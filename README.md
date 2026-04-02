@@ -1,10 +1,10 @@
 # The Data Project
 
-An experiment in building a data-rich web application with editable grids and relationships between records.
+A single system for managing all my data projects — If Not For, home inventory, email archiving, project management, CRM, and whatever comes next — in a consistent, organized way.
 
 ## Background
 
-This grew out of a need to manage structured data — projects, features, user stories, tasks — where the relationships between things matter as much as the things themselves. Existing tools (Airtable, Notion) get close but don't give full control over how relationships work.
+These projects all share the same underlying need: structured data with rich relationships between records, displayed in editable grids. Rather than scattering them across Airtable, Notion, spreadsheets, and one-off tools, this is an attempt to build one flexible system that handles all of them.
 
 A [first prototype](https://github.com/ted-thetrees/grid-prototype) explored this with Neo4j and TanStack Table. This repo is a fresh start, rethinking some of those choices.
 
