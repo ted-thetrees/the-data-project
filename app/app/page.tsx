@@ -1,18 +1,21 @@
 import { getInboxRecords, getInboxCount } from "@/lib/db";
-import { detectContentType, extractYouTubeId, extractDomain } from "@/lib/content";
+import { detectContentType, extractYouTubeId, extractDomain, cleanUrl } from "@/lib/content";
 import { fetchOgImage } from "@/lib/og";
 import { Badge } from "@/components/ui/badge";
 import { DeleteButton } from "./delete-button";
 import { ExternalLink } from "./external-link";
 
 async function InboxCard({ row }: { row: Record<string, unknown> }) {
-  const content = (row.content as string) || "";
+  const rawContent = (row.content as string) || "";
+  const content = cleanUrl(rawContent);
   const type = detectContentType(content);
   const date = row.created_date
-    ? new Date(row.created_date as string).toLocaleDateString("en-US", {
+    ? new Date(row.created_date as string).toLocaleString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
       })
     : null;
 
@@ -36,8 +39,20 @@ async function InboxCard({ row }: { row: Record<string, unknown> }) {
   );
 }
 
+async function getYouTubeThumbnail(ytId: string): Promise<string> {
+  const maxres = `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`;
+  try {
+    const res = await fetch(maxres, { method: "HEAD" });
+    if (res.ok) return maxres;
+  } catch {}
+  return `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`;
+}
+
 async function UrlCard({ url }: { url: string }) {
-  const ogImage = await fetchOgImage(url.split("?")[0]);
+  const ytId = extractYouTubeId(url);
+  const ogImage = ytId
+    ? await getYouTubeThumbnail(ytId)
+    : await fetchOgImage(url.split("?")[0]);
 
   return (
     <ExternalLink
@@ -45,13 +60,21 @@ async function UrlCard({ url }: { url: string }) {
       className="group flex flex-col gap-2 text-left cursor-pointer"
     >
       {ogImage && (
-        <div className="rounded-md overflow-hidden border">
+        <div className="relative rounded-md overflow-hidden border aspect-video">
           <img
             src={ogImage}
             alt=""
-            className="w-full h-auto max-h-64 object-cover group-hover:opacity-90 transition-opacity"
+            className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
             loading="lazy"
           />
+          {ytId && (
+            <div className="absolute bottom-2 right-2 bg-black/70 rounded-md p-3">
+              <svg viewBox="0 0 121.48 85.04" className="w-16 h-auto">
+                <path d="M118.9 13.3c-1.4-5.2-5.5-9.3-10.7-10.7C98.7 0 60.7 0 60.7 0s-38 0-47.5 2.5C8.1 3.9 3.9 8.1 2.5 13.3 0 22.8 0 42.5 0 42.5s0 19.8 2.5 29.2C3.9 76.9 8 81 13.2 82.4 22.8 85 60.7 85 60.7 85s38 0 47.5-2.5c5.2-1.4 9.3-5.5 10.7-10.7 2.5-9.5 2.5-29.2 2.5-29.2s.1-19.8-2.5-29.3z" fill="red"/>
+                <path fill="#fff" d="M48.6 24.3v36.4l31.6-18.2z"/>
+              </svg>
+            </div>
+          )}
         </div>
       )}
       <span className="text-sm text-primary group-hover:underline break-all">

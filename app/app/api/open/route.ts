@@ -10,5 +10,5 @@ export async function GET(request: NextRequest) {
 
   exec(`open '${url.replace(/'/g, "'\\''")}'`);
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.redirect(new URL("/", request.url));
 }

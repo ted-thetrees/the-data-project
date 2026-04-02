@@ -1,5 +1,3 @@
-"use client";
-
 export function ExternalLink({
   url,
   children,
@@ -10,13 +8,11 @@ export function ExternalLink({
   className?: string;
 }) {
   return (
-    <button
-      onClick={() => {
-        fetch(`/api/open?url=${encodeURIComponent(url)}`);
-      }}
+    <a
+      href={`/api/open?url=${encodeURIComponent(url)}`}
       className={className}
     >
       {children}
-    </button>
+    </a>
   );
 }

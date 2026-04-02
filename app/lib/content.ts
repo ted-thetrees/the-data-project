@@ -30,6 +30,26 @@ export function extractYouTubeId(url: string): string | null {
   return match ? match[1] : null;
 }
 
+export function cleanUrl(url: string): string {
+  try {
+    const u = new URL(url.trim());
+
+    // YouTube: keep only v= parameter
+    if (/^(www\.)?youtube\.com$/.test(u.hostname) && u.searchParams.has("v")) {
+      return `https://www.youtube.com/watch?v=${u.searchParams.get("v")}`;
+    }
+
+    // X/Twitter: strip query params (s=20, etc.)
+    if (/^(www\.)?(twitter|x)\.com$/.test(u.hostname) && /\/status\/\d+/.test(u.pathname)) {
+      return `${u.origin}${u.pathname}`;
+    }
+
+    return url.trim();
+  } catch {
+    return url.trim();
+  }
+}
+
 export function extractDomain(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, "");

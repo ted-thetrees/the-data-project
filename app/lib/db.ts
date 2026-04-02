@@ -14,8 +14,7 @@ export async function getInboxRecords(limit = 100, offset = 0) {
       __id as id,
       "Title" as content,
       "Record_Type" as record_type,
-      "Created_Date" as created_date,
-      "Needs_SS" as needs_ss
+      "Created_Date" as created_date
     FROM "bsePwEnYg0x7fdbsdZR"."Inbox"
     ORDER BY "Created_Date" DESC
     LIMIT $1 OFFSET $2`,
