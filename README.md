@@ -1,13 +1,18 @@
-# Grid v2
+# The Data Project
 
-A data grid application for managing projects, features, user stories, and tasks — with first-class support for relationships between records.
+An experiment in building a data-rich web application with editable grids and relationships between records.
 
-Built with Next.js, TanStack Table, shadcn/ui, and Postgres (via Supabase).
+## Background
+
+This grew out of a need to manage structured data — projects, features, user stories, tasks — where the relationships between things matter as much as the things themselves. Existing tools (Airtable, Notion) get close but don't give full control over how relationships work.
+
+A [first prototype](https://github.com/ted-thetrees/grid-prototype) explored this with Neo4j and TanStack Table. This repo is a fresh start, rethinking some of those choices.
 
 ## Status
 
-Starting from scratch. See [docs/](docs/) for project plans and resources.
+Early stage. No code yet — currently documenting what we know, what we're considering, and what we've learned from studying other projects.
 
-## Getting started
+## Docs
 
-_Coming soon — project is being scaffolded._
+- [Thinking](docs/THINKING.md) — What we're considering and why
+- [Resources](docs/RESOURCES.md) — Reference projects and things worth studying
