@@ -14,5 +14,6 @@ Early stage. No code yet — currently documenting what we know, what we're cons
 
 ## Docs
 
-- [Thinking](docs/THINKING.md) — What we're considering and why
+- [Data Projects](docs/DATA-PROJECTS.md) — All the projects this system needs to handle
+- [Thinking](docs/THINKING.md) — Technical considerations and what we've explored
 - [Resources](docs/RESOURCES.md) — Reference projects and things worth studying
