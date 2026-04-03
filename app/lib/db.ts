@@ -24,6 +24,25 @@ export async function getInboxRecords(limit = 100, offset = 0) {
   return result.rows;
 }
 
+export async function getProjectMatrix() {
+  const result = await pool.query(
+    `SELECT
+      __id as id,
+      "Uber_Project" as uber_project,
+      "Task_Status" as task_status,
+      "Task" as task,
+      "Task_Result" as task_result,
+      "Task_Notes" as task_notes,
+      "Tickle_Date" as tickle_date,
+      "Project_Status" as project_status,
+      "Project_Notes" as project_notes,
+      "Project" as project
+    FROM "bsePwEnYg0x7fdbsdZR"."Project_Matrix"
+    ORDER BY "Uber_Project", "Project", "Tickle_Date"`
+  );
+  return result.rows;
+}
+
 export async function getInboxCount() {
   const result = await pool.query(
     `SELECT COUNT(*) as count FROM "bsePwEnYg0x7fdbsdZR"."Inbox"`

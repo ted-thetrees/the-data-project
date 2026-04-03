@@ -20,6 +20,7 @@
     "next": "16.2.2",
     "pg": "^8.20.0",
     "react": "19.2.4",
+    "react-arborist": "^3.4.3",
     "react-dom": "19.2.4",
     "shadcn": "^4.1.2",
     "tailwind-merge": "^3.5.0",
