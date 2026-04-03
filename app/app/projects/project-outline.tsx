@@ -326,10 +326,10 @@ function OutlineNode({
               <ColumnResizer index={1} />
             </div>
             <div
-              className="text-xs text-muted-foreground px-2 py-1.5 border-r flex-shrink-0 relative break-words"
+              className="text-sm px-2 py-1.5 border-r flex-shrink-0 relative break-words"
               style={{ width: widths[2] }}
             >
-              <EditableText value={node.data.taskResult || ""} recordId={node.id} field="taskResult" className="text-xs" />
+              <EditableText value={node.data.taskResult || ""} recordId={node.id} field="taskResult" />
               <ColumnResizer index={2} />
             </div>
             <div
