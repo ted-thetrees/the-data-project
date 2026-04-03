@@ -42,7 +42,11 @@ function buildTree(tasks: Task[]) {
 
     for (const [project, tasks] of sortedProjects) {
       const tickleDate = tasks[0]?.tickle_date;
-      const projectChildren = tasks.map((t) => ({
+      const statusOrder: Record<string, number> = { Tickled: 0, Done: 1 };
+      const sortedTasks = [...tasks].sort(
+        (a, b) => (statusOrder[a.task_status] ?? 0) - (statusOrder[b.task_status] ?? 0)
+      );
+      const projectChildren = sortedTasks.map((t) => ({
         id: t.id,
         name: t.task || "(no task)",
         data: {
