@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useCallback, useRef, createContext, useContext } from "react";
-import { updateTickleDate } from "./actions";
+import { updateTickleDate, updateTaskField } from "./actions";
 
 interface TreeNode {
   id: string;
@@ -101,6 +101,99 @@ function statusBadge(status: string | undefined) {
   );
 }
 
+function EditableText({
+  value,
+  recordId,
+  field,
+  className,
+}: {
+  value: string;
+  recordId: string;
+  field: "task" | "taskResult" | "taskNotes";
+  className?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  if (editing) {
+    return (
+      <input
+        type="text"
+        defaultValue={value}
+        autoFocus
+        className={`w-full bg-background border rounded px-1 py-0.5 text-sm outline-none ${className || ""}`}
+        onBlur={(e) => {
+          setEditing(false);
+          if (e.target.value !== value) {
+            startTransition(() => updateTaskField(recordId, field, e.target.value));
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          if (e.key === "Escape") setEditing(false);
+        }}
+        onClick={(e) => e.stopPropagation()}
+      />
+    );
+  }
+
+  return (
+    <span
+      className={`cursor-text hover:bg-accent/80 rounded px-0.5 -mx-0.5 ${isPending ? "opacity-50" : ""} ${className || ""}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        setEditing(true);
+      }}
+    >
+      {value || "\u00A0"}
+    </span>
+  );
+}
+
+function EditableStatus({
+  value,
+  recordId,
+}: {
+  value: string | undefined;
+  recordId: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  if (editing) {
+    return (
+      <select
+        defaultValue={value || ""}
+        autoFocus
+        className="text-xs border rounded px-1 py-0.5 bg-background outline-none"
+        onChange={(e) => {
+          setEditing(false);
+          if (e.target.value !== value) {
+            startTransition(() => updateTaskField(recordId, "taskStatus", e.target.value));
+          }
+        }}
+        onBlur={() => setEditing(false)}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <option value="Tickled">Tickled</option>
+        <option value="Done">Done</option>
+      </select>
+    );
+  }
+
+  return (
+    <span
+      className={`cursor-pointer ${isPending ? "opacity-50" : ""}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        setEditing(true);
+      }}
+    >
+      {statusBadge(value) || <span className="text-xs text-muted-foreground/40">set status</span>}
+    </span>
+  );
+}
+
 function EditableDate({
   date,
   taskIds,
@@ -160,8 +253,8 @@ function ColumnHeaders() {
       {COLUMN_HEADERS.map((header, i) => (
         <div
           key={header}
-          className="relative px-2 py-1.5 border-r last:border-r-0 truncate"
-          style={{ width: widths[i], flexShrink: 0 }}
+          className={`relative px-2 py-1.5 border-r last:border-r-0 truncate ${i === COLUMN_HEADERS.length - 1 ? "flex-1" : ""}`}
+          style={i < COLUMN_HEADERS.length - 1 ? { width: widths[i], flexShrink: 0 } : { minWidth: widths[i] }}
         >
           {header}
           {i < COLUMN_HEADERS.length - 1 && <ColumnResizer index={i} />}
@@ -222,28 +315,28 @@ function OutlineNode({
               className={`text-sm px-2 py-1.5 border-r truncate flex-shrink-0 relative ${node.data.taskStatus === "Done" ? "line-through text-muted-foreground" : ""}`}
               style={{ width: widths[0] }}
             >
-              {node.name}
+              <EditableText value={node.name} recordId={node.id} field="task" />
               <ColumnResizer index={0} />
             </div>
             <div
               className="flex-shrink-0 px-2 py-1.5 border-r text-center relative"
               style={{ width: widths[1] }}
             >
-              {statusBadge(node.data.taskStatus)}
+              <EditableStatus value={node.data.taskStatus} recordId={node.id} />
               <ColumnResizer index={1} />
             </div>
             <div
               className="text-xs text-muted-foreground px-2 py-1.5 border-r truncate flex-shrink-0 relative"
               style={{ width: widths[2] }}
             >
-              {node.data.taskResult || ""}
+              <EditableText value={node.data.taskResult || ""} recordId={node.id} field="taskResult" className="text-xs" />
               <ColumnResizer index={2} />
             </div>
             <div
               className="text-xs text-muted-foreground/70 italic px-2 py-1.5 truncate flex-1"
               style={{ minWidth: widths[3] }}
             >
-              {node.data.taskNotes || ""}
+              <EditableText value={node.data.taskNotes || ""} recordId={node.id} field="taskNotes" className="text-xs italic" />
             </div>
           </div>
         )}
