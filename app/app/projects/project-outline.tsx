@@ -310,9 +310,9 @@ function OutlineNode({
         )}
 
         {node.data.type === "task" && (
-          <div className="flex items-center flex-1 min-w-0 -my-1.5 -mr-2">
+          <div className="flex items-stretch flex-1 min-w-0 -my-1.5 -mr-2">
             <div
-              className={`text-sm px-2 py-1.5 border-r truncate flex-shrink-0 relative ${node.data.taskStatus === "Done" ? "line-through text-muted-foreground" : ""}`}
+              className={`text-sm px-2 py-1.5 border-r flex-shrink-0 relative break-words ${node.data.taskStatus === "Done" ? "line-through text-muted-foreground" : ""}`}
               style={{ width: widths[0] }}
             >
               <EditableText value={node.name} recordId={node.id} field="task" />
@@ -326,14 +326,14 @@ function OutlineNode({
               <ColumnResizer index={1} />
             </div>
             <div
-              className="text-xs text-muted-foreground px-2 py-1.5 border-r truncate flex-shrink-0 relative"
+              className="text-xs text-muted-foreground px-2 py-1.5 border-r flex-shrink-0 relative break-words"
               style={{ width: widths[2] }}
             >
               <EditableText value={node.data.taskResult || ""} recordId={node.id} field="taskResult" className="text-xs" />
               <ColumnResizer index={2} />
             </div>
             <div
-              className="text-xs text-muted-foreground/70 italic px-2 py-1.5 truncate flex-1"
+              className="text-xs text-muted-foreground/70 italic px-2 py-1.5 flex-1 break-words"
               style={{ minWidth: widths[3] }}
             >
               <EditableText value={node.data.taskNotes || ""} recordId={node.id} field="taskNotes" className="text-xs italic" />
