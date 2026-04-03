@@ -82,7 +82,7 @@ async function UrlCard({ url }: { url: string }) {
           )}
         </div>
       )}
-      <span className="text-sm text-primary group-hover:underline break-all">
+      <span className="text-sm text-primary underline break-all">
         {url}
       </span>
     </ExternalLink>
