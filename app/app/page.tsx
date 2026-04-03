@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { DeleteButton } from "./delete-button";
 import { ExternalLink } from "./external-link";
 import { format as timeago } from "timeago.js";
+import { LinkifiedText } from "./linkified-text";
 
 async function InboxCard({ row }: { row: Record<string, unknown> }) {
   const rawContent = (row.content as string) || "";
@@ -89,7 +90,11 @@ async function UrlCard({ url }: { url: string }) {
 }
 
 function TextCard({ text }: { text: string }) {
-  return <p className="text-sm leading-relaxed whitespace-pre-wrap text-balance">{text}</p>;
+  return (
+    <p className="text-sm leading-relaxed whitespace-pre-wrap text-balance">
+      <LinkifiedText text={text} />
+    </p>
+  );
 }
 
 export default async function Home() {
