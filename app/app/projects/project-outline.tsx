@@ -147,13 +147,23 @@ function OutlineNode({
         )}
 
         {node.data.type === "task" && (
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="flex items-center gap-4 flex-1 min-w-0">
             <span
-              className={`text-sm ${node.data.taskStatus === "Done" ? "line-through text-muted-foreground" : ""}`}
+              className={`text-sm flex-shrink-0 w-[280px] truncate ${node.data.taskStatus === "Done" ? "line-through text-muted-foreground" : ""}`}
             >
               {node.name}
             </span>
-            {statusBadge(node.data.taskStatus)}
+            <span className="w-[70px] flex-shrink-0">{statusBadge(node.data.taskStatus)}</span>
+            {node.data.taskResult && (
+              <span className="text-xs text-muted-foreground truncate w-[200px] flex-shrink-0">
+                {node.data.taskResult}
+              </span>
+            )}
+            {node.data.taskNotes && (
+              <span className="text-xs text-muted-foreground/70 italic truncate">
+                {node.data.taskNotes}
+              </span>
+            )}
           </div>
         )}
       </div>
