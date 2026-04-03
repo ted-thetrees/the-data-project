@@ -65,8 +65,7 @@ export async function POST(req: NextRequest) {
                 },
                 body: JSON.stringify({
                   fieldKeyType: "id",
-                  record: { fields: { [CONTENT_FIELD]: tidied } },
-                  recordId,
+                  records: [{ id: recordId, fields: { [CONTENT_FIELD]: tidied } }],
                 }),
               });
             }
@@ -82,8 +81,7 @@ export async function POST(req: NextRequest) {
                 },
                 body: JSON.stringify({
                   fieldKeyType: "id",
-                  record: { fields: { [CONTENT_FIELD]: cleaned } },
-                  recordId,
+                  records: [{ id: recordId, fields: { [CONTENT_FIELD]: cleaned } }],
                 }),
               });
             }
