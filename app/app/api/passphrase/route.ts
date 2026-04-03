@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generatePassphrase } from "@/lib/passphrase";
+import { tidyText, detectContentType, cleanUrl } from "@/lib/content";
 
 const TEABLE_KEY = process.env.TEABLE_API_KEY!;
 const TEABLE_URL = process.env.TEABLE_URL || "https://teable.ifnotfor.com";
+const INBOX_TABLE_ID = "tblxWdmSHnBdDYjcmKX";
+const CONTENT_FIELD = "fldAfD5hZNUos5KGlC5";
 const PASSPHRASES_TABLE_ID = "tblBYrVi2x3KeZOIzYZ";
 const INBOX_LINK_FIELD = "fldyn9V5K1K4GAMwWCJ";
 const PASSPHRASE_FIELD = "fldzWslh4WONRZPw5a8";
@@ -43,6 +46,53 @@ export async function POST(req: NextRequest) {
     });
 
     if (res.ok) {
+      // Tidy the content field if it's plain text
+      try {
+        const recordRes = await fetch(`${TEABLE_URL}/api/table/${INBOX_TABLE_ID}/record/${recordId}?fieldKeyType=id`, {
+          headers: { Authorization: `Bearer ${TEABLE_KEY}` },
+        });
+        if (recordRes.ok) {
+          const record = await recordRes.json();
+          const content = record.fields?.[CONTENT_FIELD] as string;
+          if (content && detectContentType(content) === "text") {
+            const tidied = tidyText(content);
+            if (tidied !== content) {
+              await fetch(`${TEABLE_URL}/api/table/${INBOX_TABLE_ID}/record`, {
+                method: "PATCH",
+                headers: {
+                  Authorization: `Bearer ${TEABLE_KEY}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  fieldKeyType: "id",
+                  record: { fields: { [CONTENT_FIELD]: tidied } },
+                  recordId,
+                }),
+              });
+            }
+          } else if (content) {
+            // Clean URL tracking params
+            const cleaned = cleanUrl(content);
+            if (cleaned !== content) {
+              await fetch(`${TEABLE_URL}/api/table/${INBOX_TABLE_ID}/record`, {
+                method: "PATCH",
+                headers: {
+                  Authorization: `Bearer ${TEABLE_KEY}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  fieldKeyType: "id",
+                  record: { fields: { [CONTENT_FIELD]: cleaned } },
+                  recordId,
+                }),
+              });
+            }
+          }
+        }
+      } catch {
+        // Non-fatal — passphrase was still assigned
+      }
+
       return NextResponse.json({ success: true, passphrase, recordId });
     }
 
