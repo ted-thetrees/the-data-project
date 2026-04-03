@@ -3,6 +3,15 @@
 import { useState, useTransition } from "react";
 import { Tree, NodeRendererProps } from "react-arborist";
 import { updateTickleDate, updateTaskField } from "./actions";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 function formatDate(d: string | null | undefined): string {
   if (!d) return "";
@@ -17,9 +26,15 @@ function toInputDate(d: string | null | undefined): string {
 function tickleColor(d: string | null | undefined): string {
   if (!d) return "text-muted-foreground";
   const diff = (new Date(d).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-  if (diff < 0) return "text-red-600 font-semibold";
+  if (diff < 0) return "text-destructive font-semibold";
   if (diff < 3) return "text-orange-600 font-semibold";
   return "text-muted-foreground";
+}
+
+function statusVariant(status: string | undefined): "default" | "secondary" | "outline" | "destructive" {
+  if (status === "Done") return "default";
+  if (status === "Tickled") return "secondary";
+  return "outline";
 }
 
 function EditableText({
@@ -35,11 +50,11 @@ function EditableText({
 
   if (editing) {
     return (
-      <input
+      <Input
         type="text"
         defaultValue={value}
         autoFocus
-        className={`w-full bg-background border rounded px-1 py-0.5 outline-none ${className || "text-sm"}`}
+        className={`h-7 text-sm ${className || ""}`}
         onBlur={(e) => {
           setEditing(false);
           if (e.target.value !== value) onSave(e.target.value);
@@ -55,7 +70,7 @@ function EditableText({
 
   return (
     <span
-      className={`cursor-text hover:bg-accent/80 rounded px-0.5 -mx-0.5 ${className || "text-sm"}`}
+      className={`cursor-text hover:bg-accent rounded px-1 -mx-1 ${className || ""}`}
       onClick={(e) => {
         e.stopPropagation();
         setEditing(true);
@@ -80,11 +95,10 @@ function Node({ node, style, dragHandle }: NodeRendererProps<any>) {
       ref={dragHandle}
       style={style}
       className={`flex items-center gap-2 py-1 px-2 hover:bg-accent/50 cursor-pointer group
-        ${data.nodeType === "task" ? "border-b" : ""}
+        ${data.nodeType === "task" ? "border-b border-border" : ""}
         ${isPending ? "opacity-50" : ""}`}
       onClick={() => node.isInternal && node.toggle()}
     >
-      {/* Collapse/expand or bullet */}
       {node.isInternal ? (
         <span className="text-muted-foreground w-4 text-center text-xs select-none flex-shrink-0">
           {node.isOpen ? "▼" : "▶"}
@@ -93,21 +107,19 @@ function Node({ node, style, dragHandle }: NodeRendererProps<any>) {
         <span className="w-4 text-center text-xs text-muted-foreground/40 flex-shrink-0">•</span>
       )}
 
-      {/* Uber Project */}
       {data.nodeType === "uber" && (
-        <span className="font-bold text-base">{data.name}</span>
+        <span className="font-bold text-base text-foreground">{data.name}</span>
       )}
 
-      {/* Project */}
       {data.nodeType === "project" && (
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <span className="font-medium text-sm">{data.name}</span>
+          <span className="font-medium text-sm text-foreground">{data.name}</span>
           {editingDate ? (
-            <input
+            <Input
               type="date"
               defaultValue={toInputDate(data.tickleDate)}
               autoFocus
-              className="text-xs font-mono border rounded px-1.5 py-0.5 bg-background"
+              className="h-6 w-36 text-xs font-mono"
               onBlur={(e) => {
                 setEditingDate(false);
                 const newDate = e.target.value;
@@ -124,15 +136,16 @@ function Node({ node, style, dragHandle }: NodeRendererProps<any>) {
               onClick={(e) => e.stopPropagation()}
             />
           ) : (
-            <span
-              className={`text-xs font-mono whitespace-nowrap cursor-pointer hover:underline ${tickleColor(data.tickleDate)}`}
+            <Badge
+              variant="outline"
+              className={`cursor-pointer hover:bg-accent font-mono ${tickleColor(data.tickleDate)}`}
               onClick={(e) => {
                 e.stopPropagation();
                 setEditingDate(true);
               }}
             >
               {data.tickleDate ? formatDate(data.tickleDate) : "no date"}
-            </span>
+            </Badge>
           )}
           <span className="text-xs text-muted-foreground">
             {data.children?.length} tasks
@@ -140,12 +153,10 @@ function Node({ node, style, dragHandle }: NodeRendererProps<any>) {
         </div>
       )}
 
-      {/* Task */}
       {data.nodeType === "task" && (
         <div className="flex items-stretch flex-1 min-w-0 -my-1 -mr-2">
-          {/* Task name */}
           <div
-            className={`px-2 py-1 border-r break-words flex-shrink-0 ${data.taskStatus === "Done" ? "line-through text-muted-foreground" : ""}`}
+            className={`px-2 py-1 border-r border-border break-words flex-shrink-0 text-sm ${data.taskStatus === "Done" ? "line-through text-muted-foreground" : "text-foreground"}`}
             style={{ width: 300 }}
           >
             <EditableText
@@ -154,36 +165,36 @@ function Node({ node, style, dragHandle }: NodeRendererProps<any>) {
             />
           </div>
 
-          {/* Status */}
-          <div className="w-[80px] flex-shrink-0 px-2 py-1 border-r text-center">
-            <select
-              value={data.taskStatus || ""}
-              className="text-xs border rounded px-1 py-0.5 bg-transparent cursor-pointer"
-              onChange={(e) => {
-                e.stopPropagation();
-                handleFieldSave("taskStatus", e.target.value);
-              }}
-              onClick={(e) => e.stopPropagation()}
+          <div
+            className="w-[100px] flex-shrink-0 px-2 py-1 border-r border-border flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Select
+              value={data.taskStatus || "Tickled"}
+              onValueChange={(v) => handleFieldSave("taskStatus", v)}
             >
-              <option value="Tickled">Tickled</option>
-              <option value="Done">Done</option>
-            </select>
+              <SelectTrigger className="h-6 w-full text-xs border-0 shadow-none bg-transparent">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Tickled">Tickled</SelectItem>
+                <SelectItem value="Done">Done</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Result */}
-          <div className="px-2 py-1 border-r flex-shrink-0 break-words" style={{ width: 140 }}>
+          <div className="px-2 py-1 border-r border-border flex-shrink-0 break-words text-sm" style={{ width: 140 }}>
             <EditableText
               value={data.taskResult}
               onSave={(v) => handleFieldSave("taskResult", v)}
             />
           </div>
 
-          {/* Notes */}
           <div className="px-2 py-1 flex-1 break-words">
             <EditableText
               value={data.taskNotes}
               onSave={(v) => handleFieldSave("taskNotes", v)}
-              className="text-sm text-muted-foreground/70 italic"
+              className="text-sm text-muted-foreground italic"
             />
           </div>
         </div>
@@ -194,16 +205,15 @@ function Node({ node, style, dragHandle }: NodeRendererProps<any>) {
 
 export function ArboristTree({ initialData }: { initialData: any[] }) {
   return (
-    <div className="border rounded-lg bg-card overflow-hidden">
-      {/* Column headers */}
+    <div className="border border-border rounded-lg bg-card overflow-hidden">
       <div
-        className="flex items-center border-b-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+        className="flex items-center border-b-2 border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted/30"
         style={{ paddingLeft: 80 }}
       >
-        <div className="px-2 py-1.5 border-r" style={{ width: 300 }}>Task</div>
-        <div className="w-[80px] px-2 py-1.5 border-r text-center">Status</div>
-        <div className="px-2 py-1.5 border-r" style={{ width: 140 }}>Result</div>
-        <div className="px-2 py-1.5 flex-1">Notes</div>
+        <div className="px-2 py-2 border-r border-border" style={{ width: 300 }}>Task</div>
+        <div className="w-[100px] px-2 py-2 border-r border-border text-center">Status</div>
+        <div className="px-2 py-2 border-r border-border" style={{ width: 140 }}>Result</div>
+        <div className="px-2 py-2 flex-1">Notes</div>
       </div>
 
       <Tree
