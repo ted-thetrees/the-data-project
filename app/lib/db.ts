@@ -38,7 +38,7 @@ export async function getProjectMatrix() {
       "Project_Notes" as project_notes,
       "Project" as project
     FROM "bsePwEnYg0x7fdbsdZR"."Project_Matrix"
-    ORDER BY "Uber_Project", "Project", "Tickle_Date"`
+    ORDER BY "Uber_Project", "Tickle_Date" ASC NULLS LAST, "Project"`
   );
   return result.rows;
 }

@@ -34,7 +34,13 @@ function buildTree(tasks: Task[]) {
   for (const [uber, projectMap] of uberMap) {
     const uberChildren: any[] = [];
 
-    for (const [project, tasks] of projectMap) {
+    const sortedProjects = [...projectMap.entries()].sort(([, a], [, b]) => {
+      const da = a[0]?.tickle_date ? new Date(a[0].tickle_date).getTime() : Infinity;
+      const db = b[0]?.tickle_date ? new Date(b[0].tickle_date).getTime() : Infinity;
+      return da - db;
+    });
+
+    for (const [project, tasks] of sortedProjects) {
       const tickleDate = tasks[0]?.tickle_date;
       const projectChildren = tasks.map((t) => ({
         id: t.id,
