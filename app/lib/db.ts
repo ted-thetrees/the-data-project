@@ -1,22 +1,23 @@
 import { Pool } from "pg";
 
 export const pool = new Pool({
-  host: "127.0.0.1",
-  port: 42345,
-  database: "thedataproject",
-  user: "teable",
-  password: "teable-local-dev-2026",
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL?.includes("supabase.co")
+    ? { rejectUnauthorized: false }
+    : false,
 });
 
 export async function getInboxRecords(limit = 100, offset = 0) {
   const result = await pool.query(
     `SELECT
-      __id as id,
-      "Title" as content,
-      "Record_Type" as record_type,
-      "Created_Date" as created_date
-    FROM "bsePwEnYg0x7fdbsdZR"."Inbox"
-    ORDER BY "Created_Date" DESC
+      i.__id as id,
+      i."Title" as content,
+      i."Record_Type" as record_type,
+      i."Created_Date" as created_date,
+      p."Passphrase" as passphrase
+    FROM "bsePwEnYg0x7fdbsdZR"."Inbox" i
+    LEFT JOIN "bsePwEnYg0x7fdbsdZR"."Passphrases" p ON p."Record_ID" = i.__id
+    ORDER BY i."Created_Date" DESC
     LIMIT $1 OFFSET $2`,
     [limit, offset]
   );

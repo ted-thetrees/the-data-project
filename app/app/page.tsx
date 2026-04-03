@@ -1,22 +1,19 @@
+export const dynamic = "force-dynamic";
+
 import { getInboxRecords, getInboxCount } from "@/lib/db";
 import { detectContentType, extractYouTubeId, extractDomain, cleanUrl } from "@/lib/content";
 import { fetchOgImage } from "@/lib/og";
 import { Badge } from "@/components/ui/badge";
 import { DeleteButton } from "./delete-button";
 import { ExternalLink } from "./external-link";
+import { format as timeago } from "timeago.js";
 
 async function InboxCard({ row }: { row: Record<string, unknown> }) {
   const rawContent = (row.content as string) || "";
   const content = cleanUrl(rawContent);
   const type = detectContentType(content);
   const date = row.created_date
-    ? new Date(row.created_date as string).toLocaleString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      })
+    ? timeago(row.created_date as string)
     : null;
 
   return (
@@ -30,7 +27,14 @@ async function InboxCard({ row }: { row: Record<string, unknown> }) {
           )}
           {date && <span className="text-xs text-muted-foreground">{date}</span>}
         </div>
-        <DeleteButton recordId={row.id as string} />
+        <div className="flex items-center gap-2">
+          {row.passphrase != null && (
+            <span className="text-xs font-mono rounded-full px-2.5 py-0.5 bg-amber-100 text-amber-800 border border-amber-300">
+              {row.passphrase as string}
+            </span>
+          )}
+          <DeleteButton recordId={row.id as string} />
+        </div>
       </div>
 
       {type !== "text" && <UrlCard url={content} />}
@@ -85,7 +89,7 @@ async function UrlCard({ url }: { url: string }) {
 }
 
 function TextCard({ text }: { text: string }) {
-  return <p className="text-sm leading-relaxed whitespace-pre-wrap">{text}</p>;
+  return <p className="text-sm leading-relaxed whitespace-pre-wrap text-balance">{text}</p>;
 }
 
 export default async function Home() {
