@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { updateTickleDate } from "./actions";
 
 interface TreeNode {
   id: string;
@@ -24,6 +25,12 @@ function formatDate(d: string | null | undefined): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+function toInputDate(d: string | null | undefined): string {
+  if (!d) return "";
+  const date = new Date(d);
+  return date.toISOString().split("T")[0];
+}
+
 function tickleColor(d: string | null | undefined): string {
   if (!d) return "text-muted-foreground";
   const date = new Date(d);
@@ -45,6 +52,54 @@ function statusBadge(status: string | undefined) {
       className={`text-xs rounded-full px-2 py-0.5 border ${colors[status] || "bg-gray-100 text-gray-700 border-gray-300"}`}
     >
       {status}
+    </span>
+  );
+}
+
+function EditableDate({
+  date,
+  taskIds,
+}: {
+  date: string | undefined;
+  taskIds: string[];
+}) {
+  const [editing, setEditing] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  if (editing) {
+    return (
+      <input
+        type="date"
+        defaultValue={toInputDate(date)}
+        autoFocus
+        className="text-xs font-mono border rounded px-1.5 py-0.5 bg-background"
+        onBlur={(e) => {
+          setEditing(false);
+          const newDate = e.target.value;
+          if (newDate && newDate !== toInputDate(date)) {
+            startTransition(() => {
+              updateTickleDate(taskIds, newDate + "T00:00:00.000Z");
+            });
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          if (e.key === "Escape") setEditing(false);
+        }}
+        onClick={(e) => e.stopPropagation()}
+      />
+    );
+  }
+
+  return (
+    <span
+      className={`text-xs font-mono whitespace-nowrap cursor-pointer hover:underline ${isPending ? "opacity-50" : tickleColor(date)}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        setEditing(true);
+      }}
+    >
+      {date ? formatDate(date) : "no date"}
     </span>
   );
 }
@@ -84,13 +139,10 @@ function OutlineNode({
         {node.data.type === "project" && (
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <span className="font-medium text-sm truncate">{node.name}</span>
-            {node.data.tickleDate && (
-              <span
-                className={`text-xs font-mono whitespace-nowrap ${tickleColor(node.data.tickleDate)}`}
-              >
-                {formatDate(node.data.tickleDate)}
-              </span>
-            )}
+            <EditableDate
+              date={node.data.tickleDate}
+              taskIds={node.data.taskIds || []}
+            />
           </div>
         )}
 
