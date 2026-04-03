@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Inbox" };
 
 import { getInboxRecords, getInboxCount } from "@/lib/db";
 import { detectContentType, extractYouTubeId, extractDomain, cleanUrl } from "@/lib/content";
