@@ -241,20 +241,51 @@ export function AntProjectTree({
     ...(uber.children?.map((p) => p.key) || []),
   ]);
 
+  const [currentTheme, setCurrentTheme] = useState<"default" | "dark" | "compact">("default");
+
+  const algorithms = {
+    default: theme.defaultAlgorithm,
+    dark: theme.darkAlgorithm,
+    compact: theme.compactAlgorithm,
+  };
+
+  const isDark = currentTheme === "dark";
+
   return (
     <ConfigProvider
       theme={{
-        algorithm: theme.defaultAlgorithm,
+        algorithm: algorithms[currentTheme],
         token: {
           borderRadius: 6,
           fontFamily: "inherit",
         },
       }}
     >
-      <div style={{ maxWidth: "100%", margin: "0 auto", padding: "24px 40px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 24 }}>
+      <div
+        style={{
+          maxWidth: "100%",
+          margin: "0 auto",
+          padding: "24px 40px",
+          minHeight: "100vh",
+          background: isDark ? "#141414" : undefined,
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <Title level={2} style={{ margin: 0 }}>Projects</Title>
-          <Text type="secondary">{taskCount} tasks</Text>
+          <Space>
+            <Text type="secondary">{taskCount} tasks</Text>
+            <Select
+              size="small"
+              value={currentTheme}
+              onChange={setCurrentTheme}
+              style={{ width: 120 }}
+              options={[
+                { value: "default", label: "Default" },
+                { value: "dark", label: "Dark" },
+                { value: "compact", label: "Compact" },
+              ]}
+            />
+          </Space>
         </div>
 
         {/* Column headers */}
@@ -263,13 +294,13 @@ export function AntProjectTree({
             display: "flex",
             alignItems: "center",
             padding: "8px 12px 8px 68px",
-            borderBottom: "2px solid #f0f0f0",
+            borderBottom: isDark ? "2px solid #303030" : "2px solid #f0f0f0",
             fontSize: 11,
             fontWeight: 600,
-            textTransform: "uppercase",
+            textTransform: "uppercase" as const,
             letterSpacing: "0.05em",
-            color: "rgba(0,0,0,0.45)",
-            background: "#fafafa",
+            color: isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)",
+            background: isDark ? "#1f1f1f" : "#fafafa",
             borderRadius: "8px 8px 0 0",
           }}
         >
@@ -280,7 +311,7 @@ export function AntProjectTree({
         </div>
 
         <Card
-          style={{ borderRadius: "0 0 8px 8px", borderTop: 0 }}
+          style={{ borderRadius: "0 0 8px 8px", borderTop: 0, background: isDark ? "#1f1f1f" : undefined }}
           styles={{ body: { padding: 0 } }}
         >
           <Tree
