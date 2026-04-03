@@ -118,7 +118,7 @@ function OutlineNode({
   return (
     <div>
       <div
-        className={`flex items-center gap-2 py-1.5 px-2 rounded hover:bg-accent/50 cursor-pointer group`}
+        className={`flex items-center gap-2 py-1.5 px-2 hover:bg-accent/50 cursor-pointer group ${node.data.type === "task" ? "border-b" : "rounded"}`}
         style={{ paddingLeft: indent + 8 }}
         onClick={() => hasChildren && setOpen(!open)}
       >
@@ -147,23 +147,21 @@ function OutlineNode({
         )}
 
         {node.data.type === "task" && (
-          <div className="flex items-center gap-4 flex-1 min-w-0">
+          <div className="flex items-center flex-1 min-w-0 -my-1.5 -mr-2">
             <span
-              className={`text-sm flex-shrink-0 w-[280px] truncate ${node.data.taskStatus === "Done" ? "line-through text-muted-foreground" : ""}`}
+              className={`text-sm px-2 py-1.5 border-r w-[280px] truncate flex-shrink-0 ${node.data.taskStatus === "Done" ? "line-through text-muted-foreground" : ""}`}
             >
               {node.name}
             </span>
-            <span className="w-[70px] flex-shrink-0">{statusBadge(node.data.taskStatus)}</span>
-            {node.data.taskResult && (
-              <span className="text-xs text-muted-foreground truncate w-[200px] flex-shrink-0">
-                {node.data.taskResult}
-              </span>
-            )}
-            {node.data.taskNotes && (
-              <span className="text-xs text-muted-foreground/70 italic truncate">
-                {node.data.taskNotes}
-              </span>
-            )}
+            <span className="w-[80px] flex-shrink-0 px-2 py-1.5 border-r text-center">
+              {statusBadge(node.data.taskStatus)}
+            </span>
+            <span className="text-xs text-muted-foreground px-2 py-1.5 border-r w-[140px] truncate flex-shrink-0">
+              {node.data.taskResult || ""}
+            </span>
+            <span className="text-xs text-muted-foreground/70 italic px-2 py-1.5 truncate">
+              {node.data.taskNotes || ""}
+            </span>
           </div>
         )}
       </div>
