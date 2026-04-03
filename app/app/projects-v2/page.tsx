@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Projects v002" };
 
 import { getProjectMatrix } from "@/lib/db";
 import { ArboristTree } from "./arborist-tree";

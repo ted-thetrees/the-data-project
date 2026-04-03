@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Projects v001" };
 
 import { getProjectMatrix } from "@/lib/db";
 import { ProjectOutline } from "./project-outline";
