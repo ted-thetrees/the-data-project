@@ -14,9 +14,6 @@ import {
   Card,
 } from "antd";
 import {
-  FolderOutlined,
-  FolderOpenOutlined,
-  FileTextOutlined,
   CalendarOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -213,23 +210,18 @@ function UberTitle({ node }: { node: TreeTask }) {
 function buildAntTreeData(nodes: TreeTask[]): TreeDataNode[] {
   return nodes.map((node) => {
     let title: React.ReactNode;
-    let icon: React.ReactNode;
 
     if (node.nodeType === "uber") {
       title = <UberTitle node={node} />;
-      icon = <FolderOutlined />;
     } else if (node.nodeType === "project") {
       title = <ProjectTitle node={node} />;
-      icon = <FolderOutlined />;
     } else {
       title = <TaskTitle node={node} />;
-      icon = <FileTextOutlined />;
     }
 
     return {
       key: node.key,
       title,
-      icon,
       children: node.children ? buildAntTreeData(node.children) : undefined,
       isLeaf: !node.children || node.children.length === 0,
     };
@@ -294,7 +286,6 @@ export function AntProjectTree({
           <Tree
             treeData={antTreeData}
             defaultExpandedKeys={allKeys}
-            showIcon
             showLine={{ showLeafIcon: false }}
             blockNode
             selectable={false}
