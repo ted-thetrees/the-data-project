@@ -174,9 +174,11 @@ function ColumnHeaders() {
 function OutlineNode({
   node,
   depth = 0,
+  isFirstChild = false,
 }: {
   node: TreeNode;
   depth?: number;
+  isFirstChild?: boolean;
 }) {
   const [open, setOpen] = useState(node.data.type !== "task");
   const { widths } = useContext(ColumnsContext);
@@ -186,7 +188,7 @@ function OutlineNode({
   return (
     <div>
       <div
-        className={`flex items-center gap-2 py-1.5 px-2 hover:bg-accent/50 cursor-pointer group ${node.data.type === "task" ? "border-b" : "rounded"}`}
+        className={`flex items-center gap-2 py-1.5 px-2 hover:bg-accent/50 cursor-pointer group ${node.data.type === "task" ? `border-b ${isFirstChild ? "border-t" : ""}` : "rounded"}`}
         style={{ paddingLeft: indent + 8 }}
         onClick={() => hasChildren && setOpen(!open)}
       >
@@ -249,8 +251,8 @@ function OutlineNode({
 
       {open &&
         hasChildren &&
-        node.children!.map((child) => (
-          <OutlineNode key={child.id} node={child} depth={depth + 1} />
+        node.children!.map((child, i) => (
+          <OutlineNode key={child.id} node={child} depth={depth + 1} isFirstChild={i === 0} />
         ))}
     </div>
   );
