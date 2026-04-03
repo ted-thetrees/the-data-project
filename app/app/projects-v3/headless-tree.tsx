@@ -87,6 +87,52 @@ function EditableText({
   );
 }
 
+function ProjectRow({ itemData, startTransition }: { itemData: TreeItem; startTransition: (fn: () => void) => void }) {
+  const [editingDate, setEditingDate] = useState(false);
+
+  return (
+    <div className="flex items-center gap-3 flex-1 min-w-0">
+      <span className="font-medium text-sm text-foreground">{itemData.itemName}</span>
+      {editingDate ? (
+        <Input
+          type="date"
+          defaultValue={toInputDate(itemData.tickleDate)}
+          autoFocus
+          className="h-6 w-36 text-xs font-mono"
+          onBlur={(e) => {
+            setEditingDate(false);
+            const newDate = e.target.value;
+            if (newDate && newDate !== toInputDate(itemData.tickleDate)) {
+              startTransition(() =>
+                updateTickleDate(itemData.taskIds || [], newDate + "T00:00:00.000Z")
+              );
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+            if (e.key === "Escape") setEditingDate(false);
+          }}
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : (
+        <Badge
+          variant="outline"
+          className={`cursor-pointer hover:bg-accent font-mono ${tickleColor(itemData.tickleDate)}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            setEditingDate(true);
+          }}
+        >
+          {itemData.tickleDate ? formatDate(itemData.tickleDate) : "no date"}
+        </Badge>
+      )}
+      <span className="text-xs text-muted-foreground">
+        {itemData.childrenIds.length} tasks
+      </span>
+    </div>
+  );
+}
+
 export function HeadlessTree({ initialData }: { initialData: Record<string, TreeItem> }) {
   const [data] = useState(initialData);
   const [isPending, startTransition] = useTransition();
@@ -162,50 +208,9 @@ export function HeadlessTree({ initialData }: { initialData: Record<string, Tree
               )}
 
               {/* Project */}
-              {itemData.nodeType === "project" && (() => {
-                const [editingDate, setEditingDate] = useState(false);
-                return (
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <span className="font-medium text-sm text-foreground">{itemData.itemName}</span>
-                    {editingDate ? (
-                      <Input
-                        type="date"
-                        defaultValue={toInputDate(itemData.tickleDate)}
-                        autoFocus
-                        className="h-6 w-36 text-xs font-mono"
-                        onBlur={(e) => {
-                          setEditingDate(false);
-                          const newDate = e.target.value;
-                          if (newDate && newDate !== toInputDate(itemData.tickleDate)) {
-                            startTransition(() =>
-                              updateTickleDate(itemData.taskIds || [], newDate + "T00:00:00.000Z")
-                            );
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                          if (e.key === "Escape") setEditingDate(false);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className={`cursor-pointer hover:bg-accent font-mono ${tickleColor(itemData.tickleDate)}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingDate(true);
-                        }}
-                      >
-                        {itemData.tickleDate ? formatDate(itemData.tickleDate) : "no date"}
-                      </Badge>
-                    )}
-                    <span className="text-xs text-muted-foreground">
-                      {itemData.childrenIds.length} tasks
-                    </span>
-                  </div>
-                );
-              })()}
+              {itemData.nodeType === "project" && (
+                <ProjectRow itemData={itemData} startTransition={startTransition} />
+              )}
 
               {/* Task */}
               {itemData.nodeType === "task" && (
