@@ -238,8 +238,8 @@ function OutlineNode({
               <ColumnResizer index={2} />
             </div>
             <div
-              className="text-xs text-muted-foreground/70 italic px-2 py-1.5 truncate"
-              style={{ width: widths[3] }}
+              className="text-xs text-muted-foreground/70 italic px-2 py-1.5 truncate flex-1"
+              style={{ minWidth: widths[3] }}
             >
               {node.data.taskNotes || ""}
             </div>

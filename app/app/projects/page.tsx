@@ -84,7 +84,7 @@ export default async function ProjectsPage() {
 
   return (
     <div className="min-h-screen bg-background p-6 md:p-10">
-      <div className="max-w-3xl mx-auto">
+      <div className="mx-auto" style={{ maxWidth: "100%" }}>
         <div className="flex items-baseline justify-between mb-6">
           <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
           <span className="text-sm text-muted-foreground">
