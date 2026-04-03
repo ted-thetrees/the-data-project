@@ -45,6 +45,7 @@ function buildTree(tasks: Task[]) {
       const statusOrder: Record<string, number> = { Tickled: 0, Done: 1 };
       const sortedTasks = [...tasks].sort(
         (a, b) => (statusOrder[a.task_status] ?? 0) - (statusOrder[b.task_status] ?? 0)
+          || (a.task || "").localeCompare(b.task || "")
       );
       const projectChildren = sortedTasks.map((t) => ({
         id: t.id,
