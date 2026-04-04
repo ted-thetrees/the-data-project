@@ -176,41 +176,43 @@ function PersonRow({ person, depth }: { person: Person; depth: number }) {
   const indent = depth * INDENT_PX;
   const bg = DEPTH_COLORS[depth] || DEPTH_COLORS[DEPTH_COLORS.length - 1];
 
+  const cellStyle = { background: bg };
+
   return (
     <div style={{
       display: "flex", alignItems: "stretch",
       marginLeft: indent,
-      background: bg,
+      gap: 2,
     }}>
-      <div className="claude-cell" style={{ width: widths[0], flexShrink: 0, position: "relative", fontWeight: 500 }}>
+      <div className="claude-cell" style={{ ...cellStyle, width: widths[0], flexShrink: 0, position: "relative", fontWeight: 500 }}>
         <EditableText value={person.name} recordId={person.id} field="name" />
         <ColResizer index={0} />
       </div>
-      <div className="claude-cell" style={{ width: widths[1], flexShrink: 0, position: "relative" }}>
+      <div className="claude-cell" style={{ ...cellStyle, width: widths[1], flexShrink: 0, position: "relative" }}>
         <EditableSelect value={person.familiarity} recordId={person.id} field="familiarity" options={FAMILIARITY_OPTIONS} />
         <ColResizer index={1} />
       </div>
-      <div className="claude-cell" style={{ width: widths[2], flexShrink: 0, position: "relative" }}>
+      <div className="claude-cell" style={{ ...cellStyle, width: widths[2], flexShrink: 0, position: "relative" }}>
         <EditableSelect value={person.gender} recordId={person.id} field="gender" options={GENDER_OPTIONS} />
         <ColResizer index={2} />
       </div>
-      <div className="claude-cell" style={{ width: widths[3], flexShrink: 0, position: "relative" }}>
+      <div className="claude-cell" style={{ ...cellStyle, width: widths[3], flexShrink: 0, position: "relative" }}>
         <EditableText value={person.known_as || ""} recordId={person.id} field="knownAs" />
         <ColResizer index={3} />
       </div>
-      <div className="claude-cell" style={{ width: widths[4], flexShrink: 0, position: "relative" }}>
+      <div className="claude-cell" style={{ ...cellStyle, width: widths[4], flexShrink: 0, position: "relative" }}>
         <EditableText value={person.metro_area || ""} recordId={person.id} field="metroArea" />
         <ColResizer index={4} />
       </div>
-      <div className="claude-cell" style={{ width: widths[5], flexShrink: 0, position: "relative" }}>
+      <div className="claude-cell" style={{ ...cellStyle, width: widths[5], flexShrink: 0, position: "relative" }}>
         <EditableSelect value={person.has_org_filled} recordId={person.id} field="hasOrgFilled" options={ORG_OPTIONS} />
         <ColResizer index={5} />
       </div>
-      <div className="claude-cell" style={{ width: widths[6], flexShrink: 0, position: "relative" }}>
+      <div className="claude-cell" style={{ ...cellStyle, width: widths[6], flexShrink: 0, position: "relative" }}>
         <EditableSelect value={person.target_desirability} recordId={person.id} field="targetDesirability" options={DESIRABILITY_OPTIONS} />
         <ColResizer index={6} />
       </div>
-      <div className="claude-cell" style={{ flex: 1, minWidth: widths[7] }}>
+      <div className="claude-cell" style={{ ...cellStyle, flex: 1, minWidth: widths[7] }}>
         <EditableSelect value={person.teller_status} recordId={person.id} field="tellerStatus" options={TELLER_OPTIONS} />
       </div>
     </div>
@@ -254,9 +256,9 @@ function NestedGroups({
 }) {
   if (groupFields.length === 0) {
     return (
-      <div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {showHeaders && <ColumnHeaders indent={depth * INDENT_PX} />}
-        {people.map((p, i) => (
+        {people.map((p) => (
           <PersonRow key={p.id} person={p} depth={depth} />
         ))}
       </div>
@@ -458,7 +460,7 @@ export function PeopleTable({ people }: { people: Person[] }) {
 
         <ColContext.Provider value={{ widths, onResize }}>
           {/* Top border */}
-          <div style={{ overflow: "hidden" }}>
+          <div style={{ overflow: "hidden", display: "flex", flexDirection: "column", gap: 2 }}>
             {groupFields.length > 0 ? (
               <NestedGroups
                 people={sorted}
