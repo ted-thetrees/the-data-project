@@ -181,9 +181,8 @@ function PersonRow({ person, depth }: { person: Person; depth: number }) {
     <div style={{
       display: "flex", alignItems: "stretch",
       marginLeft: indent,
-      borderBottom: "1px solid var(--border)",
-      borderLeft: "1px solid var(--border)",
-      borderRight: "1px solid var(--border)",
+      border: "1px solid var(--border)",
+      borderTop: "none",
       background: bg,
     }}>
       <div className="claude-cell" style={{ width: widths[0], flexShrink: 0, position: "relative", fontWeight: 500 }}>
@@ -537,9 +536,7 @@ export function PeopleTable({ people }: { people: Person[] }) {
           display: flex;
           align-items: center;
           border-right: 1px solid var(--border);
-        }
-        .claude-cell:last-child {
-          border-right: none;
+          min-height: 36px;
         }
         .claude-toolbar-btn {
           font-family: inherit;
