@@ -249,9 +249,10 @@ function GroupHeader({ label, count, open, onToggle, depth }: {
 }
 
 function NestedGroups({
-  people, groupFields, depth, openGroups, toggleGroup, showHeaders,
+  people, groupFields, groupSortDirs, depth, openGroups, toggleGroup, showHeaders,
 }: {
-  people: Person[]; groupFields: string[]; depth: number;
+  people: Person[]; groupFields: string[]; groupSortDirs: ("asc" | "desc")[];
+  depth: number;
   openGroups: Set<string>; toggleGroup: (g: string) => void;
   showHeaders?: boolean;
 }) {
@@ -267,6 +268,7 @@ function NestedGroups({
   }
 
   const [currentField, ...remainingFields] = groupFields;
+  const [currentSortDir, ...remainingSortDirs] = groupSortDirs;
   const map = new Map<string, Person[]>();
   for (const p of people) {
     const key = (p as any)[currentField] || "";
@@ -274,9 +276,14 @@ function NestedGroups({
     map.get(key)!.push(p);
   }
 
+  const sortedEntries = [...map.entries()].sort(([a], [b]) => {
+    const cmp = a.localeCompare(b);
+    return currentSortDir === "asc" ? cmp : -cmp;
+  });
+
   return (
     <>
-      {[...map.entries()].map(([label, members]) => {
+      {sortedEntries.map(([label, members]) => {
         const groupKey = `${depth}-${currentField}-${label}`;
         const isOpen = openGroups.has(groupKey);
         const isLeafGroup = remainingFields.length === 0;
@@ -293,6 +300,7 @@ function NestedGroups({
               <NestedGroups
                 people={members}
                 groupFields={remainingFields}
+                groupSortDirs={remainingSortDirs}
                 depth={depth + 1}
                 openGroups={openGroups}
                 toggleGroup={toggleGroup}
@@ -312,6 +320,7 @@ export function PeopleTable({ people }: { people: Person[] }) {
   const [sortField, setSortField] = useState<string>("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [groupFields, setGroupFields] = useState<string[]>([]);
+  const [groupSortDirs, setGroupSortDirs] = useState<("asc" | "desc")[]>([]);
   const [search, setSearch] = useState("");
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
 
@@ -374,12 +383,14 @@ export function PeopleTable({ people }: { people: Person[] }) {
   const addGroupField = (field: string) => {
     if (field && !groupFields.includes(field)) {
       setGroupFields([...groupFields, field]);
+      setGroupSortDirs([...groupSortDirs, "asc"]);
       setOpenGroups(new Set());
     }
   };
 
   const removeGroupField = (index: number) => {
     setGroupFields(groupFields.filter((_, i) => i !== index));
+    setGroupSortDirs(groupSortDirs.filter((_, i) => i !== index));
     setOpenGroups(new Set());
   };
 
@@ -388,6 +399,14 @@ export function PeopleTable({ people }: { people: Person[] }) {
     next[index] = field;
     setGroupFields(next);
     setOpenGroups(new Set());
+  };
+
+  const toggleGroupSortDir = (index: number) => {
+    setGroupSortDirs((prev) => {
+      const next = [...prev];
+      next[index] = next[index] === "asc" ? "desc" : "asc";
+      return next;
+    });
   };
 
   return (
@@ -439,6 +458,9 @@ export function PeopleTable({ people }: { people: Person[] }) {
                     <option key={f.key} value={f.key}>{f.label}</option>
                   ))}
                 </select>
+                <button className="claude-toolbar-btn" onClick={() => toggleGroupSortDir(i)} style={{ padding: "2px 6px", fontSize: 11 }}>
+                  {groupSortDirs[i] === "asc" ? "↑" : "↓"}
+                </button>
                 <button className="claude-toolbar-btn" onClick={() => removeGroupField(i)} style={{ padding: "2px 6px", fontSize: 11 }}>✕</button>
               </div>
             ))}
@@ -466,6 +488,7 @@ export function PeopleTable({ people }: { people: Person[] }) {
               <NestedGroups
                 people={sorted}
                 groupFields={groupFields}
+                groupSortDirs={groupSortDirs}
                 depth={0}
                 openGroups={openGroups}
                 toggleGroup={toggleGroup}
