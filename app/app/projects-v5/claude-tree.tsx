@@ -1,8 +1,55 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useCallback, useRef, createContext, useContext } from "react";
 import { updateTickleDate, updateTaskField } from "./actions";
 import type { TreeTask } from "./page";
+
+const ColContext = createContext<{ widths: number[]; onResize: (i: number, delta: number) => void }>({
+  widths: [300, 120, 150, 200],
+  onResize: () => {},
+});
+
+function ColResizer({ index }: { index: number }) {
+  const { onResize } = useContext(ColContext);
+  const startX = useRef(0);
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    startX.current = e.clientX;
+    const move = (e: MouseEvent) => {
+      onResize(index, e.clientX - startX.current);
+      startX.current = e.clientX;
+    };
+    const up = () => {
+      document.removeEventListener("mousemove", move);
+      document.removeEventListener("mouseup", up);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.addEventListener("mousemove", move);
+    document.addEventListener("mouseup", up);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  }, [index, onResize]);
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 0,
+        bottom: 0,
+        right: -2,
+        width: 5,
+        cursor: "col-resize",
+        zIndex: 10,
+      }}
+      onMouseDown={onMouseDown}
+      onMouseOver={(e) => (e.currentTarget.style.background = "var(--ring)")}
+      onMouseOut={(e) => (e.currentTarget.style.background = "transparent")}
+    />
+  );
+}
 
 function formatDate(d: string | null | undefined): string {
   if (!d) return "";
@@ -140,26 +187,30 @@ function StatusSelect({
 
 function TaskRow({ node }: { node: TreeTask }) {
   const [isPending, startTransition] = useTransition();
+  const { widths } = useContext(ColContext);
   const isDone = node.taskStatus === "Done";
 
   return (
     <div className={`claude-task-row ${isPending ? "claude-pending" : ""}`}>
-      <div className={`claude-cell claude-cell-task ${isDone ? "claude-done" : ""}`}>
+      <div className={`claude-cell ${isDone ? "claude-done" : ""}`} style={{ width: widths[0], flexShrink: 0, paddingLeft: 56, position: "relative" }}>
         <EditableText
           value={node.name}
           onSave={(v) => startTransition(() => updateTaskField(node.key, "task", v))}
         />
+        <ColResizer index={0} />
       </div>
-      <div className="claude-cell claude-cell-status">
+      <div className="claude-cell" style={{ width: widths[1], flexShrink: 0, justifyContent: "center", position: "relative" }}>
         <StatusSelect value={node.taskStatus} recordId={node.key} />
+        <ColResizer index={1} />
       </div>
-      <div className="claude-cell claude-cell-result">
+      <div className="claude-cell" style={{ width: widths[2], flexShrink: 0, position: "relative" }}>
         <EditableText
           value={node.taskResult || ""}
           onSave={(v) => startTransition(() => updateTaskField(node.key, "taskResult", v))}
         />
+        <ColResizer index={2} />
       </div>
-      <div className="claude-cell claude-cell-notes">
+      <div className="claude-cell" style={{ flex: 1, minWidth: widths[3] }}>
         <EditableText
           value={node.taskNotes || ""}
           onSave={(v) => startTransition(() => updateTaskField(node.key, "taskNotes", v))}
@@ -220,6 +271,14 @@ export function ClaudeTree({
   taskCount: number;
 }) {
   const [mode, setMode] = useState<"light" | "dark">("light");
+  const [widths, setWidths] = useState([300, 120, 150, 200]);
+  const onResize = useCallback((i: number, delta: number) => {
+    setWidths((prev) => {
+      const next = [...prev];
+      next[i] = Math.max(60, next[i] + delta);
+      return next;
+    });
+  }, []);
 
   return (
     <div className={`claude-theme ${mode === "dark" ? "dark" : ""}`} style={{ minHeight: "100vh", background: "var(--background)", color: "var(--foreground)" }}>
@@ -239,17 +298,19 @@ export function ClaudeTree({
 
         {/* Column headers */}
         <div className="claude-col-headers">
-          <div className="claude-col-header" style={{ width: 300 }}>Task</div>
-          <div className="claude-col-header" style={{ width: 120, textAlign: "center" }}>Status</div>
-          <div className="claude-col-header" style={{ width: 150 }}>Result</div>
-          <div className="claude-col-header" style={{ flex: 1 }}>Notes</div>
+          <div className="claude-col-header" style={{ width: widths[0], position: "relative" }}>Task<ColResizer index={0} /></div>
+          <div className="claude-col-header" style={{ width: widths[1], textAlign: "center", position: "relative" }}>Status<ColResizer index={1} /></div>
+          <div className="claude-col-header" style={{ width: widths[2], position: "relative" }}>Result<ColResizer index={2} /></div>
+          <div className="claude-col-header" style={{ flex: 1, minWidth: widths[3] }}>Notes</div>
         </div>
 
+        <ColContext.Provider value={{ widths, onResize }}>
         <div className="claude-tree-card">
           {treeData.map((uber) => (
             <UberNode key={uber.key} node={uber} />
           ))}
         </div>
+        </ColContext.Provider>
       </div>
 
       <style>{`
@@ -462,27 +523,6 @@ export function ClaudeTree({
           border-right: none;
         }
 
-        .claude-cell-task {
-          width: 300px;
-          flex-shrink: 0;
-          padding-left: 56px;
-        }
-
-        .claude-cell-status {
-          width: 120px;
-          flex-shrink: 0;
-          justify-content: center;
-        }
-
-        .claude-cell-result {
-          width: 150px;
-          flex-shrink: 0;
-        }
-
-        .claude-cell-notes {
-          flex: 1;
-          min-width: 0;
-        }
 
         .claude-done {
           text-decoration: line-through;
