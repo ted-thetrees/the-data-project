@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 200px;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      text-align: center;
+    }
+    #status {
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    #status.saving { background: #fff3cd; color: #856404; }
+    #status.success { background: #d4edda; color: #155724; }
+    #status.error { background: #f8d7da; color: #721c24; }
+    .title {
+      font-size: 11px;
+      color: #666;
+      margin-top: 8px;
+      word-break: break-word;
+      max-height: 40px;
+      overflow: hidden;
+    }
+    .setup-link { margin-top: 10px; font-size: 11px; }
+    .setup-link a { color: #888; cursor: pointer; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div id="status" class="saving">Saving...</div>
+  <div class="title" id="pageTitle"></div>
+  <div class="setup-link"><a id="optionsLink">Settings</a></div>
+  <script src="popup.js"></script>
+</body>
+</html>
