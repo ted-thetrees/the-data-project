@@ -136,7 +136,7 @@ const COLUMNS = ["Name", "Familiarity", "Gender", "Known As", "Metro Area", "Org
 
 function PersonRow({ person, depth = 0 }: { person: Person; depth?: number }) {
   const { widths } = useContext(ColContext);
-  const indent = depth * 20;
+  const indent = depth * 50;
 
   return (
     <div className="claude-task-row" style={{ display: "flex", alignItems: "stretch" }}>
@@ -204,7 +204,7 @@ function GroupHeader({ label, count, open, onToggle, depth }: { label: string; c
       onClick={onToggle}
       style={{
         display: "flex", alignItems: "center", gap: 10,
-        padding: `8px 16px 8px ${16 + depth * 20}px`,
+        padding: `8px 16px 8px ${16 + depth * 50}px`,
         cursor: "pointer", background: depth === 0 ? "var(--muted)" : "transparent",
         borderBottom: "1px solid var(--border)",
         fontWeight: weights[depth] || 400, fontSize: sizes[depth] || 11,
