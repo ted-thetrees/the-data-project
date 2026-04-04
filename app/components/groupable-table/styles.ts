@@ -1,9 +1,9 @@
 export const DEPTH_COLORS = [
-  "rgba(201, 100, 66, 0.06)",
-  "rgba(120, 160, 120, 0.08)",
-  "rgba(140, 120, 180, 0.08)",
-  "rgba(200, 140, 120, 0.08)",
-  "rgba(120, 160, 200, 0.08)",
+  "#f7f0ea",  // warm cream
+  "#f0f2eb",  // sage
+  "#f1eff0",  // lavender
+  "#f6f0eb",  // peach
+  "#f0f2f1",  // sky
 ];
 
 export const INDENT_PX = 40;
