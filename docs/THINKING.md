@@ -10,6 +10,12 @@ A web application for managing structured data (projects, features, user stories
 
 Think of it as a custom Airtable/Notion database built for a specific project management data model, where you can express and navigate relationships (a feature *contains* user stories, a story *has* tasks, a person *works on* features).
 
+## Current state (April 2026)
+
+The system is live at [data.ifnotfor.com](https://data.ifnotfor.com). The database question was resolved with a **hybrid approach**: Teable (self-hosted Airtable alternative) manages the data through its UI, backed by Supabase Postgres. Neo4j handles relationship-heavy graph queries. The Next.js app reads directly from Postgres for speed and writes through Teable's API to preserve business logic.
+
+Five iterations of the Projects view were built (v001–v005), each trying a different rendering approach. The winner was v005 — a hand-built tree with a custom "Claude+" theme. The People view (v001) led to the extraction of a reusable `GroupableTable` component with multi-level grouping, depth-colored bands, and persistent UI state. See the main README for full details.
+
 ---
 
 ## What we learned from the first prototype
@@ -46,21 +52,16 @@ The first prototype used Next.js and it worked fine. No strong reason to switch.
 
 ### Database
 
-**Open question: Postgres (Supabase) vs. Neo4j**
+**Resolved: Hybrid — Supabase Postgres + Neo4j**
 
-Neo4j models relationships beautifully — it's literally designed for it. But the development experience around it is painful: no good ORMs, almost no starter templates, separate hosting (Neo4j Aura).
+We went with Supabase Postgres as the primary data store (via Teable), with Neo4j for relationship-heavy graph queries. Teable manages the schema and provides an Airtable-like UI for direct data entry. The Next.js app reads from Postgres directly (fast) and writes through Teable's REST API (preserves field logic). Neo4j handles person-to-person relationships, synced from Supabase via webhooks.
 
-Postgres with join tables can model the same relationships. The queries are more verbose, but everything else gets dramatically easier: Drizzle ORM for type-safe queries, Supabase for one-click hosting with bundled auth/storage/real-time, and thousands of reference projects to learn from.
-
-| | Neo4j | Postgres (Supabase) |
-|---|---|---|
-| Modeling relationships | Elegant, natural | Join tables — works, just more verbose |
-| Ecosystem | Small, niche | Massive |
-| ORM options | Basically none for JS | Drizzle, Prisma |
-| Hosting | Neo4j Aura (separate) | Supabase on Vercel (one-click) |
-| Bundled extras | None | Auth, real-time, file storage |
-
-There may be a hybrid approach — Postgres for the main data, with graph queries for specific relationship-heavy features later.
+| Concern | Solution |
+|---|---|
+| Entity storage | Supabase Postgres (via Teable) |
+| Data entry UI | Teable (self-hosted at teable.ifnotfor.com) |
+| Relationship queries | Neo4j (self-hosted on Hetzner) |
+| Sync | Supabase → Neo4j via webhooks |
 
 ### UI components
 
@@ -70,63 +71,59 @@ No reason to change this. It worked well in v1, it's the community standard, and
 
 ### Grid library
 
-**Settled: TanStack Table v8**
+**Resolved: Custom GroupableTable component**
 
-Proven in the prototype. Headless (full rendering control), handles sorting, grouping, filtering. The only editable-grid example using it is [react-editable-table](https://github.com/muhimasri/react-editable-table) — worth studying when we get to inline editing.
+We explored TanStack Table (in the grid-prototype), react-arborist (v002), @headless-tree (v003), Ant Design Tree (v004), and hand-built trees (v001, v005). The winner was hand-built React with a custom `GroupableTable` component extracted from the People v001 work. It provides multi-level grouping, depth-colored bands, column resizing, inline editing, and persistent state — all without a grid library dependency.
 
 ### Data fetching
 
-**Settled: TanStack Query**
+**Resolved: Server components + revalidatePath**
 
-Worked well in v1. Caching, background refetching, optimistic updates.
+Moved away from TanStack Query. All pages use Next.js server components with `force-dynamic`. After mutations (via Teable REST API server actions), `revalidatePath()` triggers a server-side refetch. No client-side data fetching layer needed.
 
 ---
 
 ## Structural ideas
 
-Things we want to get right from the start this time.
+### Separate data from UI (implemented)
 
-### Separate data from UI
+Database queries live in `lib/db.ts`. Server actions for Teable writes live in each page's `actions.ts`. UI components receive data as props. The `GroupableTable` component is fully generic — it doesn't know about Teable or Postgres.
 
-UI components shouldn't talk to the database directly. A `queries/` folder (or similar) holds all database calls. Components call those functions. This means we can swap databases without rewriting UI, and test queries independently.
-
-### Consistent folder structure
-
-Something like:
+### Actual folder structure
 
 ```
-src/
-├── app/          routes (pages)
+app/
+├── app/              # Routes (pages) — each page has its own actions.ts
 ├── components/
-│   ├── ui/       shadcn components
-│   ├── grid/     grid-specific components
-│   └── layout/   shell (sidebar, header)
-├── lib/          database connection, utilities
-├── queries/      all database queries
-└── types/        TypeScript types
+│   ├── groupable-table/  # Reusable multi-level grouping table
+│   └── ui/               # shadcn/ui components
+├── lib/
+│   ├── db.ts             # Postgres pool + all read queries
+│   ├── passphrase.ts     # PGP passphrase system
+│   ├── content.ts        # Content type detection, URL cleaning
+│   ├── og.ts             # OG image fetching
+│   └── utils.ts          # cn() utility
+└── package.json
 ```
 
-### GitHub workflow
+### Commit often (established practice)
 
-- Issues for tracking work
-- Milestones for grouping related issues
-- One branch per feature
-- Commit after each functional change
-
-### Architecture Decision Records
-
-A `docs/decisions/` folder for recording *why* we made choices (not just *what*). Short documents — a few paragraphs each. Useful when we come back in 3 months and wonder why things are the way they are.
+Commit after each functional change, not batched at end of session. The git history for Projects v005 and People v001 has 20+ small, meaningful commits showing every iteration.
 
 ---
+
+## Resolved questions
+
+- **Postgres vs. Neo4j** — Hybrid. Both. See Database section above.
+- **Deployment** — Vercel, linked via `vercel link`. Environment variables auto-provisioned.
+- **What to build first** — Built Inbox first, then iterated on Projects (5 versions), then People.
 
 ## Open questions
 
-- **Postgres vs. Neo4j** — see above. Need to make this call before writing code.
-- **Auth** — do we need user accounts? If so, Supabase Auth or Clerk?
-- **Deployment** — Vercel seems obvious, but we haven't set it up yet.
-- **Data model** — the project management schema (projects → features → stories → tasks) needs to be written out formally before building anything.
-- **What to build first** — probably a single grid (People?) end-to-end, from database to UI.
+- **Auth** — no user authentication yet. UI state is hardcoded to user "ted". Will need auth if other people use the system.
+- **More tables** — only Inbox, Projects, and People have custom views so far. The other 10 project areas (Gatherings, CRM, Home Inventory, etc.) still need views.
+- **Navigation** — no shared navigation between pages yet. Each page is accessed by direct URL.
 
 ---
 
-*Last updated: 2026-04-02*
+*Last updated: 2026-04-04*

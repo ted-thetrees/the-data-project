@@ -25,7 +25,7 @@ This is inherently a graph — people connected to people through typed, directi
 ### 1. People & Relationships (core)
 **What**: The central people database and the web of connections between them.
 **Key data**: Contact info, how I know them, introductions made, friendship interests, gathering history, last contact, contact frequency goals.
-**Where it lives today**: _TBD_
+**Where it lives today**: Teable `People` table → custom view at [data.ifnotfor.com/people](https://data.ifnotfor.com/people) (People v001). Fields: Name, Photo, Familiarity, Gender, Known As, Metro Area, Org Filled, Desirability, Teller Status. Photos proxied from Teable via `/api/teable-image/`. Person-to-person relationships tracked in Neo4j.
 **Connects to**: Everything.
 
 ### 2. Gatherings
@@ -36,8 +36,8 @@ This is inherently a graph — people connected to people through typed, directi
 
 ### 3. Project Management
 **What**: Tracking projects, features, user stories, tasks.
-**Key data**: Projects → features → user stories → tasks, with status, assignees, priorities, tickle dates.
-**Where it lives today**: Neo4j (grid-prototype v1), Coda.
+**Key data**: Uber Project → Project → Task, with status (Tickled/Done), result, notes, tickle dates.
+**Where it lives today**: Teable `Project_Matrix` table → custom views at [data.ifnotfor.com/projects-v5](https://data.ifnotfor.com/projects-v5) (current best, 5 iterations built). Also still in Coda. Previously Neo4j (grid-prototype v1).
 **Connects to**: People (who's working on what).
 
 ### 4. Business Contacts / CRM
@@ -117,14 +117,33 @@ This is inherently a graph — people connected to people through typed, directi
 
 ---
 
+## Status summary
+
+| Project | Status | View |
+|---------|--------|------|
+| People & Relationships | **Live** — Teable + People v001 + Neo4j graph | `/people` |
+| Gatherings | Not started | — |
+| Project Management | **Live** — Teable + Projects v005 (5 iterations) | `/projects-v5` |
+| Business Contacts / CRM | Not started | — |
+| Staying in Touch | Not started | — |
+| Home Inventory | Not started | — |
+| Email Archiving | Not started | — |
+| Airtable Migration | Not started | — |
+| Buy / Gift Tracking | Not started | — |
+| Places to Go | Not started | — |
+| TV Shows to Watch | Not started | — |
+| Things with My Son | Not started | — |
+| Company Ideas | Not started | — |
+
+Additionally, an **Inbox** capture system is live at `/` — not one of the original 13 projects but serves as a general-purpose ingestion point for URLs, text, and notes.
+
 ## Open questions
 
-- Where does each project's data live today? (Need to inventory this)
-- Which projects should we build first?
 - Is there existing data in Airtable that maps to any of these?
 - How formal does the gathering/introduction tracking need to be? (Simple log vs. full CRM-style pipeline)
 - Should "Staying in Touch" and "Business Contacts" be the same thing with different views?
+- Should future table views all use the `GroupableTable` component, or do some datasets need different UI patterns?
 
 ---
 
-*Last updated: 2026-04-02*
+*Last updated: 2026-04-04*
