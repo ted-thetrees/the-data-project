@@ -244,15 +244,16 @@ function NestedGroups({
   toggleGroup: (key: string) => void;
 }) {
   if (groupFields.length === 0) {
-    // Leaf level — render actual data rows
+    // Leaf level — render actual data rows, indented under their parent group
+    const indent = depth * 24;
     return (
       <>
         {rows.map((row) => (
           <tr key={row.id} className="group" style={{ borderBottom: "1px solid var(--border)" }}>
-            {row.getVisibleCells().map((cell) => {
+            {row.getVisibleCells().map((cell, cellIdx) => {
               const size = cell.column.columnDef.size;
               return (
-                <td key={cell.id} style={{ padding: "8px 12px", fontSize: 14, width: size ? `${size}px` : undefined }}>
+                <td key={cell.id} style={{ padding: "8px 12px", fontSize: 14, width: size ? `${size}px` : undefined, paddingLeft: cellIdx === 0 ? 12 + indent : 12 }}>
                   {typeof cell.column.columnDef.cell === "function"
                     ? cell.column.columnDef.cell(cell.getContext())
                     : cell.getValue() as string}
