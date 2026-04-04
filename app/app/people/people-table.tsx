@@ -153,9 +153,6 @@ function ColumnHeaders({ indent }: { indent: number }) {
       padding: "8px 0",
       fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.06em",
       color: "var(--muted-foreground)",
-      borderLeft: "1px solid var(--border)",
-      borderRight: "1px solid var(--border)",
-      borderBottom: "2px solid var(--border)",
       background: "var(--muted)",
     }}>
       {COLUMNS.map((col, i) => (
@@ -183,9 +180,6 @@ function PersonRow({ person, depth }: { person: Person; depth: number }) {
     <div style={{
       display: "flex", alignItems: "stretch",
       marginLeft: indent,
-      borderLeft: "1px solid var(--border)",
-      borderRight: "1px solid var(--border)",
-      borderBottom: "1px solid var(--border)",
       background: bg,
     }}>
       <div className="claude-cell" style={{ width: widths[0], flexShrink: 0, position: "relative", fontWeight: 500 }}>
@@ -238,8 +232,6 @@ function GroupHeader({ label, count, open, onToggle, depth }: {
         padding: "9px 16px",
         cursor: "pointer",
         background: bg,
-        border: "1px solid var(--border)",
-        borderTop: "none",
         fontWeight: 600, fontSize: 14 - depth,
       }}
     >
@@ -466,7 +458,7 @@ export function PeopleTable({ people }: { people: Person[] }) {
 
         <ColContext.Provider value={{ widths, onResize }}>
           {/* Top border */}
-          <div style={{ borderTop: "1px solid var(--border)", borderRadius: "var(--radius) var(--radius) 0 0", overflow: "hidden" }}>
+          <div style={{ overflow: "hidden" }}>
             {groupFields.length > 0 ? (
               <NestedGroups
                 people={sorted}
