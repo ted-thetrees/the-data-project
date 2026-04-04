@@ -228,6 +228,13 @@ function buildAntTreeData(nodes: TreeTask[]): TreeDataNode[] {
   });
 }
 
+function TypekitHead() {
+  return (
+    // eslint-disable-next-line @next/next/no-css-tags
+    <link rel="stylesheet" href="https://use.typekit.net/qjz7hyx.css" />
+  );
+}
+
 export function AntProjectTree({
   treeData,
   taskCount,
@@ -252,12 +259,14 @@ export function AntProjectTree({
   const isDark = currentTheme === "dark";
 
   return (
+    <>
+    <TypekitHead />
     <ConfigProvider
       theme={{
         algorithm: algorithms[currentTheme],
         token: {
           borderRadius: 6,
-          fontFamily: "inherit",
+          fontFamily: '"roboto-condensed", "Roboto Condensed", sans-serif',
         },
       }}
     >
@@ -325,5 +334,6 @@ export function AntProjectTree({
         </Card>
       </div>
     </ConfigProvider>
+    </>
   );
 }
