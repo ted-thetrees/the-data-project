@@ -153,6 +153,8 @@ function ColumnHeaders({ indent }: { indent: number }) {
       padding: "8px 0",
       fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.06em",
       color: "var(--muted-foreground)",
+      borderLeft: "1px solid var(--border)",
+      borderRight: "1px solid var(--border)",
       borderBottom: "2px solid var(--border)",
       background: "var(--muted)",
     }}>
@@ -181,8 +183,9 @@ function PersonRow({ person, depth }: { person: Person; depth: number }) {
     <div style={{
       display: "flex", alignItems: "stretch",
       marginLeft: indent,
-      border: "1px solid var(--border)",
-      borderTop: "none",
+      borderLeft: "1px solid var(--border)",
+      borderRight: "1px solid var(--border)",
+      borderBottom: "1px solid var(--border)",
       background: bg,
     }}>
       <div className="claude-cell" style={{ width: widths[0], flexShrink: 0, position: "relative", fontWeight: 500 }}>
@@ -235,9 +238,8 @@ function GroupHeader({ label, count, open, onToggle, depth }: {
         padding: "9px 16px",
         cursor: "pointer",
         background: bg,
-        borderBottom: "1px solid var(--border)",
-        borderLeft: "1px solid var(--border)",
-        borderRight: "1px solid var(--border)",
+        border: "1px solid var(--border)",
+        borderTop: "none",
         fontWeight: 600, fontSize: 14 - depth,
       }}
     >
@@ -535,7 +537,6 @@ export function PeopleTable({ people }: { people: Person[] }) {
           font-size: 14px;
           display: flex;
           align-items: center;
-          border-right: 1px solid var(--border);
           min-height: 36px;
         }
         .claude-toolbar-btn {
