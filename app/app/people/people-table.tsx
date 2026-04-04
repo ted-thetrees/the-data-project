@@ -139,7 +139,7 @@ function PersonRow({ person }: { person: Person }) {
 
   return (
     <div className="claude-task-row" style={{ display: "flex", alignItems: "stretch" }}>
-      <div className="claude-cell" style={{ width: widths[0], flexShrink: 0, position: "relative", fontWeight: 500, cssText: familiarityColor(person.familiarity) } as any}>
+      <div className="claude-cell" style={{ width: widths[0], flexShrink: 0, position: "relative", fontWeight: 500 }}>
         <EditableText value={person.name} recordId={person.id} field="name" />
         <ColResizer index={0} />
       </div>
@@ -195,14 +195,18 @@ const SORTABLE_FIELDS = [
   { key: "teller_status", label: "Teller Status" },
 ];
 
-function GroupHeader({ label, count, open, onToggle }: { label: string; count: number; open: boolean; onToggle: () => void }) {
+function GroupHeader({ label, count, open, onToggle, depth }: { label: string; count: number; open: boolean; onToggle: () => void; depth: number }) {
+  const sizes = [14, 13, 12, 12, 11];
+  const weights = [600, 600, 500, 500, 400];
   return (
     <div
       onClick={onToggle}
       style={{
-        display: "flex", alignItems: "center", gap: 10, padding: "10px 16px",
-        cursor: "pointer", background: "var(--muted)", borderBottom: "1px solid var(--border)",
-        fontWeight: 600, fontSize: 14,
+        display: "flex", alignItems: "center", gap: 10,
+        padding: `8px 16px 8px ${16 + depth * 20}px`,
+        cursor: "pointer", background: depth === 0 ? "var(--muted)" : "transparent",
+        borderBottom: "1px solid var(--border)",
+        fontWeight: weights[depth] || 400, fontSize: sizes[depth] || 11,
       }}
     >
       <span style={{ color: "var(--muted-foreground)", fontSize: 12 }}>{open ? "▾" : "▸"}</span>
@@ -212,22 +216,50 @@ function GroupHeader({ label, count, open, onToggle }: { label: string; count: n
   );
 }
 
-function GroupedRows({ groups, openGroups, toggleGroup }: { groups: [string, Person[]][]; openGroups: Set<string>; toggleGroup: (g: string) => void }) {
+function NestedGroups({
+  people, groupFields, depth, openGroups, toggleGroup,
+}: {
+  people: Person[]; groupFields: string[]; depth: number;
+  openGroups: Set<string>; toggleGroup: (g: string) => void;
+}) {
+  if (groupFields.length === 0) {
+    return <>{people.map((p) => <PersonRow key={p.id} person={p} />)}</>;
+  }
+
+  const [currentField, ...remainingFields] = groupFields;
+  const map = new Map<string, Person[]>();
+  for (const p of people) {
+    const key = (p as any)[currentField] || "";
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(p);
+  }
+
   return (
     <>
-      {groups.map(([groupLabel, members]) => (
-        <div key={groupLabel}>
-          <GroupHeader
-            label={groupLabel}
-            count={members.length}
-            open={openGroups.has(groupLabel)}
-            onToggle={() => toggleGroup(groupLabel)}
-          />
-          {openGroups.has(groupLabel) && members.map((person) => (
-            <PersonRow key={person.id} person={person} />
-          ))}
-        </div>
-      ))}
+      {[...map.entries()].map(([label, members]) => {
+        const groupKey = `${depth}-${currentField}-${label}`;
+        const isOpen = openGroups.has(groupKey);
+        return (
+          <div key={groupKey}>
+            <GroupHeader
+              label={label}
+              count={members.length}
+              open={isOpen}
+              onToggle={() => toggleGroup(groupKey)}
+              depth={depth}
+            />
+            {isOpen && (
+              <NestedGroups
+                people={members}
+                groupFields={remainingFields}
+                depth={depth + 1}
+                openGroups={openGroups}
+                toggleGroup={toggleGroup}
+              />
+            )}
+          </div>
+        );
+      })}
     </>
   );
 }
@@ -237,7 +269,7 @@ export function PeopleTable({ people }: { people: Person[] }) {
   const [widths, setWidths] = useState([200, 160, 80, 140, 180, 120, 140, 180]);
   const [sortField, setSortField] = useState<string>("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const [groupBy, setGroupBy] = useState<string>("");
+  const [groupFields, setGroupFields] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
 
@@ -281,29 +313,46 @@ export function PeopleTable({ people }: { people: Person[] }) {
   };
 
   const expandAll = () => {
-    if (groupBy) {
-      const allLabels = new Set(sorted.map((p) => (p as any)[groupBy] || ""));
-      setOpenGroups(allLabels);
+    // Recursively collect all possible group keys
+    const keys = new Set<string>();
+    function collect(people: Person[], fields: string[], depth: number) {
+      if (fields.length === 0) return;
+      const [field, ...rest] = fields;
+      const map = new Map<string, Person[]>();
+      for (const p of people) {
+        const key = (p as any)[field] || "";
+        if (!map.has(key)) map.set(key, []);
+        map.get(key)!.push(p);
+      }
+      for (const [label, members] of map) {
+        keys.add(`${depth}-${field}-${label}`);
+        collect(members, rest, depth + 1);
+      }
     }
+    collect(sorted, groupFields, 0);
+    setOpenGroups(keys);
   };
 
   const collapseAll = () => setOpenGroups(new Set());
 
-  // Build groups
-  const groups: [string, Person[]][] = [];
-  if (groupBy) {
-    const map = new Map<string, Person[]>();
-    for (const p of sorted) {
-      const key = (p as any)[groupBy] || "";
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(p);
+  const addGroupField = (field: string) => {
+    if (field && !groupFields.includes(field)) {
+      setGroupFields([...groupFields, field]);
+      setOpenGroups(new Set());
     }
-    groups.push(...map.entries());
-    // Auto-expand on first group change
-    if (openGroups.size === 0 && groups.length > 0) {
-      setTimeout(() => expandAll(), 0);
-    }
-  }
+  };
+
+  const removeGroupField = (index: number) => {
+    setGroupFields(groupFields.filter((_, i) => i !== index));
+    setOpenGroups(new Set());
+  };
+
+  const updateGroupField = (index: number, field: string) => {
+    const next = [...groupFields];
+    next[index] = field;
+    setGroupFields(next);
+    setOpenGroups(new Set());
+  };
 
   return (
     <div className={`claude-theme ${mode === "dark" ? "dark" : ""}`} style={{ minHeight: "100vh", background: "var(--background)", color: "var(--foreground)" }}>
@@ -350,17 +399,38 @@ export function PeopleTable({ people }: { people: Person[] }) {
             </button>
           </div>
           <div style={{ width: 1, height: 20, background: "var(--border)" }} />
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontWeight: 600, color: "var(--muted-foreground)" }}>Group by</span>
-            <select
-              className="claude-select"
-              value={groupBy}
-              onChange={(e) => { setGroupBy(e.target.value); setOpenGroups(new Set()); }}
-              style={{ width: "auto" }}
-            >
-              {GROUPABLE_FIELDS.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
-            </select>
-            {groupBy && (
+            {groupFields.map((field, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                {i > 0 && <span style={{ color: "var(--muted-foreground)", fontSize: 11 }}>→</span>}
+                <select
+                  className="claude-select"
+                  value={field}
+                  onChange={(e) => updateGroupField(i, e.target.value)}
+                  style={{ width: "auto" }}
+                >
+                  {GROUPABLE_FIELDS.filter((f) => f.key === "" || f.key === field || !groupFields.includes(f.key)).map((f) => (
+                    <option key={f.key} value={f.key}>{f.label}</option>
+                  ))}
+                </select>
+                <button className="claude-toolbar-btn" onClick={() => removeGroupField(i)} style={{ padding: "2px 6px", fontSize: 11 }}>✕</button>
+              </div>
+            ))}
+            {groupFields.length < 5 && (
+              <select
+                className="claude-select"
+                value=""
+                onChange={(e) => addGroupField(e.target.value)}
+                style={{ width: "auto" }}
+              >
+                <option value="">+ Add level</option>
+                {GROUPABLE_FIELDS.filter((f) => f.key && !groupFields.includes(f.key)).map((f) => (
+                  <option key={f.key} value={f.key}>{f.label}</option>
+                ))}
+              </select>
+            )}
+            {groupFields.length > 0 && (
               <>
                 <button className="claude-toolbar-btn" onClick={expandAll}>Expand all</button>
                 <button className="claude-toolbar-btn" onClick={collapseAll}>Collapse all</button>
@@ -372,7 +442,7 @@ export function PeopleTable({ people }: { people: Person[] }) {
         <ColContext.Provider value={{ widths, onResize }}>
           {/* Column headers */}
           <div style={{
-            display: "flex", alignItems: "center", padding: "10px 16px",
+            display: "flex", alignItems: "center", padding: "10px 0",
             fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.06em",
             color: "var(--muted-foreground)", background: "var(--muted)",
             borderRadius: "var(--radius) var(--radius) 0 0", border: "1px solid var(--border)", borderBottom: "2px solid var(--border)",
@@ -382,7 +452,7 @@ export function PeopleTable({ people }: { people: Person[] }) {
                 key={col}
                 style={{
                   ...(i < COLUMNS.length - 1 ? { width: widths[i], flexShrink: 0 } : { flex: 1, minWidth: widths[i] }),
-                  position: "relative", padding: "0 8px", cursor: "pointer",
+                  position: "relative", padding: "0 12px", cursor: "pointer",
                 }}
                 onClick={() => handleSort(FIELD_KEYS[i])}
               >
@@ -396,8 +466,8 @@ export function PeopleTable({ people }: { people: Person[] }) {
             background: "var(--card)", border: "1px solid var(--border)", borderTop: 0,
             borderRadius: "0 0 var(--radius) var(--radius)", overflow: "hidden",
           }}>
-            {groupBy ? (
-              <GroupedRows groups={groups} openGroups={openGroups} toggleGroup={toggleGroup} />
+            {groupFields.length > 0 ? (
+              <NestedGroups people={sorted} groupFields={groupFields} depth={0} openGroups={openGroups} toggleGroup={toggleGroup} />
             ) : (
               sorted.map((person) => <PersonRow key={person.id} person={person} />)
             )}
