@@ -174,11 +174,72 @@ function PersonRow({ person }: { person: Person }) {
   );
 }
 
+const FIELD_KEYS = ["name", "familiarity", "gender", "known_as", "metro_area", "has_org_filled", "target_desirability", "teller_status"];
+const GROUPABLE_FIELDS = [
+  { key: "", label: "None" },
+  { key: "familiarity", label: "Familiarity" },
+  { key: "gender", label: "Gender" },
+  { key: "metro_area", label: "Metro Area" },
+  { key: "has_org_filled", label: "Org Filled" },
+  { key: "target_desirability", label: "Desirability" },
+  { key: "teller_status", label: "Teller Status" },
+];
+const SORTABLE_FIELDS = [
+  { key: "name", label: "Name" },
+  { key: "familiarity", label: "Familiarity" },
+  { key: "gender", label: "Gender" },
+  { key: "known_as", label: "Known As" },
+  { key: "metro_area", label: "Metro Area" },
+  { key: "has_org_filled", label: "Org Filled" },
+  { key: "target_desirability", label: "Desirability" },
+  { key: "teller_status", label: "Teller Status" },
+];
+
+function GroupHeader({ label, count, open, onToggle }: { label: string; count: number; open: boolean; onToggle: () => void }) {
+  return (
+    <div
+      onClick={onToggle}
+      style={{
+        display: "flex", alignItems: "center", gap: 10, padding: "10px 16px",
+        cursor: "pointer", background: "var(--muted)", borderBottom: "1px solid var(--border)",
+        fontWeight: 600, fontSize: 14,
+      }}
+    >
+      <span style={{ color: "var(--muted-foreground)", fontSize: 12 }}>{open ? "▾" : "▸"}</span>
+      <span>{label || "—"}</span>
+      <span style={{ fontSize: 11, color: "var(--muted-foreground)", background: "var(--secondary)", borderRadius: 999, padding: "1px 8px" }}>{count}</span>
+    </div>
+  );
+}
+
+function GroupedRows({ groups, openGroups, toggleGroup }: { groups: [string, Person[]][]; openGroups: Set<string>; toggleGroup: (g: string) => void }) {
+  return (
+    <>
+      {groups.map(([groupLabel, members]) => (
+        <div key={groupLabel}>
+          <GroupHeader
+            label={groupLabel}
+            count={members.length}
+            open={openGroups.has(groupLabel)}
+            onToggle={() => toggleGroup(groupLabel)}
+          />
+          {openGroups.has(groupLabel) && members.map((person) => (
+            <PersonRow key={person.id} person={person} />
+          ))}
+        </div>
+      ))}
+    </>
+  );
+}
+
 export function PeopleTable({ people }: { people: Person[] }) {
   const [mode, setMode] = useState<"light" | "dark">("light");
   const [widths, setWidths] = useState([200, 160, 80, 140, 180, 120, 140, 180]);
   const [sortField, setSortField] = useState<string>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [groupBy, setGroupBy] = useState<string>("");
   const [search, setSearch] = useState("");
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
 
   const onResize = useCallback((i: number, delta: number) => {
     setWidths((prev) => {
@@ -197,13 +258,58 @@ export function PeopleTable({ people }: { people: Person[] }) {
   const sorted = [...filtered].sort((a, b) => {
     const av = (a as any)[sortField] || "";
     const bv = (b as any)[sortField] || "";
-    return av.localeCompare(bv);
+    const cmp = av.localeCompare(bv);
+    return sortDir === "asc" ? cmp : -cmp;
   });
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
+
+  const toggleGroup = (g: string) => {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(g)) next.delete(g);
+      else next.add(g);
+      return next;
+    });
+  };
+
+  const expandAll = () => {
+    if (groupBy) {
+      const allLabels = new Set(sorted.map((p) => (p as any)[groupBy] || ""));
+      setOpenGroups(allLabels);
+    }
+  };
+
+  const collapseAll = () => setOpenGroups(new Set());
+
+  // Build groups
+  const groups: [string, Person[]][] = [];
+  if (groupBy) {
+    const map = new Map<string, Person[]>();
+    for (const p of sorted) {
+      const key = (p as any)[groupBy] || "";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(p);
+    }
+    groups.push(...map.entries());
+    // Auto-expand on first group change
+    if (openGroups.size === 0 && groups.length > 0) {
+      setTimeout(() => expandAll(), 0);
+    }
+  }
 
   return (
     <div className={`claude-theme ${mode === "dark" ? "dark" : ""}`} style={{ minHeight: "100vh", background: "var(--background)", color: "var(--foreground)" }}>
       <div className="claude-container" style={{ maxWidth: "100%", padding: "32px 48px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>People</h1>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <input
@@ -225,6 +331,44 @@ export function PeopleTable({ people }: { people: Person[] }) {
           </div>
         </div>
 
+        {/* Toolbar */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 16, marginBottom: 16,
+          padding: "10px 16px", background: "var(--card)", border: "1px solid var(--border)",
+          borderRadius: "var(--radius)", fontSize: 13,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontWeight: 600, color: "var(--muted-foreground)" }}>Sort by</span>
+            <select className="claude-select" value={sortField} onChange={(e) => setSortField(e.target.value)} style={{ width: "auto" }}>
+              {SORTABLE_FIELDS.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+            </select>
+            <button
+              className="claude-toolbar-btn"
+              onClick={() => setSortDir(sortDir === "asc" ? "desc" : "asc")}
+            >
+              {sortDir === "asc" ? "↑ Asc" : "↓ Desc"}
+            </button>
+          </div>
+          <div style={{ width: 1, height: 20, background: "var(--border)" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontWeight: 600, color: "var(--muted-foreground)" }}>Group by</span>
+            <select
+              className="claude-select"
+              value={groupBy}
+              onChange={(e) => { setGroupBy(e.target.value); setOpenGroups(new Set()); }}
+              style={{ width: "auto" }}
+            >
+              {GROUPABLE_FIELDS.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+            </select>
+            {groupBy && (
+              <>
+                <button className="claude-toolbar-btn" onClick={expandAll}>Expand all</button>
+                <button className="claude-toolbar-btn" onClick={collapseAll}>Collapse all</button>
+              </>
+            )}
+          </div>
+        </div>
+
         <ColContext.Provider value={{ widths, onResize }}>
           {/* Column headers */}
           <div style={{
@@ -240,9 +384,9 @@ export function PeopleTable({ people }: { people: Person[] }) {
                   ...(i < COLUMNS.length - 1 ? { width: widths[i], flexShrink: 0 } : { flex: 1, minWidth: widths[i] }),
                   position: "relative", padding: "0 8px", cursor: "pointer",
                 }}
-                onClick={() => setSortField(["name", "familiarity", "gender", "known_as", "metro_area", "has_org_filled", "target_desirability", "teller_status"][i])}
+                onClick={() => handleSort(FIELD_KEYS[i])}
               >
-                {col} {sortField === ["name", "familiarity", "gender", "known_as", "metro_area", "has_org_filled", "target_desirability", "teller_status"][i] ? "▾" : ""}
+                {col} {sortField === FIELD_KEYS[i] ? (sortDir === "asc" ? "▴" : "▾") : ""}
                 {i < COLUMNS.length - 1 && <ColResizer index={i} />}
               </div>
             ))}
@@ -252,9 +396,11 @@ export function PeopleTable({ people }: { people: Person[] }) {
             background: "var(--card)", border: "1px solid var(--border)", borderTop: 0,
             borderRadius: "0 0 var(--radius) var(--radius)", overflow: "hidden",
           }}>
-            {sorted.map((person) => (
-              <PersonRow key={person.id} person={person} />
-            ))}
+            {groupBy ? (
+              <GroupedRows groups={groups} openGroups={openGroups} toggleGroup={toggleGroup} />
+            ) : (
+              sorted.map((person) => <PersonRow key={person.id} person={person} />)
+            )}
           </div>
         </ColContext.Provider>
       </div>
@@ -342,6 +488,21 @@ export function PeopleTable({ people }: { people: Person[] }) {
           border-radius: var(--radius);
           padding: 6px 12px;
           cursor: pointer;
+        }
+
+        .claude-toolbar-btn {
+          font-family: inherit;
+          font-size: 12px;
+          padding: 3px 10px;
+          border: 1px solid var(--border);
+          border-radius: 6px;
+          background: var(--background);
+          color: var(--foreground);
+          cursor: pointer;
+        }
+
+        .claude-toolbar-btn:hover {
+          background: var(--accent);
         }
       `}</style>
     </div>
