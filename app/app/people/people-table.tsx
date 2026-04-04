@@ -148,19 +148,19 @@ function ColumnHeaders({ indent }: { indent: number }) {
   const { widths } = useContext(ColContext);
   return (
     <div style={{
-      display: "flex", alignItems: "center",
+      display: "flex", alignItems: "stretch",
       marginLeft: indent,
-      padding: "8px 0",
+      gap: 2,
       fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.06em",
       color: "var(--muted-foreground)",
-      background: "var(--muted)",
     }}>
       {COLUMNS.map((col, i) => (
         <div
           key={col}
           style={{
             ...(i < COLUMNS.length - 1 ? { width: widths[i], flexShrink: 0 } : { flex: 1, minWidth: widths[i] }),
-            position: "relative", padding: "0 12px",
+            position: "relative", padding: "8px 12px",
+            background: "var(--muted)",
           }}
         >
           {col}
