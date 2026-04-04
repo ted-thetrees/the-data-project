@@ -134,12 +134,13 @@ function familiarityColor(f: string | null): string {
 
 const COLUMNS = ["Name", "Familiarity", "Gender", "Known As", "Metro Area", "Org Filled", "Desirability", "Teller Status"];
 
-function PersonRow({ person }: { person: Person }) {
+function PersonRow({ person, depth = 0 }: { person: Person; depth?: number }) {
   const { widths } = useContext(ColContext);
+  const indent = depth * 20;
 
   return (
     <div className="claude-task-row" style={{ display: "flex", alignItems: "stretch" }}>
-      <div className="claude-cell" style={{ width: widths[0], flexShrink: 0, position: "relative", fontWeight: 500 }}>
+      <div className="claude-cell" style={{ width: widths[0], flexShrink: 0, position: "relative", fontWeight: 500, paddingLeft: 12 + indent }}>
         <EditableText value={person.name} recordId={person.id} field="name" />
         <ColResizer index={0} />
       </div>
@@ -223,7 +224,7 @@ function NestedGroups({
   openGroups: Set<string>; toggleGroup: (g: string) => void;
 }) {
   if (groupFields.length === 0) {
-    return <>{people.map((p) => <PersonRow key={p.id} person={p} />)}</>;
+    return <>{people.map((p) => <PersonRow key={p.id} person={p} depth={depth} />)}</>;
   }
 
   const [currentField, ...remainingFields] = groupFields;
