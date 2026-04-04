@@ -79,7 +79,7 @@ function ImageCell({ value }: { value: unknown }) {
   if (!token) return null;
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 2, height: "100%" }}>
-      <img src={`/api/teable-image/${token}`} alt="" style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", borderRadius: 3 }} loading="lazy" />
+      <img src={`/api/teable-image/${token}`} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 3 }} loading="lazy" />
     </div>
   );
 }
