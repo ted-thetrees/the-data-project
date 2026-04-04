@@ -154,7 +154,7 @@ function TaskTitle({ node }: { node: TreeTask }) {
         />
       </div>
 
-      <div style={{ width: 90, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ width: 117, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
         <Select
           size="small"
           value={node.taskStatus || "Tickled"}
@@ -314,7 +314,7 @@ export function AntProjectTree({
           }}
         >
           <div style={{ width: 280, flexShrink: 0 }}>Task</div>
-          <div style={{ width: 90, flexShrink: 0, textAlign: "center" }}>Status</div>
+          <div style={{ width: 117, flexShrink: 0, textAlign: "center" }}>Status</div>
           <div style={{ width: 140, flexShrink: 0 }}>Result</div>
           <div style={{ flex: 1 }}>Notes</div>
         </div>
