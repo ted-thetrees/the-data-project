@@ -144,17 +144,14 @@ const DEPTH_COLORS = [
 
 const INDENT_PX = 40;
 
-function ColumnHeaders({ indent }: { indent: number }) {
+function ColumnHeaders({ indent = 0 }: { indent?: number }) {
   const { widths } = useContext(ColContext);
   return (
     <div style={{
       display: "flex", alignItems: "center",
-      marginLeft: indent,
       padding: "8px 0",
       fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.06em",
       color: "var(--muted-foreground)",
-      borderLeft: "1px solid var(--border)",
-      borderRight: "1px solid var(--border)",
       borderBottom: "2px solid var(--border)",
       background: "var(--muted)",
     }}>
@@ -182,9 +179,6 @@ function PersonRow({ person, depth }: { person: Person; depth: number }) {
   return (
     <div style={{
       display: "flex", alignItems: "stretch",
-      marginLeft: indent,
-      borderLeft: "1px solid var(--border)",
-      borderRight: "1px solid var(--border)",
       borderBottom: "1px solid var(--border)",
       background: bg,
     }}>
@@ -238,8 +232,7 @@ function GroupHeader({ label, count, open, onToggle, depth }: {
         padding: "9px 16px",
         cursor: "pointer",
         background: bg,
-        border: "1px solid var(--border)",
-        borderTop: "none",
+        borderBottom: "1px solid var(--border)",
         fontWeight: 600, fontSize: 14 - depth,
       }}
     >
@@ -262,10 +255,14 @@ function NestedGroups({
 }) {
   if (groupFields.length === 0) {
     return (
-      <div>
-        {showHeaders && <ColumnHeaders indent={depth * INDENT_PX} />}
-        {people.map((p, i) => (
-          <PersonRow key={p.id} person={p} depth={depth} />
+      <div style={{
+        marginLeft: depth * INDENT_PX,
+        borderLeft: "1px solid var(--border)",
+        borderRight: "1px solid var(--border)",
+      }}>
+        {showHeaders && <ColumnHeaders indent={0} />}
+        {people.map((p) => (
+          <PersonRow key={p.id} person={p} depth={0} />
         ))}
       </div>
     );
