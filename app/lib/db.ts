@@ -43,6 +43,25 @@ export async function getProjectMatrix() {
   return result.rows;
 }
 
+export async function getPeople() {
+  const result = await pool.query(
+    `SELECT
+      __id as id,
+      "Name" as name,
+      "Familiarity" as familiarity,
+      "Gender" as gender,
+      "Known_As" as known_as,
+      "Metro_Area" as metro_area,
+      "Created_Date" as created_date,
+      "Has_Org_Filled" as has_org_filled,
+      "Target_Desirability" as target_desirability,
+      "Teller_Status" as teller_status
+    FROM "bsePwEnYg0x7fdbsdZR"."People"
+    ORDER BY "Name"`
+  );
+  return result.rows;
+}
+
 export async function getInboxCount() {
   const result = await pool.query(
     `SELECT COUNT(*) as count FROM "bsePwEnYg0x7fdbsdZR"."Inbox"`
