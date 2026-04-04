@@ -234,6 +234,7 @@ function GroupHeader({ label, count, open, onToggle, depth }: {
         padding: "9px 16px",
         cursor: "pointer",
         background: bg,
+        marginTop: depth > 0 ? 2 : 0,
         fontWeight: 600, fontSize: 14 - depth,
       }}
     >
@@ -256,7 +257,7 @@ function NestedGroups({
 }) {
   if (groupFields.length === 0) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 2 }}>
         {showHeaders && <ColumnHeaders indent={depth * INDENT_PX} />}
         {people.map((p) => (
           <PersonRow key={p.id} person={p} depth={depth} />
