@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback, useContext } from "react";
+import { useState, useCallback, useContext, useEffect, useRef } from "react";
 import { ColContext, ColResizer } from "./col-context";
 import { EditableText, EditableSelect } from "./editable-cells";
+import { loadTableState, saveTableState } from "./state-actions";
 import { DEPTH_COLORS, INDENT_PX, GAP_PX, tableStyles } from "./styles";
 import type { ColumnDef, GroupableField, TableRow } from "./types";
 
@@ -190,6 +191,39 @@ export function GroupableTable({
   const [groupSortDirs, setGroupSortDirs] = useState<("asc" | "desc")[]>([]);
   const [search, setSearch] = useState("");
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+  const [loaded, setLoaded] = useState(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load saved state on mount
+  useEffect(() => {
+    loadTableState(title).then((saved) => {
+      if (saved) {
+        if (saved.mode) setMode(saved.mode as "light" | "dark");
+        if (saved.widths) setWidths(saved.widths as number[]);
+        if (saved.sortField) setSortField(saved.sortField as string);
+        if (saved.sortDir) setSortDir(saved.sortDir as "asc" | "desc");
+        if (saved.groupFields) setGroupFields(saved.groupFields as string[]);
+        if (saved.groupSortDirs) setGroupSortDirs(saved.groupSortDirs as ("asc" | "desc")[]);
+        if (saved.search) setSearch(saved.search as string);
+        if (saved.openGroups) setOpenGroups(new Set(saved.openGroups as string[]));
+      }
+      setLoaded(true);
+    });
+  }, [title]);
+
+  // Debounced save on state change
+  useEffect(() => {
+    if (!loaded) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      saveTableState(title, {
+        mode, widths, sortField, sortDir,
+        groupFields, groupSortDirs, search,
+        openGroups: [...openGroups],
+      });
+    }, 500);
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, [loaded, title, mode, widths, sortField, sortDir, groupFields, groupSortDirs, search, openGroups]);
 
   const onResize = useCallback((i: number, delta: number) => {
     setWidths((prev) => { const next = [...prev]; next[i] = Math.max(60, next[i] + delta); return next; });
