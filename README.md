@@ -185,10 +185,11 @@ Every record can be assigned a voice-friendly 3-word passphrase (e.g., "Repay in
 
 | Service | Location | URL |
 |---------|----------|-----|
-| Next.js app | Vercel | [data.ifnotfor.com](https://data.ifnotfor.com) |
+| Next.js app | Hetzner (178.156.235.239) | [data.ifnotfor.com](https://data.ifnotfor.com) |
 | Teable | Hetzner (178.156.235.239) | [teable.ifnotfor.com](https://teable.ifnotfor.com) |
-| Supabase | Cloud | (Vercel integration — env vars auto-provisioned) |
-| Neo4j | Hetzner (178.156.235.239) | Used for relationship graph |
+| Supabase | Cloud | Postgres database (connection string in env vars) |
+| Neo4j | Hetzner (178.156.235.239) | [graph.ifnotfor.com](https://graph.ifnotfor.com) |
+| Caddy | Hetzner (178.156.235.239) | Reverse proxy + auto TLS for all services |
 
 ### Environment Variables
 
@@ -290,12 +291,67 @@ Each server action file hardcodes the Teable table ID and field IDs. This is del
 - [Thinking](docs/THINKING.md) — Technical considerations and what we've explored
 - [Resources](docs/RESOURCES.md) — Reference projects and things worth studying
 
+## Deployment
+
+The Next.js app runs directly on the Hetzner server (`178.156.235.239`), behind Caddy reverse proxy. There is no local build step — code is pushed to GitHub, pulled on the server, built there, and restarted.
+
+### Deployment process
+
+```bash
+# 1. Push to GitHub
+git push origin main
+
+# 2. SSH into Hetzner and pull
+ssh root@178.156.235.239
+cd /root/the-data-project && git pull origin main
+
+# 3. Install dependencies and build
+cd app && npm install && npx next build
+
+# 4. Restart the app
+pkill -f 'next-server'
+NODE_ENV=production nohup npx next start -p 3100 > /root/nextjs-app.log 2>&1 &
+```
+
+The app is served on port 3100. Caddy handles TLS and proxies `data.ifnotfor.com` → `localhost:3100`.
+
+### Server layout on Hetzner
+
+| Service | Port | URL | How it runs |
+|---------|------|-----|-------------|
+| Next.js app | 3100 | data.ifnotfor.com | `next start` (bare process, nohup) |
+| Teable | 3030 | teable.ifnotfor.com | Docker Compose (`/root/teable/`) |
+| Neo4j Browser | 7474 | graph.ifnotfor.com | Docker |
+| Neo4j Bolt | 7687 | bolt.ifnotfor.com | Docker |
+| n8n | 5678 | n8n.ifnotfor.com | Docker |
+| Caddy | 80/443 | — | Reverse proxy + auto TLS for all services |
+
+Caddy config: `/etc/caddy/Caddyfile`
+App log: `/root/nextjs-app.log`
+
+### Environment variables on server
+
+The server has its own `.env.local` at `/root/the-data-project/app/.env.local` with:
+- `DATABASE_URL` — Supabase Postgres connection string
+- `TEABLE_API_KEY` — Teable REST API bearer token
+- `TEABLE_URL` — `https://teable.ifnotfor.com`
+- `NODE_ENV` — `production`
+
+These are **not** synced from Vercel. They were set up manually on the server and are separate from the Vercel env vars used for local development (`vercel env pull`).
+
+### Important notes
+
+- **No process manager** — the app runs as a bare `nohup` process. If the server reboots, it needs to be restarted manually (or added to `/root/start-services.sh`).
+- **No CI/CD** — deployment is manual. Push → SSH → pull → build → restart.
+- **Build on server, not locally** — we do not build locally and transfer artifacts. The server has Node.js installed and builds from source.
+- **Vercel project is linked** but only used for `vercel env pull` during local development, not for hosting.
+
 ## Development
 
 ```bash
 cd app
 npm install
-vercel env pull .env.local   # Get environment variables
+vercel env pull .env.local   # Get environment variables (local dev only)
 npm run dev                  # http://localhost:3000
 ```
 
