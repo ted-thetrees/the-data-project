@@ -37,9 +37,9 @@ function buildColConfig(fieldOptions: Record<string, string[]>): ColConfig[] {
     { key: "gender", label: "Gender", type: "select", width: 80, options: opts("Gender") },
     { key: "known_as", label: "Known As", type: "text", width: 140 },
     { key: "metro_area", label: "Metro Area", type: "text", width: 180 },
-    { key: "has_org_filled", label: "Org Filled", type: "select", width: 120, options: opts("Has_Org_Filled") },
-    { key: "target_desirability", label: "Desirability", type: "select", width: 140, options: opts("Target_Desirability") },
-    { key: "teller_status", label: "Teller Status", type: "select", width: 180, options: opts("Teller_Status") },
+    { key: "has_org_filled", label: "Org Filled", type: "select", width: 120, options: opts("Has Org Filled") },
+    { key: "target_desirability", label: "Desirability", type: "select", width: 140, options: opts("Target Desirability") },
+    { key: "teller_status", label: "Teller Status", type: "select", width: 180, options: opts("Teller Status") },
     { key: "created_date", label: "Created", type: "date", width: 170 },
   ];
 }
