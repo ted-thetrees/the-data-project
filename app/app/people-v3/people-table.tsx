@@ -61,13 +61,47 @@ function EditableText({ value, onSave, className, style }: { value: string; onSa
 }
 
 function EditableSelect({ value, options, onSave }: { value: string | null; options: string[]; onSave: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
   return (
-    <select value={value || ""} className={`gt-select ${isPending ? "gt-pending" : ""}`}
-      onChange={(e) => startTransition(() => onSave(e.target.value))} onClick={(e) => e.stopPropagation()}>
-      <option value="">—</option>
-      {options.map((o) => <option key={o} value={o}>{o}</option>)}
-    </select>
+    <div ref={ref} style={{ position: "relative", width: "100%", overflow: open ? "visible" : undefined }}>
+      <span
+        className={`gt-picklist ${isPending ? "gt-pending" : ""}`}
+        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+      >
+        <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {value || <span className="gt-empty">—</span>}
+        </span>
+        <span style={{ color: "var(--muted-foreground)", fontSize: 10, flexShrink: 0, marginLeft: 4 }}>▿</span>
+      </span>
+      {open && (
+        <div className="gt-picklist-dropdown" onClick={(e) => e.stopPropagation()}>
+          <div
+            className={`gt-picklist-option ${!value ? "gt-picklist-active" : ""}`}
+            onClick={() => { startTransition(() => onSave("")); setOpen(false); }}
+          >—</div>
+          {options.map((o) => (
+            <div
+              key={o}
+              className={`gt-picklist-option ${value === o ? "gt-picklist-active" : ""}`}
+              onClick={() => { startTransition(() => onSave(o)); setOpen(false); }}
+            >{o}</div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -276,7 +310,7 @@ function FlexBody({
 
   if (groupFields.length > 0) {
     return (
-      <div style={{ overflow: "hidden", display: "flex", flexDirection: "column", gap: GAP_PX }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: GAP_PX }}>
         <NestedGroups rows={rows} visibleCols={visibleCols} groupFields={groupFields}
           groupSortDirs={groupSortDirs} depth={0} openGroups={openGroups}
           toggleGroup={toggleGroup} showHeaders={false} />
@@ -562,12 +596,25 @@ export function PeopleTable({ data }: { data: PersonRow[] }) {
           background: var(--background); color: var(--foreground); outline: none;
           box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 25%, transparent);
         }
-        .gt-select {
-          font-size: 12px; font-family: inherit; padding: 3px 6px;
-          border: 1px solid var(--border); border-radius: 6px;
-          background: var(--background); color: var(--foreground); cursor: pointer; outline: none; width: 100%;
+        .gt-picklist {
+          display: flex; align-items: center; cursor: pointer;
+          padding: 2px 4px; margin: -2px -4px; border-radius: 4px;
+          font-size: 14px; font-family: inherit; width: 100%;
         }
-        .gt-select:focus { border-color: var(--ring); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 25%, transparent); }
+        .gt-picklist:hover { background: rgba(0,0,0,0.04); }
+        .gt-picklist-dropdown {
+          position: absolute; top: 100%; left: -12px; right: -12px; z-index: 50;
+          margin-top: 4px; padding: 4px 0;
+          background: var(--background); border: 1px solid var(--border);
+          border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+          max-height: 240px; overflow-y: auto;
+        }
+        .gt-picklist-option {
+          padding: 6px 12px; font-size: 13px; cursor: pointer;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .gt-picklist-option:hover { background: var(--accent); }
+        .gt-picklist-active { font-weight: 600; color: var(--primary); }
         .gt-editable { cursor: text; padding: 2px 4px; margin: -2px -4px; border-radius: 4px; word-break: break-word; }
         .gt-editable:hover { background: rgba(0,0,0,0.04); }
         .gt-empty { color: var(--muted-foreground); opacity: 0.4; }
