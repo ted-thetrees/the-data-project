@@ -36,9 +36,7 @@ export function GridCellNav({
       role="gridcell"
       tabIndex={tabIndex}
       onKeyDown={(e) => {
-        // Let the roving tabindex handle arrow keys
         handleKeyDown(e);
-        // Enter to activate the cell (click the first interactive child)
         if (e.key === "Enter" && !e.defaultPrevented) {
           const target = ref.current?.querySelector<HTMLElement>(
             ".gt-editable, .gt-picklist, input, select"
@@ -50,8 +48,8 @@ export function GridCellNav({
       className={className}
       style={{
         ...style,
-        outline: focused ? "2px solid var(--ring)" : undefined,
-        outlineOffset: focused ? -2 : undefined,
+        outline: focused ? `var(--focus-ring-width) solid var(--focus-ring-color)` : undefined,
+        outlineOffset: focused ? "var(--focus-ring-offset)" : undefined,
       }}
     >
       {children}

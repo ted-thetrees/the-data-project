@@ -3,7 +3,7 @@ export const metadata = { title: "People v002" };
 
 import { getPeople } from "@/lib/db";
 import { PeopleTable } from "./people-table";
-import "../projects-v5/theme.css";
+
 
 export interface PersonRow {
   id: string;

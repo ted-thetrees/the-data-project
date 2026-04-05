@@ -1,73 +1,72 @@
 import chroma from "chroma-js";
 
-const LIGHT_TEXT = "#faf9f6";
-const DARK_TEXT = "#4a4639";
-
-/** Pick the best contrasting text color (near-white or near-black) for a given background. */
+/** Pick the best contrasting text color for a given background.
+ *  Uses --contrast-light and --contrast-dark from theme. */
 export function contrastText(bg: string): string {
+  const lightText = getComputedStyle(document.documentElement).getPropertyValue("--contrast-light").trim() || "#faf9f6";
+  const darkText = getComputedStyle(document.documentElement).getPropertyValue("--contrast-dark").trim() || "#4a4639";
   try {
-    const lightContrast = chroma.contrast(bg, LIGHT_TEXT);
-    const darkContrast = chroma.contrast(bg, DARK_TEXT);
-    return darkContrast >= lightContrast ? DARK_TEXT : LIGHT_TEXT;
+    const lightContrast = chroma.contrast(bg, lightText);
+    const darkContrast = chroma.contrast(bg, darkText);
+    return darkContrast >= lightContrast ? darkText : lightText;
   } catch {
-    return DARK_TEXT;
+    return darkText;
   }
 }
 
-export const DEFAULT_CELL_BG = "#F3F0E9";
+/** Get the CSS variable reference for a depth level (0–4). */
+export function depthColor(depth: number): string {
+  const clamped = Math.min(depth, 4);
+  return `var(--depth-${clamped})`;
+}
+
+// JS constants kept in sync with theme.css for cases where JS needs a number.
 export const ROW_HEIGHT = 48;
-
-export const DEPTH_COLORS = [
-  "#F3F0E9",
-  "#EDE9E1",
-  "#E7E3DA",
-  "#E1DDD4",
-  "#DBD7CE",
-];
-
 export const INDENT_PX = 40;
 export const GAP_PX = 2;
 
 export const dataGridStyles = `
   .gt-input {
-    width: 100%; padding: 4px 8px; font-size: 14px; font-family: inherit;
-    border: 1px solid var(--ring); border-radius: 6px;
+    width: 100%; padding: 4px 8px; font-size: var(--font-size-base); font-family: var(--font-family);
+    border: var(--border-width) solid var(--ring); border-radius: var(--radius-md);
     background: var(--background); color: var(--foreground); outline: none;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 25%, transparent);
+    box-shadow: var(--focus-shadow);
   }
   .gt-picklist {
     display: flex; align-items: center; cursor: pointer;
-    padding: 2px 4px; margin: -2px -4px; border-radius: 4px;
-    font-size: 14px; font-family: inherit; width: 100%;
+    padding: 2px 4px; margin: -2px -4px; border-radius: var(--radius-sm);
+    font-size: var(--cell-font-size); font-family: var(--font-family); width: 100%;
   }
-  .gt-picklist:hover { background: rgba(0,0,0,0.04); }
+  .gt-picklist:hover { background: var(--hover-overlay); }
   .gt-picklist-dropdown {
     position: absolute; top: 100%; left: -12px; right: -12px; z-index: 50;
     margin-top: 4px; padding: 4px 0;
-    background: var(--background); border: 1px solid var(--border);
-    border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-    max-height: 240px; overflow-y: auto;
+    background: var(--dropdown-bg); border: var(--border-width) solid var(--dropdown-border);
+    border-radius: var(--dropdown-radius); box-shadow: var(--dropdown-shadow);
+    max-height: var(--dropdown-max-height); overflow-y: auto;
   }
   .gt-picklist-option {
-    padding: 6px 12px; font-size: 13px; cursor: pointer;
+    padding: 6px 12px; font-size: var(--font-size-sm); cursor: pointer;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: background var(--transition-fast);
   }
   .gt-picklist-option:hover { background: var(--accent); }
-  .gt-picklist-active { font-weight: 600; color: var(--primary); }
-  .gt-editable { cursor: text; padding: 2px 4px; margin: -2px -4px; border-radius: 4px; word-break: break-word; }
-  .gt-editable:hover { background: rgba(0,0,0,0.04); }
-  .gt-empty { color: var(--muted-foreground); opacity: 0.4; }
-  .gt-pending { opacity: 0.5; }
-  .gt-cell { padding: 8px 12px; font-size: 14px; display: flex; align-items: center; min-height: 36px; }
+  .gt-picklist-active { font-weight: var(--font-weight-semibold); color: var(--primary); }
+  .gt-editable { cursor: text; padding: 2px 4px; margin: -2px -4px; border-radius: var(--radius-sm); word-break: break-word; }
+  .gt-editable:hover { background: var(--hover-overlay); }
+  .gt-empty { color: var(--empty-color); opacity: var(--empty-opacity); }
+  .gt-pending { opacity: var(--pending-opacity); }
+  .gt-cell { padding: var(--cell-padding-y) var(--cell-padding-x); font-size: var(--cell-font-size); display: flex; align-items: center; min-height: var(--cell-min-height); }
   .gt-toolbar-btn {
-    font-family: inherit; font-size: 12px; padding: 3px 10px;
-    border: 1px solid var(--border); border-radius: 6px;
+    font-family: var(--font-family); font-size: var(--toolbar-font-size); padding: var(--toolbar-btn-padding-y) var(--toolbar-btn-padding-x);
+    border: var(--border-width) solid var(--toolbar-border); border-radius: var(--toolbar-btn-radius);
     background: var(--background); color: var(--foreground); cursor: pointer;
+    transition: background var(--transition-fast);
   }
   .gt-toolbar-btn:hover { background: var(--accent); }
   .gt-toolbar-select {
-    font-size: 12px; font-family: inherit; padding: 3px 6px;
-    border: 1px solid var(--border); border-radius: 6px;
+    font-size: var(--toolbar-font-size); font-family: var(--font-family); padding: var(--toolbar-btn-padding-y) 6px;
+    border: var(--border-width) solid var(--toolbar-border); border-radius: var(--toolbar-btn-radius);
     background: var(--background); color: var(--foreground); cursor: pointer; outline: none;
   }
 `;

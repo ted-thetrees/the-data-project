@@ -20,20 +20,24 @@ const DEPTH_COLORS = [
 
 const STATE_KEY = "PicklistColors";
 
-// --- schemePaired palette ---
+// --- Picklist color palette ---
 const PAIRED_COLORS = [
-  { name: "Light Blue", hex: "#a6cee3" },
-  { name: "Blue", hex: "#1f78b4" },
-  { name: "Light Green", hex: "#b2df8a" },
-  { name: "Green", hex: "#33a02c" },
-  { name: "Light Pink", hex: "#fb9a99" },
-  { name: "Red", hex: "#e31a1c" },
-  { name: "Light Orange", hex: "#fdbf6f" },
-  { name: "Orange", hex: "#ff7f00" },
-  { name: "Light Purple", hex: "#cab2d6" },
-  { name: "Purple", hex: "#6a3d9a" },
-  { name: "Light Yellow", hex: "#ffff99" },
-  { name: "Brown", hex: "#b15928" },
+  { name: "Coral", hex: "#fbb4ae" },
+  { name: "Peach", hex: "#fdcdac" },
+  { name: "Apricot", hex: "#fed9a6" },
+  { name: "Cream", hex: "#fff2ae" },
+  { name: "Butter", hex: "#ffffb3" },
+  { name: "Champagne", hex: "#f1e2cc" },
+  { name: "Tan", hex: "#e5d8bd" },
+  { name: "Lime", hex: "#e6f5c9" },
+  { name: "Mint", hex: "#ccebc5" },
+  { name: "Green", hex: "#b3e2cd" },
+  { name: "Sky", hex: "#b3cde3" },
+  { name: "Periwinkle", hex: "#cbd5e8" },
+  { name: "Lavender", hex: "#decbe4" },
+  { name: "Pink", hex: "#fddaec" },
+  { name: "Silver", hex: "#f2f2f2" },
+  { name: "Gray", hex: "#d9d9d9" },
 ];
 
 // --- Color swatch picker ---
@@ -74,8 +78,8 @@ function ColorPicker({ value, onSave }: { value: string; onSave: (v: string) => 
           marginTop: 4, padding: 8,
           background: "var(--background)", border: "1px solid var(--border)",
           borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
-          display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 4,
-          width: 220,
+          display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4,
+          width: 160,
         }} onClick={(e) => e.stopPropagation()}>
           {PAIRED_COLORS.map((c) => (
             <div
@@ -298,7 +302,7 @@ function RecordCount({ total }: { total: number }) {
 // --- Main component ---
 
 export function PicklistColorsTable({ data }: { data: PicklistColorRow[] }) {
-  const [mode, setMode] = useState<"light" | "dark">("light");
+  
   const [sorting, setSorting] = useState<SortingState>([{ id: "field", desc: false }]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [globalFilter, setGlobalFilter] = useState("");
@@ -311,7 +315,6 @@ export function PicklistColorsTable({ data }: { data: PicklistColorRow[] }) {
   useEffect(() => {
     loadViewState(STATE_KEY).then((state) => {
       if (state) {
-        if (state.mode) setMode(state.mode as "light" | "dark");
         if (state.sorting) setSorting(state.sorting as SortingState);
         if (state.columnVisibility) setColumnVisibility(state.columnVisibility as VisibilityState);
         if (state.globalFilter) setGlobalFilter(state.globalFilter as string);
@@ -328,12 +331,12 @@ export function PicklistColorsTable({ data }: { data: PicklistColorRow[] }) {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       saveViewState(STATE_KEY, {
-        mode, sorting, columnVisibility, globalFilter,
+        sorting, columnVisibility, globalFilter,
         groupFields, groupSortDirs, openGroups: [...openGroups],
       });
     }, 500);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [loaded, mode, sorting, columnVisibility, globalFilter, groupFields, groupSortDirs, openGroups]);
+  }, [loaded, sorting, columnVisibility, globalFilter, groupFields, groupSortDirs, openGroups]);
 
   const handleGlobalFilterChange = useCallback((value: string | Record<string, unknown>) => {
     setGlobalFilter(typeof value === "string" ? value : String(value.query ?? ""));
@@ -355,7 +358,7 @@ export function PicklistColorsTable({ data }: { data: PicklistColorRow[] }) {
   };
 
   return (
-    <div className={`claude-theme ${mode === "dark" ? "dark" : ""}`} style={{ minHeight: "100vh", background: "var(--background)", color: "var(--foreground)" }}>
+    <div style={{ minHeight: "100vh", background: "var(--page-bg)", color: "var(--foreground)" }}>
       <div style={{ maxWidth: "100%", padding: "32px 48px" }}>
         <DataTableRoot
           data={data}
@@ -374,8 +377,6 @@ export function PicklistColorsTable({ data }: { data: PicklistColorRow[] }) {
                 <DataTableSearchFilter placeholder="Search..." />
                 <DataTableViewMenu />
                 <RecordCount total={data.length} />
-                <button style={{ background: "var(--secondary)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "6px 12px", cursor: "pointer", fontSize: 16 }}
-                  onClick={() => setMode(mode === "light" ? "dark" : "light")}>{mode === "light" ? "🌙" : "☀️"}</button>
               </div>
             </div>
           </DataTableToolbarSection>

@@ -21,6 +21,11 @@
   --input: #b4b2a7;
   --ring: #c96442;
   --radius: 1rem;
+  --depth-0: #f7f0ea;
+  --depth-1: #f0f2eb;
+  --depth-2: #f1eff0;
+  --depth-3: #f6f0eb;
+  --depth-4: #f0f2f1;
   font-family: 'Outfit', sans-serif;
 }
 
@@ -44,4 +49,9 @@
   --border: #3e3e38;
   --input: #52514a;
   --ring: #d97757;
+  --depth-0: #35342f;
+  --depth-1: #2f3129;
+  --depth-2: #32302f;
+  --depth-3: #35322e;
+  --depth-4: #2f3130;
 }

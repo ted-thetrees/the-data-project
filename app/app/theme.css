@@ -1,0 +1,184 @@
+/*
+ * Font is loaded via next/font in layout.tsx (Outfit).
+ *
+ *
+ * Unified Theme — Single source of truth for all design tokens.
+ * Every page inherits from :root. No dark mode. No .claude-theme class.
+ * To change the palette, font, or any token — change it here only.
+ */
+
+:root {
+  /* ── Palette ── */
+  --background: #faf9f5;
+  --foreground: #3d3929;
+  --card: #f5f4ef;
+  --card-foreground: #141413;
+  --popover: #ffffff;
+  --popover-foreground: #28261b;
+  --primary: #c96442;
+  --primary-foreground: #ffffff;
+  --secondary: #e9e6dc;
+  --secondary-foreground: #535146;
+  --muted: #ede9de;
+  --muted-foreground: #6e6d68;
+  --accent: #e9e6dc;
+  --accent-foreground: #28261b;
+  --destructive: #141413;
+  --destructive-foreground: #ffffff;
+  --border: #dad9d4;
+  --input: #b4b2a7;
+  --ring: #c96442;
+
+  /* ── Depth colors (nested group backgrounds) ── */
+  --depth-0: #f7f0ea;
+  --depth-1: #f0f2eb;
+  --depth-2: #f1eff0;
+  --depth-3: #f6f0eb;
+  --depth-4: #f0f2f1;
+
+  /* ── Default cell background ── */
+  --cell-bg: #F3F0E9;
+
+  /* ── Contrast text (auto dark/light on colored backgrounds) ── */
+  --contrast-light: #faf9f6;
+  --contrast-dark: #4a4639;
+
+  /* ── Typography ── */
+  --font-family: var(--font-outfit), 'Outfit', sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 28px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height: 1.5;
+  --letter-spacing-tight: -0.02em;
+  --letter-spacing-wide: 0.06em;
+
+  /* ── Layout ── */
+  --page-padding-x: 48px;
+  --page-padding-y: 32px;
+  --page-bg: #3d392b;
+  --row-height: 48px;
+  --group-indent: 40px;
+  --row-gap: 2px;
+
+  /* ── Borders ── */
+  --radius: 1rem;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --border-width: 1px;
+
+  /* ── Column headers ── */
+  --header-font-size: 11px;
+  --header-font-weight: 600;
+  --header-text-transform: uppercase;
+  --header-letter-spacing: 0.06em;
+  --header-bg: var(--muted);
+  --header-color: var(--muted-foreground);
+  --header-padding-x: 12px;
+  --header-padding-y: 8px;
+
+  /* ── Cells ── */
+  --cell-padding-x: 12px;
+  --cell-padding-y: 8px;
+  --cell-font-size: var(--font-size-base);
+  --cell-min-height: 36px;
+
+  /* ── Toolbar ── */
+  --toolbar-padding-x: 16px;
+  --toolbar-padding-y: 10px;
+  --toolbar-bg: var(--card);
+  --toolbar-border: var(--border);
+  --toolbar-font-size: var(--font-size-sm);
+  --toolbar-label-color: var(--muted-foreground);
+  --toolbar-label-weight: 600;
+  --toolbar-gap: 16px;
+  --toolbar-btn-padding-x: 10px;
+  --toolbar-btn-padding-y: 3px;
+  --toolbar-btn-radius: var(--radius-md);
+
+  /* ── Page title area ── */
+  --title-font-size: var(--font-size-xl);
+  --title-font-weight: var(--font-weight-bold);
+  --title-letter-spacing: var(--letter-spacing-tight);
+  --title-color: #F3F0E9;
+
+  /* ── Search bar ── */
+  --search-font-size: var(--font-size-base);
+
+  /* ── Record count ── */
+  --record-count-font-size: var(--font-size-base);
+  --record-count-color: var(--muted-foreground);
+
+  /* ── Hover states ── */
+  --hover-overlay: rgba(0, 0, 0, 0.04);
+
+  /* ── Focus ── */
+  --focus-ring-width: 2px;
+  --focus-ring-color: var(--ring);
+  --focus-ring-offset: -2px;
+  --focus-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 25%, transparent);
+
+  /* ── Transitions ── */
+  --transition-fast: 0.1s ease;
+  --transition-normal: 0.15s ease;
+  --transition-slow: 0.25s ease;
+
+  /* ── Dropdowns ── */
+  --dropdown-bg: var(--background);
+  --dropdown-border: var(--border);
+  --dropdown-radius: var(--radius-lg);
+  --dropdown-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --dropdown-max-height: 240px;
+
+  /* ── Empty / loading states ── */
+  --empty-color: var(--muted-foreground);
+  --empty-opacity: 0.4;
+  --pending-opacity: 0.5;
+
+  /* ── New row ── */
+  --new-row-opacity: 0.6;
+  --new-row-hover-opacity: 1;
+  --new-row-border-style: dashed;
+  --new-row-placeholder-font-size: 13px;
+
+  /* ── Group header ── */
+  --group-header-font-weight: 600;
+  --group-header-padding-x: 16px;
+  --group-header-padding-y: 9px;
+  --group-count-font-size: 11px;
+  --group-count-bg: rgba(0, 0, 0, 0.06);
+  --group-count-radius: 999px;
+  --group-count-padding: 1px 8px;
+
+  /* ── Resize handle ── */
+  --resize-handle-width: 5px;
+  --resize-handle-hover-color: var(--ring);
+
+  /* ── Toolbar divider ── */
+  --divider-width: 1px;
+  --divider-height: 20px;
+  --divider-color: var(--border);
+
+  /* ── Chart colors (shadcn compat) ── */
+  --chart-1: #e6ddd4;
+  --chart-2: #8a8680;
+  --chart-3: #6b675f;
+  --chart-4: #56524b;
+  --chart-5: #3d3929;
+
+  /* ── Sidebar (shadcn compat) ── */
+  --sidebar: #faf9f5;
+  --sidebar-foreground: #3d3929;
+  --sidebar-primary: #c96442;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e9e6dc;
+  --sidebar-accent-foreground: #28261b;
+  --sidebar-border: #dad9d4;
+  --sidebar-ring: #c96442;
+}

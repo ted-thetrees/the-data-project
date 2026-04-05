@@ -3,7 +3,6 @@ export const metadata = { title: "People v003" };
 
 import { getPeople, getPicklistColors, getTeableFieldOptions, syncPicklistColors } from "@/lib/db";
 import { PeopleTable } from "./people-table";
-import "../projects-v5/theme.css";
 
 export interface PersonRow {
   id: string;

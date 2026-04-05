@@ -16,7 +16,7 @@ export function SortToolbar({
   const sortDir = sorting[0]?.desc ? "desc" : "asc";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <span style={{ fontWeight: 600, color: "var(--muted-foreground)", fontSize: 12 }}>Sort</span>
+      <span style={{ fontWeight: "var(--toolbar-label-weight)" as unknown as number, color: "var(--toolbar-label-color)", fontSize: "var(--toolbar-font-size)" }}>Sort</span>
       <select className="gt-toolbar-select" value={sortField} onChange={(e) => onSortChange(e.target.value)}>
         {sortableFields.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
       </select>
@@ -42,19 +42,19 @@ export function GroupingToolbar({
 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-      <span style={{ fontWeight: 600, color: "var(--muted-foreground)", fontSize: 12 }}>Group</span>
+      <span style={{ fontWeight: "var(--toolbar-label-weight)" as unknown as number, color: "var(--toolbar-label-color)", fontSize: "var(--toolbar-font-size)" }}>Group</span>
       {groupFields.map((field, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", gap: 2 }}>
-          {i > 0 && <span style={{ color: "var(--muted-foreground)", fontSize: 11 }}>→</span>}
+          {i > 0 && <span style={{ color: "var(--muted-foreground)", fontSize: "var(--font-size-xs)" }}>→</span>}
           <select className="gt-toolbar-select" value={field} onChange={(e) => onUpdateGroup(i, e.target.value)}>
             {groupableFields.filter((f) => f.key === field || !groupFields.includes(f.key)).map((f) => (
               <option key={f.key} value={f.key}>{f.label}</option>
             ))}
           </select>
-          <button className="gt-toolbar-btn" onClick={() => onToggleGroupSort(i)} style={{ padding: "2px 6px", fontSize: 11 }}>
+          <button className="gt-toolbar-btn" onClick={() => onToggleGroupSort(i)} style={{ padding: "2px 6px", fontSize: "var(--font-size-xs)" }}>
             {groupSortDirs[i] === "asc" ? "↑" : "↓"}
           </button>
-          <button className="gt-toolbar-btn" onClick={() => onRemoveGroup(i)} style={{ padding: "2px 6px", fontSize: 11 }}>✕</button>
+          <button className="gt-toolbar-btn" onClick={() => onRemoveGroup(i)} style={{ padding: "2px 6px", fontSize: "var(--font-size-xs)" }}>✕</button>
         </div>
       ))}
       {groupFields.length < 5 && (
@@ -88,21 +88,21 @@ export function SavedViewsToolbar({
   const [showSave, setShowSave] = useState(false);
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <span style={{ fontWeight: 600, color: "var(--muted-foreground)", fontSize: 12 }}>Views</span>
+      <span style={{ fontWeight: "var(--toolbar-label-weight)" as unknown as number, color: "var(--toolbar-label-color)", fontSize: "var(--toolbar-font-size)" }}>Views</span>
       {views.map((v) => (
         <div key={v.name} style={{ display: "flex", alignItems: "center" }}>
           <button className="gt-toolbar-btn" onClick={() => onLoad(v)} style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}>{v.name}</button>
           <button className="gt-toolbar-btn" onClick={() => onDelete(v.name)}
-            style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderLeft: "none", color: "var(--muted-foreground)", padding: "3px 6px", fontSize: 11 }}>✕</button>
+            style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderLeft: "none", color: "var(--muted-foreground)", padding: "3px 6px", fontSize: "var(--font-size-xs)" }}>✕</button>
         </div>
       ))}
       {showSave ? (
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <input type="text" value={currentViewName} onChange={(e) => onSetName(e.target.value)}
-            placeholder="View name..." className="gt-input" style={{ width: 140, fontSize: 12, padding: "3px 8px" }}
+            placeholder="View name..." className="gt-input" style={{ width: 140, fontSize: "var(--toolbar-font-size)", padding: "3px 8px" }}
             autoFocus onKeyDown={(e) => { if (e.key === "Enter") { onSave(); setShowSave(false); } if (e.key === "Escape") setShowSave(false); }} />
           <button className="gt-toolbar-btn" onClick={() => { onSave(); setShowSave(false); }}>Save</button>
-          <button className="gt-toolbar-btn" onClick={() => setShowSave(false)} style={{ padding: "2px 6px", fontSize: 11 }}>✕</button>
+          <button className="gt-toolbar-btn" onClick={() => setShowSave(false)} style={{ padding: "2px 6px", fontSize: "var(--font-size-xs)" }}>✕</button>
         </div>
       ) : (
         <button className="gt-toolbar-btn" onClick={() => setShowSave(true)}>+ Save view</button>
@@ -144,7 +144,7 @@ export function ColumnOrderToolbar({
 
   return (
     <div ref={ref} style={{ position: "relative", display: "flex", alignItems: "center", gap: 6 }}>
-      <span style={{ fontWeight: 600, color: "var(--muted-foreground)", fontSize: 12 }}>Columns</span>
+      <span style={{ fontWeight: "var(--toolbar-label-weight)" as unknown as number, color: "var(--toolbar-label-color)", fontSize: "var(--toolbar-font-size)" }}>Columns</span>
       <button className="gt-toolbar-btn" onClick={() => setOpen(!open)}>
         Reorder {open ? "▴" : "▾"}
       </button>
@@ -152,14 +152,14 @@ export function ColumnOrderToolbar({
         <div style={{
           position: "absolute", top: "100%", left: 0, zIndex: 50,
           marginTop: 4, padding: 6,
-          background: "var(--background)", border: "1px solid var(--border)",
-          borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+          background: "var(--dropdown-bg)", border: `var(--border-width) solid var(--dropdown-border)`,
+          borderRadius: "var(--dropdown-radius)", boxShadow: "var(--dropdown-shadow)",
           minWidth: 220,
         }}>
           {ordered.map((col, i) => (
             <div key={col.key} style={{
               display: "flex", alignItems: "center", gap: 6,
-              padding: "4px 8px", fontSize: 13, borderRadius: 4,
+              padding: "4px 8px", fontSize: "var(--font-size-sm)", borderRadius: "var(--radius-sm)",
             }}>
               <button className="gt-toolbar-btn" onClick={() => move(i, -1)}
                 disabled={i === 0}
@@ -170,8 +170,8 @@ export function ColumnOrderToolbar({
               <span style={{ flex: 1 }}>{col.label}</span>
             </div>
           ))}
-          <div style={{ borderTop: "1px solid var(--border)", marginTop: 4, paddingTop: 4 }}>
-            <button className="gt-toolbar-btn" style={{ width: "100%", fontSize: 11 }}
+          <div style={{ borderTop: `var(--border-width) solid var(--divider-color)`, marginTop: 4, paddingTop: 4 }}>
+            <button className="gt-toolbar-btn" style={{ width: "100%", fontSize: "var(--font-size-xs)" }}
               onClick={() => { onReorder([]); setOpen(false); }}>
               Reset to default
             </button>

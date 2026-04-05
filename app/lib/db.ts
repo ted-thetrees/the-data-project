@@ -62,19 +62,6 @@ export async function getPeople() {
   return result.rows;
 }
 
-export async function getColors() {
-  const result = await pool.query(
-    `SELECT
-      __id as id,
-      "Name" as name,
-      "Hex" as hex,
-      "Palette" as palette,
-      __created_time as created_date
-    FROM "bsePwEnYg0x7fdbsdZR"."Colors"
-    ORDER BY "Palette", "Name"`
-  );
-  return result.rows;
-}
 
 export async function getPicklistColors(tableName?: string) {
   const result = await pool.query(
@@ -116,8 +103,9 @@ export async function getTeableFieldOptions(tableId: string): Promise<Record<str
 }
 
 const PAIRED_COLORS = [
-  "#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c",
-  "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a", "#ffff99", "#b15928",
+  "#fbb4ae", "#fdcdac", "#fed9a6", "#fff2ae", "#ffffb3", "#f1e2cc",
+  "#e5d8bd", "#e6f5c9", "#ccebc5", "#b3e2cd", "#b3cde3", "#cbd5e8",
+  "#decbe4", "#fddaec", "#f2f2f2", "#d9d9d9",
 ];
 
 /**

@@ -270,7 +270,7 @@ export function ClaudeTree({
   treeData: TreeTask[];
   taskCount: number;
 }) {
-  const [mode, setMode] = useState<"light" | "dark">("light");
+  
   const [widths, setWidths] = useState([300, 120, 150, 200]);
   const onResize = useCallback((i: number, delta: number) => {
     setWidths((prev) => {
@@ -281,18 +281,12 @@ export function ClaudeTree({
   }, []);
 
   return (
-    <div className={`claude-theme ${mode === "dark" ? "dark" : ""}`} style={{ minHeight: "100vh", background: "var(--background)", color: "var(--foreground)" }}>
+    <div style={{ minHeight: "100vh", background: "var(--page-bg)", color: "var(--foreground)" }}>
       <div className="claude-container">
         <div className="claude-header">
           <h1 className="claude-title">Projects</h1>
           <div className="claude-header-right">
             <span className="claude-count">{taskCount} tasks</span>
-            <button
-              className="claude-mode-toggle"
-              onClick={() => setMode(mode === "light" ? "dark" : "light")}
-            >
-              {mode === "light" ? "🌙" : "☀️"}
-            </button>
           </div>
         </div>
 

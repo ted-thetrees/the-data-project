@@ -33,9 +33,9 @@ export function ColResizer({ index }: { index: number }) {
 
   return (
     <div
-      style={{ position: "absolute", top: 0, bottom: 0, right: -2, width: 5, cursor: "col-resize", zIndex: 10 }}
+      style={{ position: "absolute", top: 0, bottom: 0, right: -2, width: "var(--resize-handle-width)", cursor: "col-resize", zIndex: 10 }}
       onMouseDown={onMouseDown}
-      onMouseOver={(e) => (e.currentTarget.style.background = "var(--ring)")}
+      onMouseOver={(e) => (e.currentTarget.style.background = "var(--resize-handle-hover-color)")}
       onMouseOut={(e) => (e.currentTarget.style.background = "transparent")}
     />
   );

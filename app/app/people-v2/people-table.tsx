@@ -335,7 +335,7 @@ function GroupRow({
 // --- Main component ---
 
 export function PeopleTable({ data }: { data: PersonRow[] }) {
-  const [mode, setMode] = useState<"light" | "dark">("light");
+  
   const [sorting, setSorting] = useState<SortingState>([{ id: "name", desc: false }]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [globalFilter, setGlobalFilter] = useState("");
@@ -351,7 +351,6 @@ export function PeopleTable({ data }: { data: PersonRow[] }) {
   useEffect(() => {
     Promise.all([loadViewState("People-v2"), loadSavedViews()]).then(([state, views]) => {
       if (state) {
-        if (state.mode) setMode(state.mode as "light" | "dark");
         if (state.sorting) setSorting(state.sorting as SortingState);
         if (state.columnVisibility) setColumnVisibility(state.columnVisibility as VisibilityState);
         if (state.globalFilter) setGlobalFilter(state.globalFilter as string);
@@ -370,12 +369,12 @@ export function PeopleTable({ data }: { data: PersonRow[] }) {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       saveViewState("People-v2", {
-        mode, sorting, columnVisibility, globalFilter,
+        sorting, columnVisibility, globalFilter,
         groupFields, groupSortDirs, openGroups: [...openGroups],
       });
     }, 500);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [loaded, mode, sorting, columnVisibility, globalFilter, groupFields, groupSortDirs, openGroups]);
+  }, [loaded, sorting, columnVisibility, globalFilter, groupFields, groupSortDirs, openGroups]);
 
   const handleGlobalFilterChange = useCallback((value: string | Record<string, unknown>) => {
     setGlobalFilter(typeof value === "string" ? value : String(value.query ?? ""));
@@ -428,7 +427,7 @@ export function PeopleTable({ data }: { data: PersonRow[] }) {
   const filteredCount = data.length; // Will be updated by the inner component
 
   return (
-    <div className={`claude-theme ${mode === "dark" ? "dark" : ""}`} style={{ minHeight: "100vh", background: "var(--background)", color: "var(--foreground)" }}>
+    <div style={{ minHeight: "100vh", background: "var(--page-bg)", color: "var(--foreground)" }}>
       <div style={{ maxWidth: "100%", padding: "32px 48px" }}>
         <DataTableRoot
           data={data}
@@ -452,10 +451,6 @@ export function PeopleTable({ data }: { data: PersonRow[] }) {
                 <DataTableSearchFilter placeholder="Search people..." />
                 <DataTableViewMenu />
                 <RecordCount total={data.length} />
-                <button
-                  style={{ background: "var(--secondary)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "6px 12px", cursor: "pointer", fontSize: 16 }}
-                  onClick={() => setMode(mode === "light" ? "dark" : "light")}
-                >{mode === "light" ? "🌙" : "☀️"}</button>
               </div>
             </div>
           </DataTableToolbarSection>

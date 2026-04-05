@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useContext } from "react";
 import { ColContext, ColResizer } from "./col-context";
-import { DEPTH_COLORS, GAP_PX, INDENT_PX } from "./styles";
+import { depthColor, GAP_PX, INDENT_PX } from "./styles";
 import type { ColConfig } from "./types";
 
 export function NewRow({
@@ -14,7 +14,7 @@ export function NewRow({
 }) {
   const { widths } = useContext(ColContext);
   const indent = depth * INDENT_PX;
-  const bg = DEPTH_COLORS[depth] || DEPTH_COLORS[DEPTH_COLORS.length - 1];
+  const bg = depthColor(depth);
   const [pending, setPending] = useState<Record<string, string>>({});
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -33,11 +33,11 @@ export function NewRow({
   return (
     <div style={{
       display: "flex", alignItems: "stretch", marginLeft: indent, gap: GAP_PX,
-      opacity: isPending ? 0.5 : 0.6,
-      transition: "opacity 0.15s",
+      opacity: isPending ? "var(--pending-opacity)" : "var(--new-row-opacity)",
+      transition: `opacity var(--transition-normal)`,
     }}
-      onMouseEnter={(e) => { if (!isPending) e.currentTarget.style.opacity = "1"; }}
-      onMouseLeave={(e) => { if (!isPending && !editingKey) e.currentTarget.style.opacity = "0.6"; }}
+      onMouseEnter={(e) => { if (!isPending) e.currentTarget.style.opacity = "var(--new-row-hover-opacity)"; }}
+      onMouseLeave={(e) => { if (!isPending && !editingKey) e.currentTarget.style.opacity = "var(--new-row-opacity)"; }}
     >
       {visibleCols.map((col, i) => {
         const isLast = i === visibleCols.length - 1;
@@ -45,7 +45,7 @@ export function NewRow({
           background: bg,
           ...(isLast ? { flex: 1, minWidth: widths[i] } : { width: widths[i], flexShrink: 0 }),
           position: "relative",
-          borderBottom: "1px dashed var(--border)",
+          borderBottom: `var(--border-width) var(--new-row-border-style) var(--border)`,
         };
 
         // Image columns get a placeholder
@@ -73,7 +73,6 @@ export function NewRow({
                     const newPending = { ...pending, [col.key]: e.target.value };
                     setPending(newPending);
                     setEditingKey(null);
-                    // Auto-commit if name is set
                     if (newPending.name?.trim()) {
                       startTransition(async () => {
                         await onCreate(newPending);
@@ -106,7 +105,6 @@ export function NewRow({
                   if (v) {
                     const newPending = { ...pending, [col.key]: v };
                     setPending(newPending);
-                    // Auto-commit if name was just entered
                     if (col.key === "name") {
                       startTransition(async () => {
                         await onCreate(newPending);
@@ -134,7 +132,7 @@ export function NewRow({
             style={{ ...cellStyle, cursor: "text" }}
             onClick={() => setEditingKey(col.key)}
           >
-            <span style={{ color: "var(--muted-foreground)", opacity: 0.5, fontSize: 13 }}>
+            <span style={{ color: "var(--muted-foreground)", opacity: "var(--empty-opacity)", fontSize: "var(--new-row-placeholder-font-size)" }}>
               {value || (col.key === "name" ? "+" : "")}
             </span>
             {!isLast && <ColResizer index={i} />}

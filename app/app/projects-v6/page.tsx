@@ -3,7 +3,7 @@ export const metadata = { title: "Projects v006" };
 
 import { getProjectMatrix } from "@/lib/db";
 import { ProjectsTable } from "./projects-table";
-import "../projects-v5/theme.css";
+
 
 interface Task {
   id: string;

@@ -7,7 +7,7 @@ import { ColContext, ColResizer } from "./col-context";
 import { EditableText, EditableSelect, ImageCell } from "./editable-cells";
 import { RovingTabIndexProvider, GridCellNav } from "./grid-cell-nav";
 import { NewRow } from "./new-row";
-import { DEPTH_COLORS, INDENT_PX, GAP_PX, ROW_HEIGHT, contrastText, DEFAULT_CELL_BG } from "./styles";
+import { depthColor, INDENT_PX, GAP_PX, ROW_HEIGHT, contrastText } from "./styles";
 import type { ColConfig } from "./types";
 
 // --- Column headers ---
@@ -17,8 +17,10 @@ export function FlexColumnHeaders({ indent, visibleCols }: { indent: number; vis
   return (
     <div style={{
       display: "flex", alignItems: "stretch", marginLeft: indent, gap: GAP_PX,
-      fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em",
-      color: "var(--muted-foreground)",
+      fontSize: "var(--header-font-size)", fontWeight: "var(--header-font-weight)" as unknown as number,
+      textTransform: "var(--header-text-transform)" as React.CSSProperties["textTransform"],
+      letterSpacing: "var(--header-letter-spacing)",
+      color: "var(--header-color)",
     }}>
       {visibleCols.map((col, i) => {
         const isImage = col.type === "image";
@@ -26,10 +28,11 @@ export function FlexColumnHeaders({ indent, visibleCols }: { indent: number; vis
         return (
           <div key={col.key} style={{
             ...(i < visibleCols.length - 1 ? { width: colWidth, flexShrink: 0 } : { flex: 1, minWidth: colWidth }),
-            position: "relative", padding: "8px 12px", background: "var(--muted)",
+            position: "relative", padding: `var(--header-padding-y) var(--header-padding-x)`,
+            background: "var(--header-bg)",
             ...(isImage ? { display: "flex", alignItems: "center", justifyContent: "center", padding: "4px" } : {}),
           }}>
-            {isImage ? <span style={{ fontSize: 16, lineHeight: 1 }}>👤</span> : col.label}
+            {isImage ? <span style={{ fontSize: "var(--font-size-lg)", lineHeight: 1 }}>👤</span> : col.label}
             {i < visibleCols.length - 1 && !isImage && <ColResizer index={i} />}
           </div>
         );
@@ -54,7 +57,7 @@ export function FlexDataRow<T extends { id: string }>({
 }) {
   const { widths } = useContext(ColContext);
   const indent = depth * INDENT_PX;
-  const bg = DEPTH_COLORS[depth] || DEPTH_COLORS[DEPTH_COLORS.length - 1];
+  const bg = depthColor(depth);
 
   return (
     <div style={{ display: "flex", alignItems: "stretch", marginLeft: indent, gap: GAP_PX, height: ROW_HEIGHT }}>
@@ -78,7 +81,7 @@ export function FlexDataRow<T extends { id: string }>({
             {col.type === "image" ? (
               <ImageCell value={val} />
             ) : col.type === "date" ? (
-              <span style={{ fontSize: 13, color: "var(--muted-foreground)" }}>
+              <span style={{ fontSize: "var(--font-size-sm)", color: "var(--muted-foreground)" }}>
                 {val ? new Date(val as string).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : ""}
               </span>
             ) : col.type === "text" ? (
@@ -118,18 +121,25 @@ export function GroupHeader({ label, count, open, onToggle, depth }: {
   label: string; count: number; open: boolean; onToggle: () => void; depth: number;
 }) {
   const indent = depth * INDENT_PX;
-  const bg = DEPTH_COLORS[depth] || DEPTH_COLORS[DEPTH_COLORS.length - 1];
+  const bg = depthColor(depth);
   return (
     <div onClick={onToggle} style={{
       display: "flex", alignItems: "center", gap: 10,
-      marginLeft: indent, padding: "9px 16px",
+      marginLeft: indent, padding: `var(--group-header-padding-y) var(--group-header-padding-x)`,
       cursor: "pointer", background: bg,
       marginTop: depth > 0 ? GAP_PX : 0,
-      fontWeight: 600, fontSize: 14 - depth,
+      fontWeight: "var(--group-header-font-weight)" as unknown as number,
+      fontSize: 14 - depth,
     }}>
-      <span style={{ color: "var(--muted-foreground)", fontSize: 12 }}>{open ? "▾" : "▸"}</span>
+      <span style={{ color: "var(--muted-foreground)", fontSize: "var(--font-size-sm)" }}>{open ? "▾" : "▸"}</span>
       <span>{label || "—"}</span>
-      <span style={{ fontSize: 11, color: "var(--muted-foreground)", background: "rgba(0,0,0,0.06)", borderRadius: 999, padding: "1px 8px" }}>{count}</span>
+      <span style={{
+        fontSize: "var(--group-count-font-size)",
+        color: "var(--muted-foreground)",
+        background: "var(--group-count-bg)",
+        borderRadius: "var(--group-count-radius)",
+        padding: "var(--group-count-padding)",
+      }}>{count}</span>
     </div>
   );
 }

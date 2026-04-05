@@ -304,7 +304,7 @@ const columns: ColumnDef<ProjectRow>[] = [
 // --- Main component ---
 
 export function ProjectsTable({ data, taskCount }: { data: ProjectRow[]; taskCount: number }) {
-  const [mode, setMode] = useState<"light" | "dark">("light");
+  
   const [expanded, setExpanded] = useState<ExpandedState>(true); // Start fully expanded
   const [globalFilter, setGlobalFilter] = useState("");
 
@@ -318,7 +318,7 @@ export function ProjectsTable({ data, taskCount }: { data: ProjectRow[]; taskCou
   }, []);
 
   return (
-    <div className={`claude-theme ${mode === "dark" ? "dark" : ""}`} style={{ minHeight: "100vh", background: "var(--background)", color: "var(--foreground)" }}>
+    <div style={{ minHeight: "100vh", background: "var(--page-bg)", color: "var(--foreground)" }}>
       <div style={{ maxWidth: "100%", padding: "32px 48px" }}>
         <DataTableRoot
           data={data}
@@ -359,12 +359,6 @@ export function ProjectsTable({ data, taskCount }: { data: ProjectRow[]; taskCou
                 </div>
                 <DataTableViewMenu />
                 <span style={{ fontSize: 14, color: "var(--muted-foreground)" }}>{taskCount} tasks</span>
-                <button
-                  style={{ background: "var(--secondary)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "6px 12px", cursor: "pointer", fontSize: 16 }}
-                  onClick={() => setMode(mode === "light" ? "dark" : "light")}
-                >
-                  {mode === "light" ? "🌙" : "☀️"}
-                </button>
               </div>
             </div>
           </DataTableToolbarSection>

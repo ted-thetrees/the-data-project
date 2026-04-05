@@ -3,7 +3,7 @@
 import { GroupableTable } from "@/components/groupable-table";
 import type { ColumnDef, GroupableField } from "@/components/groupable-table";
 import { updatePersonField } from "./actions";
-import "../../app/projects-v5/theme.css";
+
 
 const columns: ColumnDef[] = [
   { key: "name", label: "Name", type: "text", width: 200, fontWeight: 500 },

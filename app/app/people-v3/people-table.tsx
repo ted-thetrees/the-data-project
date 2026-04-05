@@ -19,7 +19,6 @@ import type { PersonRow, PicklistColorMap as PagePicklistColorMap } from "./page
 
 // --- Column config (built dynamically from Teable field options) ---
 
-// Maps Teable field names to our column keys
 const FIELD_NAME_TO_KEY: Record<string, string> = {
   Familiarity: "familiarity",
   Gender: "gender",
@@ -56,7 +55,6 @@ const GROUPABLE_FIELDS: GroupableField[] = [
 const STATE_KEY = "People-v3";
 const VIEWS_KEY = "People-v3:views";
 
-// TanStack column defs (for Niko Table state management)
 function buildColumns(colConfig: ColConfig[]): ColumnDef<PersonRow>[] {
   return colConfig.map((col) => ({
     accessorKey: col.key,
@@ -65,11 +63,10 @@ function buildColumns(colConfig: ColConfig[]): ColumnDef<PersonRow>[] {
   }));
 }
 
-// Record count (reads from Niko Table context)
 function RecordCount({ total }: { total: number }) {
   const { table } = useDataTable<PersonRow>();
   const filtered = table.getRowModel().rows.length;
-  return <span style={{ fontSize: 14, color: "var(--muted-foreground)" }}>{filtered === total ? `${total} records` : `${filtered} of ${total}`}</span>;
+  return <span style={{ fontSize: "var(--record-count-font-size)", color: "var(--record-count-color)" }}>{filtered === total ? `${total} records` : `${filtered} of ${total}`}</span>;
 }
 
 // --- Main component ---
@@ -77,7 +74,6 @@ function RecordCount({ total }: { total: number }) {
 export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data: PersonRow[]; picklistColors?: PagePicklistColorMap; fieldOptions?: Record<string, string[]> }) {
   const COL_CONFIG = buildColConfig(fieldOptions);
   const columns = buildColumns(COL_CONFIG);
-  const [mode, setMode] = useState<"light" | "dark">("light");
   const [widths, setWidths] = useState(COL_CONFIG.map((c) => c.width));
   const [sorting, setSorting] = useState<SortingState>([{ id: "name", desc: false }]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -99,7 +95,6 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
   const visibleCols = columnOrder.length > 0
     ? columnOrder.map((key) => filteredCols.find((c) => c.key === key)).filter(Boolean) as ColConfig[]
     : filteredCols;
-  // Add any columns not in the order (new columns)
   const orderedKeys = new Set(columnOrder);
   const extraCols = filteredCols.filter((c) => columnOrder.length > 0 && !orderedKeys.has(c.key));
   const allVisibleCols = [...visibleCols, ...extraCols];
@@ -113,7 +108,6 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
   useEffect(() => {
     Promise.all([loadViewState(STATE_KEY), loadSavedViews(VIEWS_KEY)]).then(([state, views]) => {
       if (state) {
-        if (state.mode) setMode(state.mode as "light" | "dark");
         if (state.widths) setWidths(state.widths as number[]);
         if (state.sorting) setSorting(state.sorting as SortingState);
         if (state.columnVisibility) setColumnVisibility(state.columnVisibility as VisibilityState);
@@ -134,12 +128,12 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       saveViewState(STATE_KEY, {
-        mode, widths, sorting, columnVisibility, columnOrder, globalFilter,
+        widths, sorting, columnVisibility, columnOrder, globalFilter,
         groupFields, groupSortDirs, openGroups: [...openGroups],
       });
     }, 500);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [loaded, mode, widths, sorting, columnVisibility, columnOrder, globalFilter, groupFields, groupSortDirs, openGroups]);
+  }, [loaded, widths, sorting, columnVisibility, columnOrder, globalFilter, groupFields, groupSortDirs, openGroups]);
 
   const handleGlobalFilterChange = useCallback((value: string | Record<string, unknown>) => {
     setGlobalFilter(typeof value === "string" ? value : String(value.query ?? ""));
@@ -183,8 +177,8 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
   const sortableFields = COL_CONFIG.filter((c) => c.type !== "image").map((c) => ({ key: c.key, label: c.label }));
 
   return (
-    <div className={`claude-theme ${mode === "dark" ? "dark" : ""}`} style={{ minHeight: "100vh", background: "#3d392b", color: "var(--foreground)" }}>
-      <div style={{ maxWidth: "100%", padding: "32px 48px" }}>
+    <div style={{ minHeight: "100vh", background: "var(--page-bg)", color: "var(--foreground)" }}>
+      <div style={{ maxWidth: "100%", padding: "var(--page-padding-y) var(--page-padding-x)" }}>
         <DataTableRoot
           data={data}
           columns={columns}
@@ -197,32 +191,31 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
         >
           <DataTableToolbarSection>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-              <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0, letterSpacing: "-0.02em", color: "#F3F0E9" }}>People</h1>
+              <h1 style={{ fontSize: "var(--title-font-size)", fontWeight: "var(--title-font-weight)" as unknown as number, margin: 0, letterSpacing: "var(--title-letter-spacing)", color: "var(--title-color)" }}>People</h1>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <DataTableSearchFilter placeholder="Search people..." />
                 <DataTableViewMenu />
                 <RecordCount total={data.length} />
-                <button style={{ background: "var(--secondary)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "6px 12px", cursor: "pointer", fontSize: 16 }}
-                  onClick={() => setMode(mode === "light" ? "dark" : "light")}>{mode === "light" ? "🌙" : "☀️"}</button>
               </div>
             </div>
           </DataTableToolbarSection>
 
           <div style={{
-            display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap",
-            padding: "10px 16px", background: "var(--card)", border: "1px solid var(--border)",
-            borderRadius: "var(--radius)", fontSize: 13,
+            display: "flex", alignItems: "center", gap: "var(--toolbar-gap)", flexWrap: "wrap",
+            padding: "var(--toolbar-padding-y) var(--toolbar-padding-x)",
+            background: "var(--toolbar-bg)", border: `var(--border-width) solid var(--toolbar-border)`,
+            borderRadius: "var(--radius)", fontSize: "var(--toolbar-font-size)",
           }}>
             <SortToolbar sorting={sorting} sortableFields={sortableFields}
               onSortChange={(f) => setSorting([{ id: f, desc: sorting[0]?.desc || false }])}
               onDirToggle={() => setSorting([{ id: sorting[0]?.id || "name", desc: !sorting[0]?.desc }])} />
-            <div style={{ width: 1, height: 20, background: "var(--border)" }} />
+            <div style={{ width: "var(--divider-width)", height: "var(--divider-height)", background: "var(--divider-color)" }} />
             <GroupingToolbar groupFields={groupFields} groupSortDirs={groupSortDirs} groupableFields={GROUPABLE_FIELDS}
               onAddGroup={addGroup} onRemoveGroup={removeGroup} onUpdateGroup={updateGroup}
               onToggleGroupSort={toggleGroupSort} onExpandAll={expandAll} onCollapseAll={() => setOpenGroups(new Set())} />
-            <div style={{ width: 1, height: 20, background: "var(--border)" }} />
+            <div style={{ width: "var(--divider-width)", height: "var(--divider-height)", background: "var(--divider-color)" }} />
             <ColumnOrderToolbar columns={COL_CONFIG} columnOrder={columnOrder} onReorder={setColumnOrder} />
-            <div style={{ width: 1, height: 20, background: "var(--border)" }} />
+            <div style={{ width: "var(--divider-width)", height: "var(--divider-height)", background: "var(--divider-color)" }} />
             <SavedViewsToolbar views={savedViews} onLoad={handleLoadView} onSave={handleSaveView}
               onDelete={handleDeleteView} currentViewName={viewName} onSetName={setViewName} />
           </div>

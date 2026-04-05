@@ -217,7 +217,7 @@ export function GroupableTable({
   searchFields?: string[];
   onUpdate: (recordId: string, field: string, value: string) => void;
 }) {
-  const [mode, setMode] = useState<"light" | "dark">("light");
+  
   const [widths, setWidths] = useState(columns.map((c) => c.width));
   const [sortField, setSortField] = useState(columns[0]?.key || "");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -232,7 +232,6 @@ export function GroupableTable({
   useEffect(() => {
     loadTableState(title).then((saved) => {
       if (saved) {
-        if (saved.mode) setMode(saved.mode as "light" | "dark");
         if (saved.widths) setWidths(saved.widths as number[]);
         if (saved.sortField) setSortField(saved.sortField as string);
         if (saved.sortDir) setSortDir(saved.sortDir as "asc" | "desc");
@@ -251,13 +250,13 @@ export function GroupableTable({
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       saveTableState(title, {
-        mode, widths, sortField, sortDir,
+        widths, sortField, sortDir,
         groupFields, groupSortDirs, search,
         openGroups: [...openGroups],
       });
     }, 500);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [loaded, title, mode, widths, sortField, sortDir, groupFields, groupSortDirs, search, openGroups]);
+  }, [loaded, title, widths, sortField, sortDir, groupFields, groupSortDirs, search, openGroups]);
 
   const onResize = useCallback((i: number, delta: number) => {
     setWidths((prev) => { const next = [...prev]; next[i] = Math.max(60, next[i] + delta); return next; });
@@ -300,7 +299,7 @@ export function GroupableTable({
   const sortableFields = columns.map((c) => ({ key: c.key, label: c.label }));
 
   return (
-    <div className={`claude-theme ${mode === "dark" ? "dark" : ""}`} style={{ minHeight: "100vh", background: "var(--background)", color: "var(--foreground)" }}>
+    <div style={{ minHeight: "100vh", background: "var(--page-bg)", color: "var(--foreground)" }}>
       <div style={{ maxWidth: "100%", padding: "32px 48px" }}>
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -309,10 +308,6 @@ export function GroupableTable({
             <input type="text" placeholder="Search..." value={search}
               onChange={(e) => setSearch(e.target.value)} className="gt-input" style={{ width: 200 }} />
             <span style={{ fontSize: 14, color: "var(--muted-foreground)" }}>{sorted.length} records</span>
-            <button
-              style={{ background: "var(--secondary)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "6px 12px", cursor: "pointer", fontSize: 16 }}
-              onClick={() => setMode(mode === "light" ? "dark" : "light")}
-            >{mode === "light" ? "🌙" : "☀️"}</button>
           </div>
         </div>
 
