@@ -76,9 +76,10 @@ export function EditableSelect({
         <span style={{ color: "var(--muted-foreground)", fontSize: 10, flexShrink: 0, marginLeft: 4 }}>▿</span>
       </span>
       {open && (
-        <div className="gt-picklist-dropdown" onClick={(e) => e.stopPropagation()}>
+        <div className="gt-picklist-dropdown" style={{ color: "var(--foreground)" }} onClick={(e) => e.stopPropagation()}>
           <div
             className={`gt-picklist-option ${!value ? "gt-picklist-active" : ""}`}
+            style={{ color: "var(--muted-foreground)" }}
             onClick={() => { startTransition(() => onSave("")); setOpen(false); }}
           >—</div>
           {options.map((o) => {
