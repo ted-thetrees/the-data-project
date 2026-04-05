@@ -162,7 +162,7 @@ export function PeopleTable({ data, picklistColors }: { data: PersonRow[]; pickl
   const sortableFields = COL_CONFIG.filter((c) => c.type !== "image").map((c) => ({ key: c.key, label: c.label }));
 
   return (
-    <div className={`claude-theme ${mode === "dark" ? "dark" : ""}`} style={{ minHeight: "100vh", background: "#3d3929", color: "var(--foreground)" }}>
+    <div className={`claude-theme ${mode === "dark" ? "dark" : ""}`} style={{ minHeight: "100vh", background: "#3d392b", color: "var(--foreground)" }}>
       <div style={{ maxWidth: "100%", padding: "32px 48px" }}>
         <DataTableRoot
           data={data}
