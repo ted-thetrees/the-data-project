@@ -9,7 +9,9 @@ export function ExternalLink({
 }) {
   return (
     <a
-      href={`/api/open?url=${encodeURIComponent(url)}`}
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
       className={className}
     >
       {children}
