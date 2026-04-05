@@ -7,7 +7,7 @@ import { ColContext, ColResizer } from "./col-context";
 import { EditableText, EditableSelect, ImageCell } from "./editable-cells";
 import { RovingTabIndexProvider, GridCellNav } from "./grid-cell-nav";
 import { NewRow } from "./new-row";
-import { DEPTH_COLORS, INDENT_PX, GAP_PX, contrastText } from "./styles";
+import { DEPTH_COLORS, INDENT_PX, GAP_PX, ROW_HEIGHT, contrastText } from "./styles";
 import type { ColConfig } from "./types";
 
 // --- Column headers ---
@@ -52,7 +52,7 @@ export function FlexDataRow<T extends { id: string }>({
   const bg = DEPTH_COLORS[depth] || DEPTH_COLORS[DEPTH_COLORS.length - 1];
 
   return (
-    <div style={{ display: "flex", alignItems: "stretch", marginLeft: indent, gap: GAP_PX }}>
+    <div style={{ display: "flex", alignItems: "stretch", marginLeft: indent, gap: GAP_PX, height: ROW_HEIGHT, overflow: "hidden" }}>
       {visibleCols.map((col, i) => {
         const isLast = i === visibleCols.length - 1;
         const val = (row.original as Record<string, unknown>)[col.key];

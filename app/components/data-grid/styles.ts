@@ -15,6 +15,7 @@ export function contrastText(bg: string): string {
 }
 
 export const DEFAULT_CELL_BG = "#F3F0E9";
+export const ROW_HEIGHT = 48;
 
 export const DEPTH_COLORS = [
   "#F3F0E9",
