@@ -2,9 +2,7 @@ import { Pool } from "pg";
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production"
-    ? { rejectUnauthorized: false }
-    : false,
+  ssl: { rejectUnauthorized: false },
 });
 
 export async function getInboxRecords(limit = 100, offset = 0) {
@@ -48,6 +46,7 @@ export async function getPeople() {
     `SELECT
       __id as id,
       "Name" as name,
+      "Image" as image,
       "Familiarity" as familiarity,
       "Gender" as gender,
       "Known_As" as known_as,
@@ -57,6 +56,18 @@ export async function getPeople() {
       "Target_Desirability" as target_desirability,
       "Teller_Status" as teller_status
     FROM "bsePwEnYg0x7fdbsdZR"."People"
+    ORDER BY "Name"`
+  );
+  return result.rows;
+}
+
+export async function getColors() {
+  const result = await pool.query(
+    `SELECT
+      __id as id,
+      "Name" as name,
+      "Hex" as hex
+    FROM "bsePwEnYg0x7fdbsdZR"."Colors"
     ORDER BY "Name"`
   );
   return result.rows;
