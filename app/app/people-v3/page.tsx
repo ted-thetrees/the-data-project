@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 export const metadata = { title: "People v003" };
 
-import { getPeople, getPicklistColors } from "@/lib/db";
+import { getPeople, getPicklistColors, getTeableFieldOptions } from "@/lib/db";
 import { PeopleTable } from "./people-table";
 import "../projects-v5/theme.css";
 
@@ -23,9 +23,10 @@ export interface PicklistColorMap {
 }
 
 export default async function PeopleV3Page() {
-  const [people, colorRows] = await Promise.all([
+  const [people, colorRows, fieldOptions] = await Promise.all([
     getPeople(),
     getPicklistColors("People"),
+    getTeableFieldOptions("tblyvrNXdqftQGNIniT"),
   ]);
 
   // Build a nested map: field → option → hex color
@@ -35,5 +36,5 @@ export default async function PeopleV3Page() {
     picklistColors[row.field][row.option] = row.color;
   }
 
-  return <PeopleTable data={people as PersonRow[]} picklistColors={picklistColors} />;
+  return <PeopleTable data={people as PersonRow[]} picklistColors={picklistColors} fieldOptions={fieldOptions} />;
 }

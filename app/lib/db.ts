@@ -90,6 +90,29 @@ export async function getPicklistColors(tableName?: string) {
   return result.rows;
 }
 
+export async function getTeableFieldOptions(tableId: string): Promise<Record<string, string[]>> {
+  const teableUrl = process.env.TEABLE_URL || "https://teable.ifnotfor.com";
+  const teableKey = process.env.TEABLE_API_KEY!;
+
+  const res = await fetch(`${teableUrl}/api/table/${tableId}/field`, {
+    headers: { Authorization: `Bearer ${teableKey}` },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) return {};
+
+  const fields = await res.json();
+  const result: Record<string, string[]> = {};
+
+  for (const field of fields) {
+    if (field.type === "singleSelect" && field.options?.choices) {
+      result[field.name] = field.options.choices.map((c: { name: string }) => c.name);
+    }
+  }
+
+  return result;
+}
+
 export async function getInboxCount() {
   const result = await pool.query(
     `SELECT COUNT(*) as count FROM "bsePwEnYg0x7fdbsdZR"."Inbox"`

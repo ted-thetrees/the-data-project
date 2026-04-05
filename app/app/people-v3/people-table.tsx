@@ -17,25 +17,31 @@ import {
 import { updatePersonField, createPerson } from "./actions";
 import type { PersonRow, PicklistColorMap as PagePicklistColorMap } from "./page";
 
-// --- Column config ---
+// --- Column config (built dynamically from Teable field options) ---
 
-const familiarityOptions = ["1 Very Close + Family", "2 Know | Current", "3 Know | In Past", "4 Acquainted | Talked To", "5 Contacted | No Response", "6 Contacted | Would not Remember Me", "7 Never Met"];
-const genderOptions = ["Man", "Woman"];
-const orgFilledOptions = ["Yes", "Maybe", "No", "Sort"];
-const desirabilityOptions = ["F Yes", "Possible", "Not Sure / Ponder Later", "No"];
-const tellerStatusOptions = ["Can Ask When Website Is Up", "When I Have a Kite", "Chit Used", "Done/Recorded!", "Sort", "Do not Want to Ask", "Will Resist/Never Do It"];
+// Maps Teable field names to our column keys
+const FIELD_NAME_TO_KEY: Record<string, string> = {
+  Familiarity: "familiarity",
+  Gender: "gender",
+  Has_Org_Filled: "has_org_filled",
+  Target_Desirability: "target_desirability",
+  Teller_Status: "teller_status",
+};
 
-const COL_CONFIG: ColConfig[] = [
-  { key: "name", label: "Name", type: "text", width: 200, fontWeight: 500 },
-  { key: "image", label: "Photo", type: "image", width: 50 },
-  { key: "familiarity", label: "Familiarity", type: "select", width: 160, options: familiarityOptions },
-  { key: "gender", label: "Gender", type: "select", width: 80, options: genderOptions },
-  { key: "known_as", label: "Known As", type: "text", width: 140 },
-  { key: "metro_area", label: "Metro Area", type: "text", width: 180 },
-  { key: "has_org_filled", label: "Org Filled", type: "select", width: 120, options: orgFilledOptions },
-  { key: "target_desirability", label: "Desirability", type: "select", width: 140, options: desirabilityOptions },
-  { key: "teller_status", label: "Teller Status", type: "select", width: 180, options: tellerStatusOptions },
-];
+function buildColConfig(fieldOptions: Record<string, string[]>): ColConfig[] {
+  const opts = (teableName: string) => fieldOptions[teableName] || [];
+  return [
+    { key: "name", label: "Name", type: "text", width: 200, fontWeight: 500 },
+    { key: "image", label: "Photo", type: "image", width: 50 },
+    { key: "familiarity", label: "Familiarity", type: "select", width: 160, options: opts("Familiarity") },
+    { key: "gender", label: "Gender", type: "select", width: 80, options: opts("Gender") },
+    { key: "known_as", label: "Known As", type: "text", width: 140 },
+    { key: "metro_area", label: "Metro Area", type: "text", width: 180 },
+    { key: "has_org_filled", label: "Org Filled", type: "select", width: 120, options: opts("Has_Org_Filled") },
+    { key: "target_desirability", label: "Desirability", type: "select", width: 140, options: opts("Target_Desirability") },
+    { key: "teller_status", label: "Teller Status", type: "select", width: 180, options: opts("Teller_Status") },
+  ];
+}
 
 const GROUPABLE_FIELDS: GroupableField[] = [
   { key: "familiarity", label: "Familiarity" },
@@ -50,11 +56,13 @@ const STATE_KEY = "People-v3";
 const VIEWS_KEY = "People-v3:views";
 
 // TanStack column defs (for Niko Table state management)
-const columns: ColumnDef<PersonRow>[] = COL_CONFIG.map((col) => ({
-  accessorKey: col.key,
-  header: col.label,
-  enableSorting: col.type !== "image",
-}));
+function buildColumns(colConfig: ColConfig[]): ColumnDef<PersonRow>[] {
+  return colConfig.map((col) => ({
+    accessorKey: col.key,
+    header: col.label,
+    enableSorting: col.type !== "image",
+  }));
+}
 
 // Record count (reads from Niko Table context)
 function RecordCount({ total }: { total: number }) {
@@ -65,7 +73,9 @@ function RecordCount({ total }: { total: number }) {
 
 // --- Main component ---
 
-export function PeopleTable({ data, picklistColors }: { data: PersonRow[]; picklistColors?: PagePicklistColorMap }) {
+export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data: PersonRow[]; picklistColors?: PagePicklistColorMap; fieldOptions?: Record<string, string[]> }) {
+  const COL_CONFIG = buildColConfig(fieldOptions);
+  const columns = buildColumns(COL_CONFIG);
   const [mode, setMode] = useState<"light" | "dark">("light");
   const [widths, setWidths] = useState(COL_CONFIG.map((c) => c.width));
   const [sorting, setSorting] = useState<SortingState>([{ id: "name", desc: false }]);
