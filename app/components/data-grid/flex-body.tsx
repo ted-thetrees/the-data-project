@@ -64,6 +64,7 @@ export function FlexDataRow<T extends { id: string }>({
           ...(isLast ? { flex: 1, minWidth: widths[i] } : { width: widths[i], flexShrink: 0 }),
           position: "relative",
           ...(col.fontWeight ? { fontWeight: col.fontWeight } : {}),
+          ...(col.type === "image" ? { padding: 0, overflow: "hidden" } : {}),
         };
 
         const cellContent = (
