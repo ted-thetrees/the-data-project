@@ -4,7 +4,7 @@ export { FlexColumnHeaders, FlexDataRow, GroupHeader, NestedGroups, FlexBody } f
 export { RovingTabIndexProvider, GridCellNav } from "./grid-cell-nav";
 export { NewRow } from "./new-row";
 export type { PicklistColorMap } from "./flex-body";
-export { SortToolbar, GroupingToolbar, SavedViewsToolbar } from "./toolbar";
+export { SortToolbar, GroupingToolbar, SavedViewsToolbar, ColumnOrderToolbar } from "./toolbar";
 export { loadViewState, saveViewState, loadSavedViews, saveNamedView, deleteNamedView } from "./view-actions";
 export { DEPTH_COLORS, INDENT_PX, GAP_PX, ROW_HEIGHT, dataGridStyles, contrastText } from "./styles";
 export type { ColConfig, GroupableField, SavedView } from "./types";

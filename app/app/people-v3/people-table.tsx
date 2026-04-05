@@ -9,7 +9,7 @@ import { DataTableToolbarSection } from "@/components/niko-table/components/data
 import { useDataTable } from "@/components/niko-table/core/data-table-context";
 import {
   ColContext, FlexBody,
-  SortToolbar, GroupingToolbar, SavedViewsToolbar,
+  SortToolbar, GroupingToolbar, SavedViewsToolbar, ColumnOrderToolbar,
   loadViewState, saveViewState, loadSavedViews, saveNamedView, deleteNamedView,
   dataGridStyles, ROW_HEIGHT,
   type ColConfig, type GroupableField, type SavedView, type PicklistColorMap,
@@ -82,6 +82,7 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
   const [sorting, setSorting] = useState<SortingState>([{ id: "name", desc: false }]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [globalFilter, setGlobalFilter] = useState("");
+  const [columnOrder, setColumnOrder] = useState<string[]>([]);
   const [groupFields, setGroupFields] = useState<string[]>([]);
   const [groupSortDirs, setGroupSortDirs] = useState<("asc" | "desc")[]>([]);
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
@@ -94,8 +95,16 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
     setWidths((prev) => { const next = [...prev]; next[i] = Math.max(60, next[i] + delta); return next; });
   }, []);
 
-  const visibleCols = COL_CONFIG.filter((col) => columnVisibility[col.key] !== false);
-  const visibleWidths = visibleCols.map((col) => {
+  const filteredCols = COL_CONFIG.filter((col) => columnVisibility[col.key] !== false);
+  const visibleCols = columnOrder.length > 0
+    ? columnOrder.map((key) => filteredCols.find((c) => c.key === key)).filter(Boolean) as ColConfig[]
+    : filteredCols;
+  // Add any columns not in the order (new columns)
+  const orderedKeys = new Set(columnOrder);
+  const extraCols = filteredCols.filter((c) => columnOrder.length > 0 && !orderedKeys.has(c.key));
+  const allVisibleCols = [...visibleCols, ...extraCols];
+
+  const visibleWidths = allVisibleCols.map((col) => {
     const origIdx = COL_CONFIG.findIndex((c) => c.key === col.key);
     return widths[origIdx];
   });
@@ -109,6 +118,7 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
         if (state.sorting) setSorting(state.sorting as SortingState);
         if (state.columnVisibility) setColumnVisibility(state.columnVisibility as VisibilityState);
         if (state.globalFilter) setGlobalFilter(state.globalFilter as string);
+        if (state.columnOrder) setColumnOrder(state.columnOrder as string[]);
         if (state.groupFields) setGroupFields(state.groupFields as string[]);
         if (state.groupSortDirs) setGroupSortDirs(state.groupSortDirs as ("asc" | "desc")[]);
         if (state.openGroups) setOpenGroups(new Set(state.openGroups as string[]));
@@ -124,12 +134,12 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       saveViewState(STATE_KEY, {
-        mode, widths, sorting, columnVisibility, globalFilter,
+        mode, widths, sorting, columnVisibility, columnOrder, globalFilter,
         groupFields, groupSortDirs, openGroups: [...openGroups],
       });
     }, 500);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [loaded, mode, widths, sorting, columnVisibility, globalFilter, groupFields, groupSortDirs, openGroups]);
+  }, [loaded, mode, widths, sorting, columnVisibility, columnOrder, globalFilter, groupFields, groupSortDirs, openGroups]);
 
   const handleGlobalFilterChange = useCallback((value: string | Record<string, unknown>) => {
     setGlobalFilter(typeof value === "string" ? value : String(value.query ?? ""));
@@ -158,13 +168,13 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
   // Saved views
   const handleSaveView = () => {
     if (!viewName.trim()) return;
-    const view: SavedView = { name: viewName.trim(), sorting, grouping: groupFields, groupSortDirs, columnVisibility, globalFilter };
+    const view: SavedView = { name: viewName.trim(), sorting, grouping: groupFields, groupSortDirs, columnVisibility, columnOrder, globalFilter };
     saveNamedView(VIEWS_KEY, view).then(() => loadSavedViews(VIEWS_KEY).then(setSavedViews));
     setViewName("");
   };
   const handleLoadView = (view: SavedView) => {
     setSorting(view.sorting); setGroupFields(view.grouping); setGroupSortDirs(view.groupSortDirs);
-    setColumnVisibility(view.columnVisibility); setGlobalFilter(view.globalFilter); setOpenGroups(new Set());
+    setColumnVisibility(view.columnVisibility); setColumnOrder(view.columnOrder || []); setGlobalFilter(view.globalFilter); setOpenGroups(new Set());
   };
   const handleDeleteView = (name: string) => {
     deleteNamedView(VIEWS_KEY, name).then(() => loadSavedViews(VIEWS_KEY).then(setSavedViews));
@@ -211,13 +221,15 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
               onAddGroup={addGroup} onRemoveGroup={removeGroup} onUpdateGroup={updateGroup}
               onToggleGroupSort={toggleGroupSort} onExpandAll={expandAll} onCollapseAll={() => setOpenGroups(new Set())} />
             <div style={{ width: 1, height: 20, background: "var(--border)" }} />
+            <ColumnOrderToolbar columns={COL_CONFIG} columnOrder={columnOrder} onReorder={setColumnOrder} />
+            <div style={{ width: 1, height: 20, background: "var(--border)" }} />
             <SavedViewsToolbar views={savedViews} onLoad={handleLoadView} onSave={handleSaveView}
               onDelete={handleDeleteView} currentViewName={viewName} onSetName={setViewName} />
           </div>
 
           <ColContext.Provider value={{ widths: visibleWidths, onResize }}>
             <FlexBody<PersonRow>
-              visibleCols={visibleCols} groupFields={groupFields} groupSortDirs={groupSortDirs}
+              visibleCols={allVisibleCols} groupFields={groupFields} groupSortDirs={groupSortDirs}
               openGroups={openGroups} toggleGroup={toggleGroup}
               onUpdate={(id, field, value) => updatePersonField(id, field, value)}
               picklistColors={picklistColors}

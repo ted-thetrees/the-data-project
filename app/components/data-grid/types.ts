@@ -18,5 +18,6 @@ export interface SavedView {
   grouping: string[];
   groupSortDirs: ("asc" | "desc")[];
   columnVisibility: Record<string, boolean>;
+  columnOrder?: string[];
   globalFilter: string;
 }

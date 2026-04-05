@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { SortingState } from "@tanstack/react-table";
 import type { ColConfig, GroupableField, SavedView } from "./types";
 
@@ -106,6 +106,77 @@ export function SavedViewsToolbar({
         </div>
       ) : (
         <button className="gt-toolbar-btn" onClick={() => setShowSave(true)}>+ Save view</button>
+      )}
+    </div>
+  );
+}
+
+export function ColumnOrderToolbar({
+  columns, columnOrder, onReorder,
+}: {
+  columns: ColConfig[];
+  columnOrder: string[];
+  onReorder: (newOrder: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const ordered = columnOrder.length > 0
+    ? columnOrder.map((key) => columns.find((c) => c.key === key)).filter(Boolean) as ColConfig[]
+    : columns;
+
+  const move = (index: number, dir: -1 | 1) => {
+    const newIdx = index + dir;
+    if (newIdx < 0 || newIdx >= ordered.length) return;
+    const newOrder = ordered.map((c) => c.key);
+    [newOrder[index], newOrder[newIdx]] = [newOrder[newIdx], newOrder[index]];
+    onReorder(newOrder);
+  };
+
+  return (
+    <div ref={ref} style={{ position: "relative", display: "flex", alignItems: "center", gap: 6 }}>
+      <span style={{ fontWeight: 600, color: "var(--muted-foreground)", fontSize: 12 }}>Columns</span>
+      <button className="gt-toolbar-btn" onClick={() => setOpen(!open)}>
+        Reorder {open ? "▴" : "▾"}
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "100%", left: 0, zIndex: 50,
+          marginTop: 4, padding: 6,
+          background: "var(--background)", border: "1px solid var(--border)",
+          borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+          minWidth: 220,
+        }}>
+          {ordered.map((col, i) => (
+            <div key={col.key} style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "4px 8px", fontSize: 13, borderRadius: 4,
+            }}>
+              <button className="gt-toolbar-btn" onClick={() => move(i, -1)}
+                disabled={i === 0}
+                style={{ padding: "1px 6px", fontSize: 10, opacity: i === 0 ? 0.3 : 1 }}>↑</button>
+              <button className="gt-toolbar-btn" onClick={() => move(i, 1)}
+                disabled={i === ordered.length - 1}
+                style={{ padding: "1px 6px", fontSize: 10, opacity: i === ordered.length - 1 ? 0.3 : 1 }}>↓</button>
+              <span style={{ flex: 1 }}>{col.label}</span>
+            </div>
+          ))}
+          <div style={{ borderTop: "1px solid var(--border)", marginTop: 4, paddingTop: 4 }}>
+            <button className="gt-toolbar-btn" style={{ width: "100%", fontSize: 11 }}
+              onClick={() => { onReorder([]); setOpen(false); }}>
+              Reset to default
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
