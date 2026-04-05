@@ -7,10 +7,11 @@ import "../../app/projects-v5/theme.css";
 
 const columns: ColumnDef[] = [
   { key: "name", label: "Name", type: "text", width: 200, fontWeight: 500 },
+  { key: "image", label: "Photo", type: "image", width: 50 },
   { key: "familiarity", label: "Familiarity", type: "select", width: 160, options: [
     "1 Very Close + Family", "2 Know | Current", "3 Know | In Past",
     "4 Acquainted | Talked To", "5 Contacted | No Response",
-    "5 Contacted | Would not Remember Me", "7 Never Met",
+    "6 Contacted | Would not Remember Me", "7 Never Met",
   ]},
   { key: "gender", label: "Gender", type: "select", width: 80, options: ["Man", "Woman"] },
   { key: "known_as", label: "Known As", type: "text", width: 140 },

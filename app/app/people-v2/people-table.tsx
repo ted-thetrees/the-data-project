@@ -76,7 +76,7 @@ function ImageCell({ value }: { value: unknown }) {
 }
 
 // --- Options ---
-const familiarityOptions = ["1 Very Close + Family", "2 Know | Current", "3 Know | In Past", "4 Acquainted | Talked To", "5 Contacted | No Response", "5 Contacted | Would not Remember Me", "7 Never Met"];
+const familiarityOptions = ["1 Very Close + Family", "2 Know | Current", "3 Know | In Past", "4 Acquainted | Talked To", "5 Contacted | No Response", "6 Contacted | Would not Remember Me", "7 Never Met"];
 const genderOptions = ["Man", "Woman"];
 const orgFilledOptions = ["Yes", "Maybe", "No", "Sort"];
 const desirabilityOptions = ["F Yes", "Possible", "Not Sure / Ponder Later", "No"];
