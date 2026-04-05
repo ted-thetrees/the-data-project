@@ -11,7 +11,7 @@ import {
   ColContext, FlexBody,
   SortToolbar, GroupingToolbar, SavedViewsToolbar,
   loadViewState, saveViewState, loadSavedViews, saveNamedView, deleteNamedView,
-  dataGridStyles,
+  dataGridStyles, ROW_HEIGHT,
   type ColConfig, type GroupableField, type SavedView, type PicklistColorMap,
 } from "@/components/data-grid";
 import { updatePersonField, createPerson } from "./actions";
@@ -32,7 +32,7 @@ function buildColConfig(fieldOptions: Record<string, string[]>): ColConfig[] {
   const opts = (teableName: string) => fieldOptions[teableName] || [];
   return [
     { key: "name", label: "Name", type: "text", width: 200, fontWeight: 500 },
-    { key: "image", label: "Photo", type: "image", width: 50 },
+    { key: "image", label: "Photo", type: "image", width: ROW_HEIGHT },
     { key: "familiarity", label: "Familiarity", type: "select", width: 160, options: opts("Familiarity") },
     { key: "gender", label: "Gender", type: "select", width: 80, options: opts("Gender") },
     { key: "known_as", label: "Known As", type: "text", width: 140 },
