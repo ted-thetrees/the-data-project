@@ -284,6 +284,21 @@ const columns: ColumnDef<ProjectRow>[] = [
     },
     enableSorting: false,
   },
+  {
+    accessorKey: "createdDate",
+    header: "Created",
+    cell: ({ row }) => {
+      const node = row.original;
+      if (node.nodeType !== "task" || !node.createdDate) return null;
+      return (
+        <span style={{ fontSize: 13, color: "var(--muted-foreground)" }}>
+          {new Date(node.createdDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
+        </span>
+      );
+    },
+    size: 170,
+    enableSorting: false,
+  },
 ];
 
 // --- Main component ---

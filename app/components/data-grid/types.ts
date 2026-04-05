@@ -1,7 +1,7 @@
 export interface ColConfig {
   key: string;
   label: string;
-  type: "text" | "select" | "image";
+  type: "text" | "select" | "image" | "date";
   width: number;
   options?: string[];
   fontWeight?: number;

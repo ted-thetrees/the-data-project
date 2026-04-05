@@ -22,6 +22,7 @@ const columns: ColumnDef[] = [
     "Can Ask When Website Is Up", "When I Have a Kite", "Chit Used",
     "Done/Recorded!", "Sort", "Do not Want to Ask", "Will Resist/Never Do It",
   ]},
+  { key: "created_date", label: "Created", type: "date", width: 140 },
 ];
 
 const groupableFields: GroupableField[] = [

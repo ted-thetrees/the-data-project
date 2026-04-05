@@ -35,6 +35,34 @@ function ColumnHeaders({ columns, indent }: { columns: ColumnDef[]; indent: numb
   );
 }
 
+// --- Image Cell ---
+
+function ImageCell({ value }: { value: unknown }) {
+  if (!value) return null;
+  let token = "";
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed) && parsed[0]?.token) token = parsed[0].token;
+    } catch {
+      // not JSON
+    }
+  } else if (Array.isArray(value) && value[0]?.token) {
+    token = value[0].token;
+  }
+  if (!token) return null;
+  const url = `/api/teable-image/${token}`;
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 2, height: "100%" }}>
+      <img
+        src={url}
+        alt=""
+        style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", borderRadius: 3, display: "block" }}
+      />
+    </div>
+  );
+}
+
 // --- Data Row ---
 
 function DataRow({
@@ -60,7 +88,13 @@ function DataRow({
 
         return (
           <div key={col.key} className="gt-cell" style={style}>
-            {col.type === "text" ? (
+            {col.type === "image" ? (
+              <ImageCell value={row[col.key]} />
+            ) : col.type === "date" ? (
+              <span style={{ fontSize: 13, color: "var(--muted-foreground)" }}>
+                {row[col.key] ? new Date(row[col.key] as string).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : ""}
+              </span>
+            ) : col.type === "text" ? (
               <EditableText
                 value={(row[col.key] as string) || ""}
                 onSave={(v) => onUpdate(row.id, col.key, v)}

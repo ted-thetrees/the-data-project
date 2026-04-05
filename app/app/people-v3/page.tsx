@@ -13,6 +13,7 @@ export interface PersonRow {
   gender: string | null;
   known_as: string | null;
   metro_area: string | null;
+  created_date: string | null;
   has_org_filled: string | null;
   target_desirability: string | null;
   teller_status: string | null;

@@ -16,6 +16,7 @@ interface Task {
   project_status: string | null;
   project_notes: string | null;
   project: string;
+  created_date: string | null;
 }
 
 export interface ProjectRow {
@@ -26,6 +27,7 @@ export interface ProjectRow {
   taskResult?: string;
   taskNotes?: string;
   tickleDate?: string | null;
+  createdDate?: string | null;
   taskCount?: number;
   subRows?: ProjectRow[];
 }
@@ -74,6 +76,7 @@ function buildTree(tasks: Task[]): ProjectRow[] {
           taskStatus: t.task_status,
           taskResult: t.task_result || "",
           taskNotes: t.task_notes || "",
+          createdDate: t.created_date,
         })),
       });
     }

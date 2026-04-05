@@ -1,7 +1,7 @@
 export interface ColumnDef {
   key: string;
   label: string;
-  type: "text" | "select" | "image";
+  type: "text" | "select" | "image" | "date";
   options?: string[];
   width: number;
   fontWeight?: number;

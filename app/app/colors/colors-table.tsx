@@ -123,6 +123,20 @@ const columns: ColumnDef<ColorRow>[] = [
     enableSorting: false,
     enableHiding: false,
   },
+  {
+    accessorKey: "created_date",
+    header: "Created",
+    cell: ({ row }) => {
+      const d = row.original.created_date;
+      if (!d) return null;
+      return (
+        <span style={{ fontSize: 13, color: "var(--muted-foreground)" }}>
+          {new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
+        </span>
+      );
+    },
+    size: 170,
+  },
 ];
 
 // --- Grouping toolbar ---

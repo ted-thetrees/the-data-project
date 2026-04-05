@@ -70,6 +70,10 @@ export function FlexDataRow<T extends { id: string }>({
           <>
             {col.type === "image" ? (
               <ImageCell value={val} />
+            ) : col.type === "date" ? (
+              <span style={{ fontSize: 13, color: "var(--muted-foreground)" }}>
+                {val ? new Date(val as string).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : ""}
+              </span>
             ) : col.type === "text" ? (
               <EditableText
                 value={(val as string) || ""}

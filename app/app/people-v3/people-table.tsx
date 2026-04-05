@@ -40,6 +40,7 @@ function buildColConfig(fieldOptions: Record<string, string[]>): ColConfig[] {
     { key: "has_org_filled", label: "Org Filled", type: "select", width: 120, options: opts("Has_Org_Filled") },
     { key: "target_desirability", label: "Desirability", type: "select", width: 140, options: opts("Target_Desirability") },
     { key: "teller_status", label: "Teller Status", type: "select", width: 180, options: opts("Teller_Status") },
+    { key: "created_date", label: "Created", type: "date", width: 170 },
   ];
 }
 

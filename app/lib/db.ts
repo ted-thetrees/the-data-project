@@ -34,7 +34,8 @@ export async function getProjectMatrix() {
       "Tickle_Date" as tickle_date,
       "Project_Status" as project_status,
       "Project_Notes" as project_notes,
-      "Project" as project
+      "Project" as project,
+      __created_time as created_date
     FROM "bsePwEnYg0x7fdbsdZR"."Project_Matrix"
     ORDER BY "Uber_Project", "Tickle_Date" ASC NULLS LAST, "Project"`
   );
@@ -67,7 +68,8 @@ export async function getColors() {
       __id as id,
       "Name" as name,
       "Hex" as hex,
-      "Palette" as palette
+      "Palette" as palette,
+      __created_time as created_date
     FROM "bsePwEnYg0x7fdbsdZR"."Colors"
     ORDER BY "Palette", "Name"`
   );

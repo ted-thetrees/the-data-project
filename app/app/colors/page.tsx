@@ -10,6 +10,7 @@ export interface ColorRow {
   name: string;
   hex: string;
   palette: string;
+  created_date: string | null;
 }
 
 export default async function ColorsPage() {
