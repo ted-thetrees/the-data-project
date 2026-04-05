@@ -28,7 +28,7 @@ export function GridCellNav({
     disabled ?? false,
     rowIndex
   );
-  useFocusEffect(focused, ref);
+  useFocusEffect(focused, ref as React.RefObject<HTMLElement>);
 
   return (
     <div
