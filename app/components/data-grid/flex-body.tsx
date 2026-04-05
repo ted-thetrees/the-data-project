@@ -78,7 +78,9 @@ export function FlexDataRow<T extends { id: string }>({
 
         const cellContent = (
           <>
-            {col.type === "image" ? (
+            {col.render ? (
+              col.render(val, row.original as Record<string, unknown>)
+            ) : col.type === "image" ? (
               <ImageCell value={val} />
             ) : col.type === "date" ? (
               <span style={{ fontSize: "var(--font-size-sm)", color: "var(--muted-foreground)" }}>

@@ -1,10 +1,13 @@
+import type React from "react";
+
 export interface ColConfig {
   key: string;
   label: string;
-  type: "text" | "select" | "image" | "date";
+  type: "text" | "select" | "image" | "date" | "custom";
   width: number;
   options?: string[];
   fontWeight?: number;
+  render?: (value: unknown, row: Record<string, unknown>) => React.ReactNode;
 }
 
 export interface GroupableField {
