@@ -4,5 +4,5 @@ export { FlexColumnHeaders, FlexDataRow, GroupHeader, NestedGroups, FlexBody } f
 export type { PicklistColorMap } from "./flex-body";
 export { SortToolbar, GroupingToolbar, SavedViewsToolbar } from "./toolbar";
 export { loadViewState, saveViewState, loadSavedViews, saveNamedView, deleteNamedView } from "./view-actions";
-export { DEPTH_COLORS, INDENT_PX, GAP_PX, dataGridStyles } from "./styles";
+export { DEPTH_COLORS, INDENT_PX, GAP_PX, dataGridStyles, contrastText } from "./styles";
 export type { ColConfig, GroupableField, SavedView } from "./types";

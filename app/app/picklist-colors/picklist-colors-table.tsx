@@ -10,7 +10,7 @@ import { DataTableViewMenu } from "@/components/niko-table/components/data-table
 import { DataTableToolbarSection } from "@/components/niko-table/components/data-table-toolbar-section";
 import { useDataTable } from "@/components/niko-table/core/data-table-context";
 import { updatePicklistColor } from "./actions";
-import { loadViewState, saveViewState } from "@/components/data-grid";
+import { loadViewState, saveViewState, contrastText } from "@/components/data-grid";
 import type { PicklistColorRow } from "./page";
 
 const DEPTH_COLORS = [
@@ -140,7 +140,7 @@ const columns: ColumnDef<PicklistColorRow>[] = [
       <div style={{
         background: row.original.color || "transparent",
         padding: "4px 12px", borderRadius: 4, fontSize: 13,
-        color: isLightColor(row.original.color) ? "var(--foreground)" : "#fff",
+        color: row.original.color ? contrastText(row.original.color) : "var(--foreground)",
       }}>
         {row.original.option}
       </div>
@@ -149,14 +149,6 @@ const columns: ColumnDef<PicklistColorRow>[] = [
     enableSorting: false,
   },
 ];
-
-function isLightColor(hex: string): boolean {
-  if (!hex) return true;
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return (r * 299 + g * 587 + b * 114) / 1000 > 140;
-}
 
 // --- Grouping toolbar ---
 

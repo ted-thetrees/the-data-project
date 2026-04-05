@@ -1,3 +1,19 @@
+import chroma from "chroma-js";
+
+const LIGHT_TEXT = "#faf9f6";
+const DARK_TEXT = "#4a4639";
+
+/** Pick the best contrasting text color (near-white or near-black) for a given background. */
+export function contrastText(bg: string): string {
+  try {
+    const lightContrast = chroma.contrast(bg, LIGHT_TEXT);
+    const darkContrast = chroma.contrast(bg, DARK_TEXT);
+    return darkContrast >= lightContrast ? DARK_TEXT : LIGHT_TEXT;
+  } catch {
+    return DARK_TEXT;
+  }
+}
+
 export const DEPTH_COLORS = [
   "var(--depth-0)", "var(--depth-1)", "var(--depth-2)",
   "var(--depth-3)", "var(--depth-4)",

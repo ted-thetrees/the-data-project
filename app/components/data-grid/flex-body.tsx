@@ -5,7 +5,7 @@ import type { Row } from "@tanstack/react-table";
 import { useDataTable } from "@/components/niko-table/core/data-table-context";
 import { ColContext, ColResizer } from "./col-context";
 import { EditableText, EditableSelect, ImageCell } from "./editable-cells";
-import { DEPTH_COLORS, INDENT_PX, GAP_PX } from "./styles";
+import { DEPTH_COLORS, INDENT_PX, GAP_PX, contrastText } from "./styles";
 import type { ColConfig } from "./types";
 
 // --- Column headers ---
@@ -57,6 +57,7 @@ export function FlexDataRow<T extends { id: string }>({
         const cellBg = optionColor || bg;
         const cellStyle: React.CSSProperties = {
           background: cellBg,
+          ...(optionColor ? { color: contrastText(optionColor) } : {}),
           ...(isLast ? { flex: 1, minWidth: widths[i] } : { width: widths[i], flexShrink: 0 }),
           position: "relative",
           ...(col.fontWeight ? { fontWeight: col.fontWeight } : {}),
