@@ -74,6 +74,19 @@ export async function getColors() {
   return result.rows;
 }
 
+export async function getPicklistColors() {
+  const result = await pool.query(
+    `SELECT
+      __id as id,
+      "Field" as field,
+      "Option" as option,
+      "Color" as color
+    FROM "bsePwEnYg0x7fdbsdZR"."Picklist_Colors"
+    ORDER BY "Field", "Option"`
+  );
+  return result.rows;
+}
+
 export async function getInboxCount() {
   const result = await pool.query(
     `SELECT COUNT(*) as count FROM "bsePwEnYg0x7fdbsdZR"."Inbox"`
