@@ -66,9 +66,10 @@ export async function getColors() {
     `SELECT
       __id as id,
       "Name" as name,
-      "Hex" as hex
+      "Hex" as hex,
+      "Palette" as palette
     FROM "bsePwEnYg0x7fdbsdZR"."Colors"
-    ORDER BY "Name"`
+    ORDER BY "Palette", "Name"`
   );
   return result.rows;
 }

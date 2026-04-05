@@ -12,11 +12,12 @@ import { DEPTH_COLORS, GAP_PX, dataGridStyles } from "@/components/data-grid/sty
 import { updateColorField } from "./actions";
 import type { ColorRow } from "./page";
 
-const COL_WIDTHS = [200, 120, 60]; // Name, Hex, Swatch
+const COL_WIDTHS = [200, 120, 80, 60]; // Name, Hex, Palette, Swatch
 
 const columns: ColumnDef<ColorRow>[] = [
   { accessorKey: "name", header: "Name" },
   { accessorKey: "hex", header: "Hex" },
+  { accessorKey: "palette", header: "Palette" },
 ];
 
 function RecordCount({ total }: { total: number }) {
@@ -45,7 +46,10 @@ function ColorBody() {
         <div style={{ width: widths[1], flexShrink: 0, padding: "8px 12px", background: "var(--muted)", position: "relative" }}>
           Hex<ColResizer index={1} />
         </div>
-        <div style={{ width: widths[2], flexShrink: 0, padding: "8px 12px", background: "var(--muted)" }}>
+        <div style={{ width: widths[2], flexShrink: 0, padding: "8px 12px", background: "var(--muted)", position: "relative" }}>
+          Palette<ColResizer index={2} />
+        </div>
+        <div style={{ width: widths[3], flexShrink: 0, padding: "8px 12px", background: "var(--muted)" }}>
           Swatch
         </div>
       </div>
@@ -61,7 +65,11 @@ function ColorBody() {
             <EditableText value={row.original.hex || ""} onSave={(v) => updateColorField(row.original.id, "hex", v)} />
             <ColResizer index={1} />
           </div>
-          <div className="gt-cell" style={{ width: widths[2], flexShrink: 0, background: bg, justifyContent: "center" }}>
+          <div className="gt-cell" style={{ width: widths[2], flexShrink: 0, background: bg, position: "relative" }}>
+            <EditableText value={row.original.palette || ""} onSave={(v) => updateColorField(row.original.id, "palette", v)} />
+            <ColResizer index={2} />
+          </div>
+          <div className="gt-cell" style={{ width: widths[3], flexShrink: 0, background: bg, justifyContent: "center" }}>
             <div style={{
               width: 32, height: 32, borderRadius: 6,
               background: row.original.hex || "transparent",

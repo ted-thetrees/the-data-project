@@ -9,6 +9,7 @@ const TABLE_ID = "tbl4LAxgM4VWxgJbETf";
 const FIELD_IDS: Record<string, string> = {
   name: "fldyNeUjHQW62HwzPHS",
   hex: "fldAO4DZes9iJv7juaj",
+  palette: "fldUbwkAfZeUhWEmnmt",
 };
 
 export async function updateColorField(
