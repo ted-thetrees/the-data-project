@@ -7,6 +7,7 @@ import "../projects-v5/theme.css";
 
 export interface PicklistColorRow {
   id: string;
+  table_name: string;
   field: string;
   option: string;
   color: string;

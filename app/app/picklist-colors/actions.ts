@@ -7,6 +7,7 @@ const TEABLE_URL = process.env.TEABLE_URL || "https://teable.ifnotfor.com";
 const TABLE_ID = "tbl0oH7BL6QQmUd5vak";
 
 const FIELD_IDS: Record<string, string> = {
+  table_name: "fldmbZOh3X2jOa7EUQC",
   field: "fldKbYzY5s9EOcNFrnr",
   option: "fldC2zjZAbDxCwvbb1Q",
   color: "fldXyaQXtoskZEuaMsR",

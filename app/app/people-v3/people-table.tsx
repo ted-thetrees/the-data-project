@@ -12,10 +12,10 @@ import {
   SortToolbar, GroupingToolbar, SavedViewsToolbar,
   loadViewState, saveViewState, loadSavedViews, saveNamedView, deleteNamedView,
   dataGridStyles,
-  type ColConfig, type GroupableField, type SavedView,
+  type ColConfig, type GroupableField, type SavedView, type PicklistColorMap,
 } from "@/components/data-grid";
 import { updatePersonField } from "./actions";
-import type { PersonRow } from "./page";
+import type { PersonRow, PicklistColorMap as PagePicklistColorMap } from "./page";
 
 // --- Column config ---
 
@@ -65,7 +65,7 @@ function RecordCount({ total }: { total: number }) {
 
 // --- Main component ---
 
-export function PeopleTable({ data }: { data: PersonRow[] }) {
+export function PeopleTable({ data, picklistColors }: { data: PersonRow[]; picklistColors?: PagePicklistColorMap }) {
   const [mode, setMode] = useState<"light" | "dark">("light");
   const [widths, setWidths] = useState(COL_CONFIG.map((c) => c.width));
   const [sorting, setSorting] = useState<SortingState>([{ id: "name", desc: false }]);
@@ -209,6 +209,7 @@ export function PeopleTable({ data }: { data: PersonRow[] }) {
               visibleCols={visibleCols} groupFields={groupFields} groupSortDirs={groupSortDirs}
               openGroups={openGroups} toggleGroup={toggleGroup}
               onUpdate={(id, field, value) => updatePersonField(id, field, value)}
+              picklistColors={picklistColors}
             />
           </ColContext.Provider>
         </DataTableRoot>

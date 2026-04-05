@@ -33,13 +33,16 @@ export function FlexColumnHeaders({ indent, visibleCols }: { indent: number; vis
 
 // --- Data row ---
 
+export type PicklistColorMap = { [fieldKey: string]: { [optionValue: string]: string } };
+
 export function FlexDataRow<T extends { id: string }>({
-  row, visibleCols, depth, onUpdate,
+  row, visibleCols, depth, onUpdate, picklistColors,
 }: {
   row: Row<T>;
   visibleCols: ColConfig[];
   depth: number;
   onUpdate: (recordId: string, field: string, value: string) => void;
+  picklistColors?: PicklistColorMap;
 }) {
   const { widths } = useContext(ColContext);
   const indent = depth * INDENT_PX;
@@ -49,13 +52,15 @@ export function FlexDataRow<T extends { id: string }>({
     <div style={{ display: "flex", alignItems: "stretch", marginLeft: indent, gap: GAP_PX }}>
       {visibleCols.map((col, i) => {
         const isLast = i === visibleCols.length - 1;
+        const val = (row.original as Record<string, unknown>)[col.key];
+        const optionColor = col.type === "select" && val ? picklistColors?.[col.label]?.[(val as string)] : undefined;
+        const cellBg = optionColor || bg;
         const cellStyle: React.CSSProperties = {
-          background: bg,
+          background: cellBg,
           ...(isLast ? { flex: 1, minWidth: widths[i] } : { width: widths[i], flexShrink: 0 }),
           position: "relative",
           ...(col.fontWeight ? { fontWeight: col.fontWeight } : {}),
         };
-        const val = (row.original as Record<string, unknown>)[col.key];
 
         return (
           <div key={col.key} className="gt-cell" style={cellStyle}>
@@ -106,7 +111,7 @@ export function GroupHeader({ label, count, open, onToggle, depth }: {
 // --- Nested groups ---
 
 export function NestedGroups<T extends { id: string }>({
-  rows, visibleCols, groupFields, groupSortDirs, depth, openGroups, toggleGroup, onUpdate, showHeaders,
+  rows, visibleCols, groupFields, groupSortDirs, depth, openGroups, toggleGroup, onUpdate, showHeaders, picklistColors,
 }: {
   rows: Row<T>[];
   visibleCols: ColConfig[];
@@ -117,13 +122,14 @@ export function NestedGroups<T extends { id: string }>({
   toggleGroup: (key: string) => void;
   onUpdate: (recordId: string, field: string, value: string) => void;
   showHeaders?: boolean;
+  picklistColors?: PicklistColorMap;
 }) {
   if (groupFields.length === 0) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: GAP_PX, marginTop: GAP_PX }}>
         {showHeaders && <FlexColumnHeaders indent={depth * INDENT_PX} visibleCols={visibleCols} />}
         {rows.map((row) => (
-          <FlexDataRow key={row.id} row={row} visibleCols={visibleCols} depth={depth} onUpdate={onUpdate} />
+          <FlexDataRow key={row.id} row={row} visibleCols={visibleCols} depth={depth} onUpdate={onUpdate} picklistColors={picklistColors} />
         ))}
       </div>
     );
@@ -156,7 +162,7 @@ export function NestedGroups<T extends { id: string }>({
             {isOpen && (
               <NestedGroups rows={members} visibleCols={visibleCols} groupFields={remainingFields}
                 groupSortDirs={remainingSortDirs} depth={depth + 1} openGroups={openGroups}
-                toggleGroup={toggleGroup} onUpdate={onUpdate} showHeaders={isLeafGroup} />
+                toggleGroup={toggleGroup} onUpdate={onUpdate} showHeaders={isLeafGroup} picklistColors={picklistColors} />
             )}
           </div>
         );
@@ -168,7 +174,7 @@ export function NestedGroups<T extends { id: string }>({
 // --- Main flex body (reads from Niko Table context) ---
 
 export function FlexBody<T extends { id: string }>({
-  visibleCols, groupFields, groupSortDirs, openGroups, toggleGroup, onUpdate,
+  visibleCols, groupFields, groupSortDirs, openGroups, toggleGroup, onUpdate, picklistColors,
 }: {
   visibleCols: ColConfig[];
   groupFields: string[];
@@ -176,6 +182,7 @@ export function FlexBody<T extends { id: string }>({
   openGroups: Set<string>;
   toggleGroup: (key: string) => void;
   onUpdate: (recordId: string, field: string, value: string) => void;
+  picklistColors?: PicklistColorMap;
 }) {
   const { table } = useDataTable<T>();
   const rows = table.getRowModel().rows;
@@ -185,7 +192,7 @@ export function FlexBody<T extends { id: string }>({
       <div style={{ display: "flex", flexDirection: "column", gap: GAP_PX }}>
         <NestedGroups rows={rows} visibleCols={visibleCols} groupFields={groupFields}
           groupSortDirs={groupSortDirs} depth={0} openGroups={openGroups}
-          toggleGroup={toggleGroup} onUpdate={onUpdate} showHeaders={false} />
+          toggleGroup={toggleGroup} onUpdate={onUpdate} showHeaders={false} picklistColors={picklistColors} />
       </div>
     );
   }
@@ -194,7 +201,7 @@ export function FlexBody<T extends { id: string }>({
     <div style={{ display: "flex", flexDirection: "column", gap: GAP_PX }}>
       <FlexColumnHeaders indent={0} visibleCols={visibleCols} />
       {rows.map((row) => (
-        <FlexDataRow key={row.id} row={row} visibleCols={visibleCols} depth={0} onUpdate={onUpdate} />
+        <FlexDataRow key={row.id} row={row} visibleCols={visibleCols} depth={0} onUpdate={onUpdate} picklistColors={picklistColors} />
       ))}
     </div>
   );

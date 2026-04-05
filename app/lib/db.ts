@@ -74,15 +74,18 @@ export async function getColors() {
   return result.rows;
 }
 
-export async function getPicklistColors() {
+export async function getPicklistColors(tableName?: string) {
   const result = await pool.query(
     `SELECT
       __id as id,
+      "Table" as table_name,
       "Field" as field,
       "Option" as option,
       "Color" as color
     FROM "bsePwEnYg0x7fdbsdZR"."Picklist_Colors"
-    ORDER BY "Field", "Option"`
+    ${tableName ? 'WHERE "Table" = $1' : ''}
+    ORDER BY "Table", "Field", "Option"`,
+    tableName ? [tableName] : []
   );
   return result.rows;
 }

@@ -100,16 +100,23 @@ function ColorPicker({ value, onSave }: { value: string; onSave: (v: string) => 
 
 // --- Groupable fields ---
 const GROUPABLE_FIELDS = [
+  { key: "table_name", label: "Table" },
   { key: "field", label: "Field" },
 ];
 
 // --- Column definitions ---
 const columns: ColumnDef<PicklistColorRow>[] = [
   {
+    accessorKey: "table_name",
+    header: "Table",
+    cell: ({ row }) => <span style={{ fontWeight: 600 }}>{row.original.table_name}</span>,
+    size: 120,
+  },
+  {
     accessorKey: "field",
     header: "Field",
     cell: ({ row }) => <span style={{ fontWeight: 600 }}>{row.original.field}</span>,
-    size: 180,
+    size: 160,
   },
   {
     accessorKey: "option",
@@ -177,8 +184,13 @@ function GroupingToolbar({
           <button className="claude-toolbar-btn-sm" onClick={() => onRemoveGroup(i)}>✕</button>
         </div>
       ))}
-      {groupFields.length === 0 && (
-        <button className="claude-toolbar-btn" onClick={() => onAddGroup("field")}>Group by Field</button>
+      {groupFields.length < GROUPABLE_FIELDS.length && (
+        <select className="claude-toolbar-select" value="" onChange={(e) => { if (e.target.value) onAddGroup(e.target.value); }}>
+          <option value="">+ Add level</option>
+          {GROUPABLE_FIELDS.filter((f) => !groupFields.includes(f.key)).map((f) => (
+            <option key={f.key} value={f.key}>{f.label}</option>
+          ))}
+        </select>
       )}
       {groupFields.length > 0 && (
         <>
@@ -298,8 +310,8 @@ export function PicklistColorsTable({ data }: { data: PicklistColorRow[] }) {
   const [sorting, setSorting] = useState<SortingState>([{ id: "field", desc: false }]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [globalFilter, setGlobalFilter] = useState("");
-  const [groupFields, setGroupFields] = useState<string[]>(["field"]);
-  const [groupSortDirs, setGroupSortDirs] = useState<("asc" | "desc")[]>(["asc"]);
+  const [groupFields, setGroupFields] = useState<string[]>(["table_name", "field"]);
+  const [groupSortDirs, setGroupSortDirs] = useState<("asc" | "desc")[]>(["asc", "asc"]);
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
   const [loaded, setLoaded] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -339,9 +351,14 @@ export function PicklistColorsTable({ data }: { data: PicklistColorRow[] }) {
 
   const expandAll = () => {
     const keys = new Set<string>();
-    const map = new Map<string, PicklistColorRow[]>();
-    for (const r of data) { const k = r.field || ""; if (!map.has(k)) map.set(k, []); map.get(k)!.push(r); }
-    for (const [label] of map) keys.add(`0-field-${label}`);
+    function collect(rows: PicklistColorRow[], fields: string[], depth: number) {
+      if (fields.length === 0) return;
+      const [field, ...rest] = fields;
+      const map = new Map<string, PicklistColorRow[]>();
+      for (const r of rows) { const k = (r[field as keyof PicklistColorRow] as string) || ""; if (!map.has(k)) map.set(k, []); map.get(k)!.push(r); }
+      for (const [label, members] of map) { keys.add(`${depth}-${field}-${label}`); collect(members, rest, depth + 1); }
+    }
+    collect(data, groupFields, 0);
     setOpenGroups(keys);
   };
 
@@ -378,9 +395,9 @@ export function PicklistColorsTable({ data }: { data: PicklistColorRow[] }) {
           }}>
             <GroupingToolbar
               groupFields={groupFields} groupSortDirs={groupSortDirs}
-              onAddGroup={(f) => { setGroupFields([f]); setGroupSortDirs(["asc"]); setOpenGroups(new Set()); }}
-              onRemoveGroup={() => { setGroupFields([]); setGroupSortDirs([]); setOpenGroups(new Set()); }}
-              onToggleGroupSort={() => setGroupSortDirs((prev) => [prev[0] === "asc" ? "desc" : "asc"])}
+              onAddGroup={(f) => { if (!groupFields.includes(f)) { setGroupFields([...groupFields, f]); setGroupSortDirs([...groupSortDirs, "asc"]); setOpenGroups(new Set()); } }}
+              onRemoveGroup={(i) => { setGroupFields(groupFields.filter((_, j) => j !== i)); setGroupSortDirs(groupSortDirs.filter((_, j) => j !== i)); setOpenGroups(new Set()); }}
+              onToggleGroupSort={(i) => setGroupSortDirs((prev) => { const next = [...prev]; next[i] = next[i] === "asc" ? "desc" : "asc"; return next; })}
               onExpandAll={expandAll}
               onCollapseAll={() => setOpenGroups(new Set())}
             />
