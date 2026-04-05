@@ -2,6 +2,7 @@ export { ColContext, ColResizer } from "./col-context";
 export { EditableText, EditableSelect, ImageCell } from "./editable-cells";
 export { FlexColumnHeaders, FlexDataRow, GroupHeader, NestedGroups, FlexBody } from "./flex-body";
 export { RovingTabIndexProvider, GridCellNav } from "./grid-cell-nav";
+export { NewRow } from "./new-row";
 export type { PicklistColorMap } from "./flex-body";
 export { SortToolbar, GroupingToolbar, SavedViewsToolbar } from "./toolbar";
 export { loadViewState, saveViewState, loadSavedViews, saveNamedView, deleteNamedView } from "./view-actions";

@@ -14,7 +14,7 @@ import {
   dataGridStyles,
   type ColConfig, type GroupableField, type SavedView, type PicklistColorMap,
 } from "@/components/data-grid";
-import { updatePersonField } from "./actions";
+import { updatePersonField, createPerson } from "./actions";
 import type { PersonRow, PicklistColorMap as PagePicklistColorMap } from "./page";
 
 // --- Column config ---
@@ -210,6 +210,7 @@ export function PeopleTable({ data, picklistColors }: { data: PersonRow[]; pickl
               openGroups={openGroups} toggleGroup={toggleGroup}
               onUpdate={(id, field, value) => updatePersonField(id, field, value)}
               picklistColors={picklistColors}
+              onCreate={(fields) => createPerson(fields)}
             />
           </ColContext.Provider>
         </DataTableRoot>

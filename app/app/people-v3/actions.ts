@@ -40,3 +40,28 @@ export async function updatePersonField(
   if (!res.ok) throw new Error(`Failed to update ${field}`);
   revalidatePath("/people-v3");
 }
+
+export async function createPerson(fields: Record<string, string>) {
+  const teableFields: Record<string, string | null> = {};
+  for (const [key, value] of Object.entries(fields)) {
+    const fieldId = FIELD_IDS[key];
+    if (fieldId && value) teableFields[fieldId] = value;
+  }
+
+  if (Object.keys(teableFields).length === 0) return;
+
+  const res = await fetch(`${TEABLE_URL}/api/table/${TABLE_ID}/record`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${TEABLE_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      fieldKeyType: "id",
+      records: [{ fields: teableFields }],
+    }),
+  });
+
+  if (!res.ok) throw new Error("Failed to create record");
+  revalidatePath("/people-v3");
+}

@@ -6,6 +6,7 @@ import { useDataTable } from "@/components/niko-table/core/data-table-context";
 import { ColContext, ColResizer } from "./col-context";
 import { EditableText, EditableSelect, ImageCell } from "./editable-cells";
 import { RovingTabIndexProvider, GridCellNav } from "./grid-cell-nav";
+import { NewRow } from "./new-row";
 import { DEPTH_COLORS, INDENT_PX, GAP_PX, contrastText } from "./styles";
 import type { ColConfig } from "./types";
 
@@ -125,7 +126,7 @@ export function GroupHeader({ label, count, open, onToggle, depth }: {
 // --- Nested groups ---
 
 export function NestedGroups<T extends { id: string }>({
-  rows, visibleCols, groupFields, groupSortDirs, depth, openGroups, toggleGroup, onUpdate, showHeaders, picklistColors,
+  rows, visibleCols, groupFields, groupSortDirs, depth, openGroups, toggleGroup, onUpdate, showHeaders, picklistColors, onCreate,
 }: {
   rows: Row<T>[];
   visibleCols: ColConfig[];
@@ -137,6 +138,7 @@ export function NestedGroups<T extends { id: string }>({
   onUpdate: (recordId: string, field: string, value: string) => void;
   showHeaders?: boolean;
   picklistColors?: PicklistColorMap;
+  onCreate?: (fields: Record<string, string>) => Promise<void>;
 }) {
   if (groupFields.length === 0) {
     return (
@@ -145,6 +147,7 @@ export function NestedGroups<T extends { id: string }>({
         {rows.map((row, i) => (
           <FlexDataRow key={row.id} row={row} visibleCols={visibleCols} depth={depth} onUpdate={onUpdate} picklistColors={picklistColors} rowIndex={i} />
         ))}
+        {onCreate && <NewRow visibleCols={visibleCols} depth={depth} onCreate={onCreate} />}
       </div>
     );
   }
@@ -176,7 +179,7 @@ export function NestedGroups<T extends { id: string }>({
             {isOpen && (
               <NestedGroups rows={members} visibleCols={visibleCols} groupFields={remainingFields}
                 groupSortDirs={remainingSortDirs} depth={depth + 1} openGroups={openGroups}
-                toggleGroup={toggleGroup} onUpdate={onUpdate} showHeaders={isLeafGroup} picklistColors={picklistColors} />
+                toggleGroup={toggleGroup} onUpdate={onUpdate} showHeaders={isLeafGroup} picklistColors={picklistColors} onCreate={onCreate} />
             )}
           </div>
         );
@@ -188,7 +191,7 @@ export function NestedGroups<T extends { id: string }>({
 // --- Main flex body (reads from Niko Table context) ---
 
 export function FlexBody<T extends { id: string }>({
-  visibleCols, groupFields, groupSortDirs, openGroups, toggleGroup, onUpdate, picklistColors,
+  visibleCols, groupFields, groupSortDirs, openGroups, toggleGroup, onUpdate, picklistColors, onCreate,
 }: {
   visibleCols: ColConfig[];
   groupFields: string[];
@@ -197,6 +200,7 @@ export function FlexBody<T extends { id: string }>({
   toggleGroup: (key: string) => void;
   onUpdate: (recordId: string, field: string, value: string) => void;
   picklistColors?: PicklistColorMap;
+  onCreate?: (fields: Record<string, string>) => Promise<void>;
 }) {
   const { table } = useDataTable<T>();
   const rows = table.getRowModel().rows;
@@ -207,7 +211,7 @@ export function FlexBody<T extends { id: string }>({
         <div role="grid" style={{ display: "flex", flexDirection: "column", gap: GAP_PX }}>
           <NestedGroups rows={rows} visibleCols={visibleCols} groupFields={groupFields}
             groupSortDirs={groupSortDirs} depth={0} openGroups={openGroups}
-            toggleGroup={toggleGroup} onUpdate={onUpdate} showHeaders={false} picklistColors={picklistColors} />
+            toggleGroup={toggleGroup} onUpdate={onUpdate} showHeaders={false} picklistColors={picklistColors} onCreate={onCreate} />
         </div>
       </RovingTabIndexProvider>
     );
@@ -220,6 +224,7 @@ export function FlexBody<T extends { id: string }>({
         {rows.map((row, i) => (
           <FlexDataRow key={row.id} row={row} visibleCols={visibleCols} depth={0} onUpdate={onUpdate} picklistColors={picklistColors} rowIndex={i} />
         ))}
+        {onCreate && <NewRow visibleCols={visibleCols} depth={0} onCreate={onCreate} />}
       </div>
     </RovingTabIndexProvider>
   );
