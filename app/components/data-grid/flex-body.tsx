@@ -57,7 +57,7 @@ export function FlexDataRow<T extends { id: string }>({
   const bg = DEPTH_COLORS[depth] || DEPTH_COLORS[DEPTH_COLORS.length - 1];
 
   return (
-    <div style={{ display: "flex", alignItems: "stretch", marginLeft: indent, gap: GAP_PX, height: ROW_HEIGHT, overflow: "hidden" }}>
+    <div style={{ display: "flex", alignItems: "stretch", marginLeft: indent, gap: GAP_PX, height: ROW_HEIGHT }}>
       {visibleCols.map((col, i) => {
         const isLast = i === visibleCols.length - 1;
         const val = (row.original as Record<string, unknown>)[col.key];
