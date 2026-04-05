@@ -17,8 +17,11 @@ export function contrastText(bg: string): string {
 export const DEFAULT_CELL_BG = "#F3F0E9";
 
 export const DEPTH_COLORS = [
-  DEFAULT_CELL_BG, "var(--depth-1)", "var(--depth-2)",
-  "var(--depth-3)", "var(--depth-4)",
+  "#F3F0E9",
+  "#EDE9E1",
+  "#E7E3DA",
+  "#E1DDD4",
+  "#DBD7CE",
 ];
 
 export const INDENT_PX = 40;
