@@ -7,7 +7,7 @@ import { ColContext, ColResizer } from "./col-context";
 import { EditableText, EditableSelect, ImageCell } from "./editable-cells";
 import { RovingTabIndexProvider, GridCellNav } from "./grid-cell-nav";
 import { NewRow } from "./new-row";
-import { DEPTH_COLORS, INDENT_PX, GAP_PX, ROW_HEIGHT, contrastText } from "./styles";
+import { DEPTH_COLORS, INDENT_PX, GAP_PX, ROW_HEIGHT, contrastText, DEFAULT_CELL_BG } from "./styles";
 import type { ColConfig } from "./types";
 
 // --- Column headers ---
@@ -58,10 +58,11 @@ export function FlexDataRow<T extends { id: string }>({
         const val = (row.original as Record<string, unknown>)[col.key];
         const optionColor = col.type === "select" && val ? picklistColors?.[col.label]?.[(val as string)] : undefined;
         const cellBg = optionColor || bg;
+        const colWidth = col.type === "image" ? ROW_HEIGHT : widths[i];
         const cellStyle: React.CSSProperties = {
           background: cellBg,
           ...(optionColor ? { color: contrastText(optionColor) } : {}),
-          ...(isLast ? { flex: 1, minWidth: widths[i] } : { width: widths[i], flexShrink: 0 }),
+          ...(isLast ? { flex: 1, minWidth: colWidth } : { width: colWidth, flexShrink: 0 }),
           position: "relative",
           ...(col.fontWeight ? { fontWeight: col.fontWeight } : {}),
           ...(col.type === "image" ? { padding: 0, overflow: "hidden" } : {}),
