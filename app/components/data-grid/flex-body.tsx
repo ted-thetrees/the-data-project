@@ -77,6 +77,7 @@ export function FlexDataRow<T extends { id: string }>({
                 value={val as string | null}
                 options={col.options || []}
                 onSave={(v) => onUpdate(row.original.id, col.key, v)}
+                optionColors={picklistColors?.[col.label]}
               />
             )}
             {!isLast && <ColResizer index={i} />}

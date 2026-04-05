@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect, useRef } from "react";
+import { contrastText } from "./styles";
 
 export function EditableText({
   value, onSave, className, style,
@@ -43,11 +44,12 @@ export function EditableText({
 }
 
 export function EditableSelect({
-  value, options, onSave,
+  value, options, onSave, optionColors,
 }: {
   value: string | null;
   options: string[];
   onSave: (v: string) => void;
+  optionColors?: { [optionValue: string]: string };
 }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -79,13 +81,23 @@ export function EditableSelect({
             className={`gt-picklist-option ${!value ? "gt-picklist-active" : ""}`}
             onClick={() => { startTransition(() => onSave("")); setOpen(false); }}
           >—</div>
-          {options.map((o) => (
-            <div
-              key={o}
-              className={`gt-picklist-option ${value === o ? "gt-picklist-active" : ""}`}
-              onClick={() => { startTransition(() => onSave(o)); setOpen(false); }}
-            >{o}</div>
-          ))}
+          {options.map((o) => {
+            const bg = optionColors?.[o];
+            return (
+              <div
+                key={o}
+                className={`gt-picklist-option ${value === o ? "gt-picklist-active" : ""}`}
+                style={bg ? {
+                  background: bg,
+                  color: contrastText(bg),
+                  borderRadius: 4,
+                  margin: "2px 4px",
+                  padding: "5px 10px",
+                } : undefined}
+                onClick={() => { startTransition(() => onSave(o)); setOpen(false); }}
+              >{o}</div>
+            );
+          })}
         </div>
       )}
     </div>
