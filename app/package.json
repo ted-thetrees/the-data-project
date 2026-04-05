@@ -29,6 +29,7 @@
     "react": "19.2.4",
     "react-arborist": "^3.4.3",
     "react-dom": "19.2.4",
+    "react-roving-tabindex": "^3.2.0",
     "shadcn": "^4.1.2",
     "tailwind-merge": "^3.5.0",
     "timeago.js": "^4.0.2",

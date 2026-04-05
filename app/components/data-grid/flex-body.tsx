@@ -5,6 +5,7 @@ import type { Row } from "@tanstack/react-table";
 import { useDataTable } from "@/components/niko-table/core/data-table-context";
 import { ColContext, ColResizer } from "./col-context";
 import { EditableText, EditableSelect, ImageCell } from "./editable-cells";
+import { RovingTabIndexProvider, GridCellNav } from "./grid-cell-nav";
 import { DEPTH_COLORS, INDENT_PX, GAP_PX, contrastText } from "./styles";
 import type { ColConfig } from "./types";
 
@@ -36,13 +37,14 @@ export function FlexColumnHeaders({ indent, visibleCols }: { indent: number; vis
 export type PicklistColorMap = { [fieldKey: string]: { [optionValue: string]: string } };
 
 export function FlexDataRow<T extends { id: string }>({
-  row, visibleCols, depth, onUpdate, picklistColors,
+  row, visibleCols, depth, onUpdate, picklistColors, rowIndex,
 }: {
   row: Row<T>;
   visibleCols: ColConfig[];
   depth: number;
   onUpdate: (recordId: string, field: string, value: string) => void;
   picklistColors?: PicklistColorMap;
+  rowIndex?: number;
 }) {
   const { widths } = useContext(ColContext);
   const indent = depth * INDENT_PX;
@@ -63,8 +65,8 @@ export function FlexDataRow<T extends { id: string }>({
           ...(col.fontWeight ? { fontWeight: col.fontWeight } : {}),
         };
 
-        return (
-          <div key={col.key} className="gt-cell" style={cellStyle}>
+        const cellContent = (
+          <>
             {col.type === "image" ? (
               <ImageCell value={val} />
             ) : col.type === "text" ? (
@@ -81,6 +83,16 @@ export function FlexDataRow<T extends { id: string }>({
               />
             )}
             {!isLast && <ColResizer index={i} />}
+          </>
+        );
+
+        return rowIndex !== undefined ? (
+          <GridCellNav key={col.key} rowIndex={rowIndex} className="gt-cell" style={cellStyle}>
+            {cellContent}
+          </GridCellNav>
+        ) : (
+          <div key={col.key} className="gt-cell" style={cellStyle}>
+            {cellContent}
           </div>
         );
       })}
@@ -130,8 +142,8 @@ export function NestedGroups<T extends { id: string }>({
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: GAP_PX, marginTop: GAP_PX }}>
         {showHeaders && <FlexColumnHeaders indent={depth * INDENT_PX} visibleCols={visibleCols} />}
-        {rows.map((row) => (
-          <FlexDataRow key={row.id} row={row} visibleCols={visibleCols} depth={depth} onUpdate={onUpdate} picklistColors={picklistColors} />
+        {rows.map((row, i) => (
+          <FlexDataRow key={row.id} row={row} visibleCols={visibleCols} depth={depth} onUpdate={onUpdate} picklistColors={picklistColors} rowIndex={i} />
         ))}
       </div>
     );
@@ -191,20 +203,24 @@ export function FlexBody<T extends { id: string }>({
 
   if (groupFields.length > 0) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: GAP_PX }}>
-        <NestedGroups rows={rows} visibleCols={visibleCols} groupFields={groupFields}
-          groupSortDirs={groupSortDirs} depth={0} openGroups={openGroups}
-          toggleGroup={toggleGroup} onUpdate={onUpdate} showHeaders={false} picklistColors={picklistColors} />
-      </div>
+      <RovingTabIndexProvider>
+        <div role="grid" style={{ display: "flex", flexDirection: "column", gap: GAP_PX }}>
+          <NestedGroups rows={rows} visibleCols={visibleCols} groupFields={groupFields}
+            groupSortDirs={groupSortDirs} depth={0} openGroups={openGroups}
+            toggleGroup={toggleGroup} onUpdate={onUpdate} showHeaders={false} picklistColors={picklistColors} />
+        </div>
+      </RovingTabIndexProvider>
     );
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: GAP_PX }}>
-      <FlexColumnHeaders indent={0} visibleCols={visibleCols} />
-      {rows.map((row) => (
-        <FlexDataRow key={row.id} row={row} visibleCols={visibleCols} depth={0} onUpdate={onUpdate} picklistColors={picklistColors} />
-      ))}
-    </div>
+    <RovingTabIndexProvider>
+      <div role="grid" style={{ display: "flex", flexDirection: "column", gap: GAP_PX }}>
+        <FlexColumnHeaders indent={0} visibleCols={visibleCols} />
+        {rows.map((row, i) => (
+          <FlexDataRow key={row.id} row={row} visibleCols={visibleCols} depth={0} onUpdate={onUpdate} picklistColors={picklistColors} rowIndex={i} />
+        ))}
+      </div>
+    </RovingTabIndexProvider>
   );
 }
