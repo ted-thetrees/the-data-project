@@ -20,15 +20,20 @@ export function FlexColumnHeaders({ indent, visibleCols }: { indent: number; vis
       fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em",
       color: "var(--muted-foreground)",
     }}>
-      {visibleCols.map((col, i) => (
-        <div key={col.key} style={{
-          ...(i < visibleCols.length - 1 ? { width: widths[i], flexShrink: 0 } : { flex: 1, minWidth: widths[i] }),
-          position: "relative", padding: "8px 12px", background: "var(--muted)",
-        }}>
-          {col.label}
-          {i < visibleCols.length - 1 && <ColResizer index={i} />}
-        </div>
-      ))}
+      {visibleCols.map((col, i) => {
+        const isImage = col.type === "image";
+        const colWidth = isImage ? ROW_HEIGHT : widths[i];
+        return (
+          <div key={col.key} style={{
+            ...(i < visibleCols.length - 1 ? { width: colWidth, flexShrink: 0 } : { flex: 1, minWidth: colWidth }),
+            position: "relative", padding: "8px 12px", background: "var(--muted)",
+            ...(isImage ? { display: "flex", alignItems: "center", justifyContent: "center", padding: "4px" } : {}),
+          }}>
+            {isImage ? <span style={{ fontSize: 16, lineHeight: 1 }}>👤</span> : col.label}
+            {i < visibleCols.length - 1 && !isImage && <ColResizer index={i} />}
+          </div>
+        );
+      })}
     </div>
   );
 }
