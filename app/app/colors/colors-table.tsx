@@ -81,7 +81,12 @@ const GROUPABLE_FIELDS = [
   { key: "palette", label: "Palette" },
 ];
 
-const paletteOptions = ["v1", "v2"];
+const paletteOptions = [
+  "v1", "v2",
+  "Category10", "Accent", "Dark2", "Paired",
+  "Pastel1", "Pastel2", "Set1", "Set2", "Set3",
+  "Tableau10", "Observable10",
+];
 
 // --- Column definitions ---
 const columns: ColumnDef<ColorRow>[] = [
