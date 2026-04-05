@@ -24,7 +24,7 @@ export function GridCellNav({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [tabIndex, focused, handleKeyDown, handleClick] = useRovingTabIndex(
-    ref,
+    ref as React.RefObject<Element>,
     disabled ?? false,
     rowIndex
   );
