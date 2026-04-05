@@ -83,9 +83,10 @@ const GROUPABLE_FIELDS = [
 
 const paletteOptions = [
   "v1", "v2",
-  "Category10", "Accent", "Dark2", "Paired",
-  "Pastel1", "Pastel2", "Set1", "Set2", "Set3",
-  "Tableau10", "Observable10",
+  "schemeAccent", "schemeCategory10", "schemeDark2",
+  "schemeObservable10", "schemePaired", "schemePastel1",
+  "schemePastel2", "schemeSet1", "schemeSet2", "schemeSet3",
+  "schemeTableau10",
 ];
 
 // --- Column definitions ---
