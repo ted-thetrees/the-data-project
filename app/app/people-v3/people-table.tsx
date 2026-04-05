@@ -162,7 +162,7 @@ export function PeopleTable({ data, picklistColors }: { data: PersonRow[]; pickl
   const sortableFields = COL_CONFIG.filter((c) => c.type !== "image").map((c) => ({ key: c.key, label: c.label }));
 
   return (
-    <div className={`claude-theme ${mode === "dark" ? "dark" : ""}`} style={{ minHeight: "100vh", background: "var(--background)", color: "var(--foreground)" }}>
+    <div className={`claude-theme ${mode === "dark" ? "dark" : ""}`} style={{ minHeight: "100vh", background: "#3d3929", color: "var(--foreground)" }}>
       <div style={{ maxWidth: "100%", padding: "32px 48px" }}>
         <DataTableRoot
           data={data}
@@ -176,7 +176,7 @@ export function PeopleTable({ data, picklistColors }: { data: PersonRow[]; pickl
         >
           <DataTableToolbarSection>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-              <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>People</h1>
+              <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0, letterSpacing: "-0.02em", color: "#F3F0E9" }}>People</h1>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <DataTableSearchFilter placeholder="Search people..." />
                 <DataTableViewMenu />
