@@ -33,7 +33,7 @@ export async function updatePersonField(
     },
     body: JSON.stringify({
       fieldKeyType: "id",
-      records: [{ id: recordId, fields: { [fieldId]: value } }],
+      records: [{ id: recordId, fields: { [fieldId]: value || null } }],
     }),
   });
 
