@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 export const metadata = { title: "People v003" };
 
-import { getPeople, getPicklistColors, getTeableFieldOptions } from "@/lib/db";
+import { getPeople, getPicklistColors, getTeableFieldOptions, syncPicklistColors } from "@/lib/db";
 import { PeopleTable } from "./people-table";
 import "../projects-v5/theme.css";
 
@@ -23,11 +23,25 @@ export interface PicklistColorMap {
   [fieldKey: string]: { [optionValue: string]: string };
 }
 
+// Maps Teable field names to display labels used in Picklist_Colors
+const FIELD_LABEL_MAP: Record<string, string> = {
+  "Familiarity": "Familiarity",
+  "Gender": "Gender",
+  "Has Org Filled": "Org Filled",
+  "Target Desirability": "Desirability",
+  "Teller Status": "Teller Status",
+};
+
+const PEOPLE_TABLE_ID = "tblyvrNXdqftQGNIniT";
+
 export default async function PeopleV3Page() {
+  // Sync missing picklist colors first (creates mappings for new options)
+  await syncPicklistColors("People", PEOPLE_TABLE_ID, FIELD_LABEL_MAP);
+
   const [people, colorRows, fieldOptions] = await Promise.all([
     getPeople(),
     getPicklistColors("People"),
-    getTeableFieldOptions("tblyvrNXdqftQGNIniT"),
+    getTeableFieldOptions(PEOPLE_TABLE_ID),
   ]);
 
   // Build a nested map: field → option → hex color

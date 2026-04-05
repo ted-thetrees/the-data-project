@@ -115,6 +115,67 @@ export async function getTeableFieldOptions(tableId: string): Promise<Record<str
   return result;
 }
 
+const PAIRED_COLORS = [
+  "#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c",
+  "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a", "#ffff99", "#b15928",
+];
+
+/**
+ * Compare Teable field options against Picklist_Colors table.
+ * Auto-create missing mappings with schemePaired colors (cycling).
+ */
+export async function syncPicklistColors(
+  tableName: string,
+  tableId: string,
+  fieldLabelMap: Record<string, string> // { "Familiarity": "Familiarity", "Has Org Filled": "Org Filled", ... }
+) {
+  const teableUrl = process.env.TEABLE_URL || "https://teable.ifnotfor.com";
+  const teableKey = process.env.TEABLE_API_KEY!;
+
+  // Get current field options from Teable
+  const fieldOptions = await getTeableFieldOptions(tableId);
+
+  // Get current picklist color mappings
+  const existingColors = await getPicklistColors(tableName);
+  const existingSet = new Set(
+    existingColors.map((r: { field: string; option: string }) => `${r.field}::${r.option}`)
+  );
+
+  // Find missing mappings
+  const toCreate: { field: string; option: string; color: string }[] = [];
+
+  for (const [teableFieldName, displayLabel] of Object.entries(fieldLabelMap)) {
+    const options = fieldOptions[teableFieldName] || [];
+    // Count existing colors for this field to continue the cycling pattern
+    const existingCount = existingColors.filter(
+      (r: { field: string }) => r.field === displayLabel
+    ).length;
+
+    options.forEach((option: string, i: number) => {
+      if (!existingSet.has(`${displayLabel}::${option}`)) {
+        const colorIndex = (existingCount + toCreate.filter((t) => t.field === displayLabel).length) % PAIRED_COLORS.length;
+        toCreate.push({ field: displayLabel, option, color: PAIRED_COLORS[colorIndex] });
+      }
+    });
+  }
+
+  if (toCreate.length === 0) return;
+
+  // Create missing records via Teable API
+  const records = toCreate.map((t) => ({
+    fields: { Table: tableName, Field: t.field, Option: t.option, Color: t.color },
+  }));
+
+  await fetch(`${teableUrl}/api/table/tbl0oH7BL6QQmUd5vak/record`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${teableKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ fieldKeyType: "name", records }),
+  });
+}
+
 export async function getInboxCount() {
   const result = await pool.query(
     `SELECT COUNT(*) as count FROM "bsePwEnYg0x7fdbsdZR"."Inbox"`
