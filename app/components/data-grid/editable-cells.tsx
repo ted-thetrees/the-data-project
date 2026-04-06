@@ -3,6 +3,12 @@
 import { useState, useTransition, useEffect, useRef } from "react";
 import { contrastText } from "./styles";
 
+/** After unmounting an input, refocus the closest gridcell ancestor. */
+function refocusCell(el: HTMLElement | null) {
+  const cell = el?.closest<HTMLElement>('[role="gridcell"]');
+  if (cell) requestAnimationFrame(() => cell.focus());
+}
+
 export function EditableText({
   value, onSave, className, style,
 }: {
@@ -13,19 +19,27 @@ export function EditableText({
 }) {
   const [editing, setEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   if (editing) {
     return (
       <input
+        ref={inputRef}
         type="text" defaultValue={value} autoFocus className="gt-input"
         style={{ width: "100%" }}
         onBlur={(e) => {
+          const el = e.target as HTMLElement;
           setEditing(false);
           if (e.target.value !== value) startTransition(() => onSave(e.target.value));
+          refocusCell(el);
         }}
         onKeyDown={(e) => {
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-          if (e.key === "Escape") setEditing(false);
+          if (e.key === "Escape") {
+            const el = e.target as HTMLElement;
+            setEditing(false);
+            refocusCell(el);
+          }
         }}
         onClick={(e) => e.stopPropagation()}
       />
@@ -55,10 +69,12 @@ export function EditableSelect({
   const [isPending, startTransition] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
 
+  const close = () => { setOpen(false); refocusCell(ref.current); };
+
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) close();
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -80,7 +96,7 @@ export function EditableSelect({
           <div
             className={`gt-picklist-option ${!value ? "gt-picklist-active" : ""}`}
             style={{ color: "var(--muted-foreground)" }}
-            onClick={() => { startTransition(() => onSave("")); setOpen(false); }}
+            onClick={() => { startTransition(() => onSave("")); close(); }}
           >—</div>
           {options.map((o) => {
             const bg = optionColors?.[o];
@@ -95,7 +111,7 @@ export function EditableSelect({
                   margin: "2px 4px",
                   padding: "5px 10px",
                 } : undefined}
-                onClick={() => { startTransition(() => onSave(o)); setOpen(false); }}
+                onClick={() => { startTransition(() => onSave(o)); close(); }}
               >{o}</div>
             );
           })}
