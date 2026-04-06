@@ -43,24 +43,62 @@ export async function getProjectMatrix() {
 }
 
 export async function getPeople() {
-  const result = await pool.query(
-    `SELECT
-      __id as id,
-      "Name" as name,
-      "Image" as image,
-      "Familiarity" as familiarity,
-      "Gender" as gender,
-      "Known_As" as known_as,
-      "Metro_Area" as metro_area,
-      "Created_Date" as created_date,
-      "Has_Org_Filled" as has_org_filled,
-      "Teller_Status" as teller_status
-    FROM "bsePwEnYg0x7fdbsdZR"."People"
-    ORDER BY "Name"`
-  );
-  return result.rows;
+  return getTableData("tblyvrNXdqftQGNIniT", "People");
 }
 
+// --- Dynamic table data fetcher ---
+
+export interface TeableFieldSchema {
+  id: string;
+  dbFieldName: string;
+  name: string;
+  type: string;
+  options?: string[];
+  isPrimary?: boolean;
+}
+
+const TEABLE_BASE_SCHEMA = "bsePwEnYg0x7fdbsdZR";
+
+export async function getTeableSchema(tableId: string): Promise<TeableFieldSchema[]> {
+  const teableUrl = process.env.TEABLE_URL || "https://teable.ifnotfor.com";
+  const teableKey = process.env.TEABLE_API_KEY!;
+
+  const res = await fetch(`${teableUrl}/api/table/${tableId}/field`, {
+    headers: { Authorization: `Bearer ${teableKey}` },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) return [];
+
+  const fields = await res.json();
+  return fields.map((f: Record<string, unknown>) => ({
+    id: f.id,
+    dbFieldName: f.dbFieldName,
+    name: f.name,
+    type: f.type,
+    isPrimary: f.isPrimary || false,
+    options: f.type === "singleSelect" && (f.options as Record<string, unknown>)?.choices
+      ? ((f.options as Record<string, unknown>).choices as { name: string }[]).map((c) => c.name)
+      : undefined,
+  }));
+}
+
+export async function getTableData(tableId: string, tableName: string) {
+  const schema = await getTeableSchema(tableId);
+  if (schema.length === 0) return { rows: [], schema };
+
+  const columns = schema.map((f) => `"${f.dbFieldName}" as "${f.dbFieldName.toLowerCase()}"`);
+  const primaryField = schema.find((f) => f.isPrimary);
+  const orderBy = primaryField ? `ORDER BY "${primaryField.dbFieldName}"` : "";
+
+  const result = await pool.query(
+    `SELECT __id as id, ${columns.join(", ")}
+     FROM "${TEABLE_BASE_SCHEMA}"."${tableName}"
+     ${orderBy}`
+  );
+
+  return { rows: result.rows, schema };
+}
 
 export async function getPicklistColors(tableName?: string) {
   const result = await pool.query(

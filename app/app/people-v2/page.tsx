@@ -19,6 +19,6 @@ export interface PersonRow {
 }
 
 export default async function PeopleV2Page() {
-  const people = (await getPeople()) as PersonRow[];
-  return <PeopleTable data={people} />;
+  const { rows } = await getPeople();
+  return <PeopleTable data={rows as PersonRow[]} />;
 }

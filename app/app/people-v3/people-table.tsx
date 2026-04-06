@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type { ColumnDef, SortingState, VisibilityState } from "@tanstack/react-table";
 import { DataTableRoot } from "@/components/niko-table/core/data-table-root";
 import { DataTableSearchFilter } from "@/components/niko-table/components/data-table-search-filter";
@@ -15,64 +15,69 @@ import {
   type ColConfig, type GroupableField, type SavedView, type PicklistColorMap, type ColumnFilter,
 } from "@/components/data-grid";
 import { updatePersonField, createPerson } from "./actions";
-import type { PersonRow, PicklistColorMap as PagePicklistColorMap } from "./page";
+import type { TeableFieldSchema } from "@/lib/db";
+import type { PicklistColorMap as PagePicklistColorMap } from "./page";
 
-// --- Column config (built dynamically from Teable field options) ---
+type Row = Record<string, unknown> & { id: string };
 
-const FIELD_NAME_TO_KEY: Record<string, string> = {
-  Familiarity: "familiarity",
-  Gender: "gender",
-  Has_Org_Filled: "has_org_filled",
-  Teller_Status: "teller_status",
+// --- Build ColConfig from Teable schema ---
+
+const DEFAULT_WIDTHS: Record<string, number> = {
+  singleLineText: 180,
+  singleSelect: 160,
+  attachment: ROW_HEIGHT,
+  date: 170,
 };
 
-function buildColConfig(fieldOptions: Record<string, string[]>): ColConfig[] {
-  const opts = (teableName: string) => fieldOptions[teableName] || [];
-  return [
-    { key: "name", label: "Name", type: "text", width: 200, fontWeight: 500 },
-    { key: "image", label: "Photo", type: "image", width: ROW_HEIGHT },
-    { key: "familiarity", label: "Familiarity", type: "select", width: 160, options: opts("Familiarity") },
-    { key: "gender", label: "Gender", type: "select", width: 80, options: opts("Gender") },
-    { key: "known_as", label: "Known As", type: "text", width: 140 },
-    { key: "metro_area", label: "Metro Area", type: "text", width: 180 },
-    { key: "has_org_filled", label: "Org Filled", type: "select", width: 120, options: opts("Has Org Filled") },
-    { key: "teller_status", label: "Teller Status", type: "select", width: 180, options: opts("Teller Status") },
-    { key: "created_date", label: "Created", type: "date", width: 170 },
-  ];
+function schemaToColConfig(schema: TeableFieldSchema[]): ColConfig[] {
+  return schema.map((field) => {
+    const key = field.dbFieldName.toLowerCase();
+    const type: ColConfig["type"] =
+      field.type === "singleSelect" ? "select" :
+      field.type === "attachment" ? "image" :
+      field.type === "date" ? "date" : "text";
+    return {
+      key,
+      label: field.name,
+      type,
+      width: DEFAULT_WIDTHS[field.type] || 160,
+      options: field.options,
+      ...(field.isPrimary ? { fontWeight: 500 } : {}),
+    };
+  });
 }
 
-const GROUPABLE_FIELDS: GroupableField[] = [
-  { key: "familiarity", label: "Familiarity" },
-  { key: "gender", label: "Gender" },
-  { key: "metro_area", label: "Metro Area" },
-  { key: "has_org_filled", label: "Org Filled" },
-  { key: "teller_status", label: "Teller Status" },
-];
+function schemaToGroupableFields(schema: TeableFieldSchema[]): GroupableField[] {
+  return schema
+    .filter((f) => f.type === "singleSelect" || f.type === "singleLineText")
+    .filter((f) => f.type !== "singleLineText" || !f.isPrimary) // skip primary text field
+    .map((f) => ({ key: f.dbFieldName.toLowerCase(), label: f.name }));
+}
 
 const STATE_KEY = "People-v3";
 const VIEWS_KEY = "People-v3:views";
 
-function buildColumns(colConfig: ColConfig[]): ColumnDef<PersonRow>[] {
-  return colConfig.map((col) => ({
-    accessorKey: col.key,
-    header: col.label,
-    enableSorting: col.type !== "image",
-  }));
-}
-
 function RecordCount({ total }: { total: number }) {
-  const { table } = useDataTable<PersonRow>();
+  const { table } = useDataTable<Row>();
   const filtered = table.getRowModel().rows.length;
   return <span style={{ fontSize: "var(--record-count-font-size)", color: "var(--record-count-color)" }}>{filtered === total ? `${total} records` : `${filtered} of ${total}`}</span>;
 }
 
 // --- Main component ---
 
-export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data: PersonRow[]; picklistColors?: PagePicklistColorMap; fieldOptions?: Record<string, string[]> }) {
-  const COL_CONFIG = buildColConfig(fieldOptions);
-  const columns = buildColumns(COL_CONFIG);
+export function PeopleTable({ data, schema, picklistColors }: { data: Row[]; schema: TeableFieldSchema[]; picklistColors?: PagePicklistColorMap }) {
+  const COL_CONFIG = useMemo(() => schemaToColConfig(schema), [schema]);
+  const GROUPABLE_FIELDS = useMemo(() => schemaToGroupableFields(schema), [schema]);
+  const columns = useMemo<ColumnDef<Row>[]>(() =>
+    COL_CONFIG.map((col) => ({
+      accessorKey: col.key,
+      header: col.label,
+      enableSorting: col.type !== "image",
+    })),
+  [COL_CONFIG]);
+
   const [widths, setWidths] = useState(COL_CONFIG.map((c) => c.width));
-  const [sorting, setSorting] = useState<SortingState>([{ id: "name", desc: false }]);
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [globalFilter, setGlobalFilter] = useState("");
   const [columnOrder, setColumnOrder] = useState<string[]>([]);
@@ -100,14 +105,13 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
     const origIdx = COL_CONFIG.findIndex((c) => c.key === col.key);
     if (origIdx === -1) return;
     setWidths((prev) => { const next = [...prev]; next[origIdx] = Math.max(60, next[origIdx] + delta); return next; });
-  }, [allVisibleCols]);
+  }, [allVisibleCols, COL_CONFIG]);
 
   const visibleWidths = allVisibleCols.map((col) => {
     const origIdx = COL_CONFIG.findIndex((c) => c.key === col.key);
     return widths[origIdx];
   });
 
-  // Load state + views
   useEffect(() => {
     Promise.all([loadViewState(STATE_KEY), loadSavedViews(VIEWS_KEY)]).then(([state, views]) => {
       if (state) {
@@ -127,7 +131,6 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
     });
   }, []);
 
-  // Debounced auto-save
   useEffect(() => {
     if (!loaded) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -144,7 +147,6 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
     setGlobalFilter(typeof value === "string" ? value : String(value.query ?? ""));
   }, []);
 
-  // Grouping handlers
   const addGroup = (f: string) => { if (f && !groupFields.includes(f)) { setGroupFields([...groupFields, f]); setGroupSortDirs([...groupSortDirs, "asc"]); setOpenGroups(new Set()); } };
   const removeGroup = (i: number) => { setGroupFields(groupFields.filter((_, j) => j !== i)); setGroupSortDirs(groupSortDirs.filter((_, j) => j !== i)); setOpenGroups(new Set()); };
   const updateGroup = (i: number, f: string) => { const next = [...groupFields]; next[i] = f; setGroupFields(next); setOpenGroups(new Set()); };
@@ -153,18 +155,17 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
 
   const expandAll = () => {
     const keys = new Set<string>();
-    function collect(rows: PersonRow[], fields: string[], depth: number) {
+    function collect(rows: Row[], fields: string[], depth: number) {
       if (fields.length === 0) return;
       const [field, ...rest] = fields;
-      const map = new Map<string, PersonRow[]>();
-      for (const r of rows) { const k = (r[field as keyof PersonRow] as string) || ""; if (!map.has(k)) map.set(k, []); map.get(k)!.push(r); }
+      const map = new Map<string, Row[]>();
+      for (const r of rows) { const k = (r[field] as string) || ""; if (!map.has(k)) map.set(k, []); map.get(k)!.push(r); }
       for (const [label, members] of map) { keys.add(`${depth}-${field}-${label}`); collect(members, rest, depth + 1); }
     }
     collect(data, groupFields, 0);
     setOpenGroups(keys);
   };
 
-  // Saved views
   const handleSaveView = () => {
     if (!viewName.trim()) return;
     const view: SavedView = { name: viewName.trim(), sorting, grouping: groupFields, groupSortDirs, columnVisibility, columnOrder, globalFilter };
@@ -180,6 +181,7 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
   };
 
   const sortableFields = COL_CONFIG.filter((c) => c.type !== "image").map((c) => ({ key: c.key, label: c.label }));
+  const primaryKey = COL_CONFIG.find((c) => c.fontWeight)?.key || COL_CONFIG[0]?.key || "name";
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--page-bg)", color: "var(--foreground)" }}>
@@ -213,7 +215,7 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
           }}>
             <SortToolbar sorting={sorting} sortableFields={sortableFields}
               onSortChange={(f) => f ? setSorting([{ id: f, desc: sorting[0]?.desc || false }]) : setSorting([])}
-              onDirToggle={() => setSorting([{ id: sorting[0]?.id || "name", desc: !sorting[0]?.desc }])}
+              onDirToggle={() => setSorting([{ id: sorting[0]?.id || primaryKey, desc: !sorting[0]?.desc }])}
               onClearSort={() => setSorting([])} />
             <div style={{ width: "var(--divider-width)", height: "var(--divider-height)", background: "var(--divider-color)" }} />
             <GroupingToolbar groupFields={groupFields} groupSortDirs={groupSortDirs} groupableFields={GROUPABLE_FIELDS}
@@ -237,7 +239,7 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
           </div>
 
           <ColContext.Provider value={{ widths: visibleWidths, onResize }}>
-            <FlexBody<PersonRow>
+            <FlexBody<Row>
               visibleCols={allVisibleCols} groupFields={groupFields} groupSortDirs={groupSortDirs}
               openGroups={openGroups} toggleGroup={toggleGroup}
               onUpdate={(id, field, value) => updatePersonField(id, field, value)}

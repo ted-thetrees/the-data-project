@@ -6,6 +6,6 @@ import { PeopleTable } from "./people-table";
 
 
 export default async function PeoplePage() {
-  const people = await getPeople();
-  return <PeopleTable people={people} />;
+  const { rows } = await getPeople();
+  return <PeopleTable people={rows} />;
 }
