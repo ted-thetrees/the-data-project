@@ -5,22 +5,30 @@ import type { SortingState } from "@tanstack/react-table";
 import type { ColConfig, GroupableField, SavedView } from "./types";
 
 export function SortToolbar({
-  sorting, sortableFields, onSortChange, onDirToggle,
+  sorting, sortableFields, onSortChange, onDirToggle, onClearSort,
 }: {
   sorting: SortingState;
   sortableFields: { key: string; label: string }[];
   onSortChange: (field: string) => void;
   onDirToggle: () => void;
+  onClearSort?: () => void;
 }) {
-  const sortField = sorting[0]?.id || sortableFields[0]?.key || "";
+  const sortField = sorting[0]?.id || "";
   const sortDir = sorting[0]?.desc ? "desc" : "asc";
+  const hasSort = sorting.length > 0;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
       <span style={{ fontWeight: "var(--toolbar-label-weight)" as unknown as number, color: "var(--toolbar-label-color)", fontSize: "var(--toolbar-font-size)" }}>Sort</span>
       <select className="gt-toolbar-select" value={sortField} onChange={(e) => onSortChange(e.target.value)}>
+        <option value="">None</option>
         {sortableFields.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
       </select>
-      <button className="gt-toolbar-btn" onClick={onDirToggle}>{sortDir === "asc" ? "↑ Asc" : "↓ Desc"}</button>
+      {hasSort && (
+        <>
+          <button className="gt-toolbar-btn" onClick={onDirToggle}>{sortDir === "asc" ? "↑ Asc" : "↓ Desc"}</button>
+          {onClearSort && <button className="gt-toolbar-btn" onClick={onClearSort} style={{ padding: "2px 6px", fontSize: "var(--font-size-xs)" }}>✕</button>}
+        </>
+      )}
     </div>
   );
 }

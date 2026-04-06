@@ -284,8 +284,9 @@ export function PicklistColorsTable({ data }: { data: PicklistColorRow[] }) {
             borderRadius: "var(--radius)", fontSize: "var(--toolbar-font-size)",
           }}>
             <SortToolbar sorting={sorting} sortableFields={sortableFields}
-              onSortChange={(f) => setSorting([{ id: f, desc: sorting[0]?.desc || false }])}
-              onDirToggle={() => setSorting([{ id: sorting[0]?.id || "field", desc: !sorting[0]?.desc }])} />
+              onSortChange={(f) => f ? setSorting([{ id: f, desc: sorting[0]?.desc || false }]) : setSorting([])}
+              onDirToggle={() => setSorting([{ id: sorting[0]?.id || "field", desc: !sorting[0]?.desc }])}
+              onClearSort={() => setSorting([])} />
             <div style={{ width: "var(--divider-width)", height: "var(--divider-height)", background: "var(--divider-color)" }} />
             <GroupingToolbar groupFields={groupFields} groupSortDirs={groupSortDirs} groupableFields={GROUPABLE_FIELDS}
               onAddGroup={addGroup} onRemoveGroup={removeGroup} onUpdateGroup={updateGroup}
