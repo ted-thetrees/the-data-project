@@ -23,4 +23,10 @@ export interface SavedView {
   columnVisibility: Record<string, boolean>;
   columnOrder?: string[];
   globalFilter: string;
+  columnFilters?: Record<string, ColumnFilter>;
 }
+
+export type ColumnFilter =
+  | { type: "select"; values: string[] }
+  | { type: "text"; operator: "contains" | "equals" | "startsWith"; value: string }
+  | { type: "date"; from?: string; to?: string };

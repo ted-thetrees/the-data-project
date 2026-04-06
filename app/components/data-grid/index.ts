@@ -5,6 +5,7 @@ export { RovingTabIndexProvider, GridCellNav } from "./grid-cell-nav";
 export { NewRow } from "./new-row";
 export type { PicklistColorMap } from "./flex-body";
 export { SortToolbar, GroupingToolbar, SavedViewsToolbar, ColumnOrderToolbar } from "./toolbar";
+export { FilterToolbar, applyColumnFilters } from "./column-filters";
 export { loadViewState, saveViewState, loadSavedViews, saveNamedView, deleteNamedView } from "./view-actions";
 export { INDENT_PX, GAP_PX, ROW_HEIGHT, dataGridStyles, contrastText, depthColor } from "./styles";
-export type { ColConfig, GroupableField, SavedView } from "./types";
+export type { ColConfig, GroupableField, SavedView, ColumnFilter } from "./types";

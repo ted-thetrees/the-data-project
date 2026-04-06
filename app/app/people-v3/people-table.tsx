@@ -9,10 +9,10 @@ import { DataTableToolbarSection } from "@/components/niko-table/components/data
 import { useDataTable } from "@/components/niko-table/core/data-table-context";
 import {
   ColContext, FlexBody,
-  SortToolbar, GroupingToolbar, SavedViewsToolbar, ColumnOrderToolbar,
+  SortToolbar, GroupingToolbar, SavedViewsToolbar, ColumnOrderToolbar, FilterToolbar,
   loadViewState, saveViewState, loadSavedViews, saveNamedView, deleteNamedView,
   dataGridStyles, ROW_HEIGHT,
-  type ColConfig, type GroupableField, type SavedView, type PicklistColorMap,
+  type ColConfig, type GroupableField, type SavedView, type PicklistColorMap, type ColumnFilter,
 } from "@/components/data-grid";
 import { updatePersonField, createPerson } from "./actions";
 import type { PersonRow, PicklistColorMap as PagePicklistColorMap } from "./page";
@@ -83,6 +83,7 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
   const [groupSortDirs, setGroupSortDirs] = useState<("asc" | "desc")[]>([]);
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
   const [rowOrder, setRowOrder] = useState<string[]>([]);
+  const [columnFilters, setColumnFilters] = useState<Record<string, ColumnFilter>>({});
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
   const [viewName, setViewName] = useState("");
   const [loaded, setLoaded] = useState(false);
@@ -118,6 +119,7 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
         if (state.groupSortDirs) setGroupSortDirs(state.groupSortDirs as ("asc" | "desc")[]);
         if (state.openGroups) setOpenGroups(new Set(state.openGroups as string[]));
         if (state.rowOrder) setRowOrder(state.rowOrder as string[]);
+        if (state.columnFilters) setColumnFilters(state.columnFilters as Record<string, ColumnFilter>);
       }
       setSavedViews(views);
       setLoaded(true);
@@ -131,11 +133,11 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
     saveTimer.current = setTimeout(() => {
       saveViewState(STATE_KEY, {
         widths, sorting, columnVisibility, columnOrder, globalFilter,
-        groupFields, groupSortDirs, openGroups: [...openGroups], rowOrder,
+        groupFields, groupSortDirs, openGroups: [...openGroups], rowOrder, columnFilters,
       });
     }, 500);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [loaded, widths, sorting, columnVisibility, columnOrder, globalFilter, groupFields, groupSortDirs, openGroups, rowOrder]);
+  }, [loaded, widths, sorting, columnVisibility, columnOrder, globalFilter, groupFields, groupSortDirs, openGroups, rowOrder, columnFilters]);
 
   const handleGlobalFilterChange = useCallback((value: string | Record<string, unknown>) => {
     setGlobalFilter(typeof value === "string" ? value : String(value.query ?? ""));
@@ -223,6 +225,16 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
               onDelete={handleDeleteView} currentViewName={viewName} onSetName={setViewName} />
           </div>
 
+          <div style={{
+            display: "flex", alignItems: "center", gap: "var(--toolbar-gap)", flexWrap: "wrap",
+            padding: "var(--toolbar-padding-y) var(--toolbar-padding-x)",
+            background: "var(--toolbar-bg)", border: `var(--border-width) solid var(--toolbar-border)`,
+            borderTop: "none", borderRadius: `0 0 var(--radius) var(--radius)`,
+            fontSize: "var(--toolbar-font-size)",
+          }}>
+            <FilterToolbar columns={COL_CONFIG} data={data as unknown as Record<string, unknown>[]} columnFilters={columnFilters} onColumnFiltersChange={setColumnFilters} />
+          </div>
+
           <ColContext.Provider value={{ widths: visibleWidths, onResize }}>
             <FlexBody<PersonRow>
               visibleCols={allVisibleCols} groupFields={groupFields} groupSortDirs={groupSortDirs}
@@ -231,6 +243,7 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
               picklistColors={picklistColors}
               onCreate={(fields) => createPerson(fields)}
               sorting={sorting} rowOrder={rowOrder} onReorder={setRowOrder}
+              columnFilters={columnFilters}
             />
           </ColContext.Provider>
         </DataTableRoot>

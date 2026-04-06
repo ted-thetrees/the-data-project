@@ -9,7 +9,8 @@ import { EditableText, EditableSelect, ImageCell } from "./editable-cells";
 import { RovingTabIndexProvider, GridCellNav } from "./grid-cell-nav";
 import { NewRow } from "./new-row";
 import { depthColor, INDENT_PX, GAP_PX, ROW_HEIGHT, contrastText } from "./styles";
-import type { ColConfig } from "./types";
+import { applyColumnFilters } from "./column-filters";
+import type { ColConfig, ColumnFilter } from "./types";
 
 // --- Column headers ---
 
@@ -272,7 +273,7 @@ function DraggableRow<T extends { id: string }>({
 
 export function FlexBody<T extends { id: string }>({
   visibleCols, groupFields, groupSortDirs, openGroups, toggleGroup, onUpdate, picklistColors, onCreate,
-  sorting, rowOrder, onReorder,
+  sorting, rowOrder, onReorder, columnFilters,
 }: {
   visibleCols: ColConfig[];
   groupFields: string[];
@@ -285,9 +286,20 @@ export function FlexBody<T extends { id: string }>({
   sorting?: SortingState;
   rowOrder?: string[];
   onReorder?: (order: string[]) => void;
+  columnFilters?: Record<string, ColumnFilter>;
 }) {
   const { table } = useDataTable<T>();
-  const allRows = table.getRowModel().rows;
+  let allRows = table.getRowModel().rows;
+
+  // Apply column filters
+  if (columnFilters && Object.keys(columnFilters).length > 0) {
+    const filtered = applyColumnFilters(
+      allRows.map((r) => r.original as Record<string, unknown>),
+      columnFilters,
+    );
+    const filteredIds = new Set(filtered.map((r) => (r as { id: string }).id));
+    allRows = allRows.filter((r) => filteredIds.has(r.original.id));
+  }
 
   // Drag state
   const [draggedId, setDraggedId] = useState<string | null>(null);
