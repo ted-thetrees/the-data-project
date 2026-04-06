@@ -9,6 +9,25 @@ function refocusCell(el: HTMLElement | null) {
   if (cell) requestAnimationFrame(() => cell.focus());
 }
 
+/** Commit edit, move to adjacent cell, and start editing it. */
+function moveAndEdit(el: HTMLElement, direction: "ArrowUp" | "ArrowDown", currentValue: string, originalValue: string, onSave: (v: string) => void, setEditing: (v: boolean) => void, startTransition: (fn: () => void) => void) {
+  setEditing(false);
+  if (currentValue !== originalValue) startTransition(() => onSave(currentValue));
+  const cell = el.closest<HTMLElement>('[role="gridcell"]');
+  if (!cell) return;
+  requestAnimationFrame(() => {
+    cell.focus();
+    // Dispatch arrow key to roving tabindex to move focus
+    cell.dispatchEvent(new KeyboardEvent("keydown", { key: direction, bubbles: true }));
+    // After focus moves, click the editable in the new cell to start editing
+    requestAnimationFrame(() => {
+      const focused = document.activeElement?.closest<HTMLElement>('[role="gridcell"]') || document.activeElement;
+      const editable = focused?.querySelector<HTMLElement>(".gt-editable");
+      if (editable) editable.click();
+    });
+  });
+}
+
 export function EditableText({
   value, onSave, className, style,
 }: {
@@ -39,6 +58,10 @@ export function EditableText({
             const el = e.target as HTMLElement;
             setEditing(false);
             refocusCell(el);
+          }
+          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+            e.preventDefault();
+            moveAndEdit(e.target as HTMLElement, e.key, (e.target as HTMLInputElement).value, value, onSave, setEditing, startTransition);
           }
         }}
         onClick={(e) => e.stopPropagation()}
