@@ -150,8 +150,31 @@ export function GroupHeader({ label, count, open, onToggle, depth }: {
 
 // --- Nested groups ---
 
+/** Count total visible rows in a group tree (for computing startIndex offsets). */
+function countVisibleRows<T extends { id: string }>(
+  rows: Row<T>[], groupFields: string[], groupSortDirs: ("asc" | "desc")[], openGroups: Set<string>, depth: number,
+): number {
+  if (groupFields.length === 0) return rows.length;
+  const [currentField, ...remainingFields] = groupFields;
+  const [currentSortDir, ...remainingSortDirs] = groupSortDirs;
+  const map = new Map<string, Row<T>[]>();
+  for (const row of rows) {
+    const key = ((row.original as Record<string, unknown>)[currentField] as string) || "";
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(row);
+  }
+  let total = 0;
+  for (const [label, members] of map) {
+    const groupKey = `${depth}-${currentField}-${label}`;
+    if (openGroups.has(groupKey)) {
+      total += countVisibleRows(members, remainingFields, remainingSortDirs, openGroups, depth + 1);
+    }
+  }
+  return total;
+}
+
 export function NestedGroups<T extends { id: string }>({
-  rows, visibleCols, groupFields, groupSortDirs, depth, openGroups, toggleGroup, onUpdate, showHeaders, picklistColors, onCreate,
+  rows, visibleCols, groupFields, groupSortDirs, depth, openGroups, toggleGroup, onUpdate, showHeaders, picklistColors, onCreate, startIndex = 0,
 }: {
   rows: Row<T>[];
   visibleCols: ColConfig[];
@@ -164,13 +187,14 @@ export function NestedGroups<T extends { id: string }>({
   showHeaders?: boolean;
   picklistColors?: PicklistColorMap;
   onCreate?: (fields: Record<string, string>) => Promise<void>;
+  startIndex?: number;
 }) {
   if (groupFields.length === 0) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: GAP_PX, marginTop: GAP_PX }}>
         {showHeaders && <FlexColumnHeaders indent={depth * INDENT_PX} visibleCols={visibleCols} />}
         {rows.map((row, i) => (
-          <FlexDataRow key={row.id} row={row} visibleCols={visibleCols} depth={depth} onUpdate={onUpdate} picklistColors={picklistColors} rowIndex={i} />
+          <FlexDataRow key={row.id} row={row} visibleCols={visibleCols} depth={depth} onUpdate={onUpdate} picklistColors={picklistColors} rowIndex={startIndex + i} />
         ))}
         {onCreate && <NewRow visibleCols={visibleCols} depth={depth} onCreate={onCreate} />}
       </div>
@@ -191,12 +215,17 @@ export function NestedGroups<T extends { id: string }>({
     return currentSortDir === "asc" ? cmp : -cmp;
   });
 
+  let runningIndex = startIndex;
   return (
     <>
       {sortedEntries.map(([label, members]) => {
         const groupKey = `${depth}-${currentField}-${label}`;
         const isOpen = openGroups.has(groupKey);
         const isLeafGroup = remainingFields.length === 0;
+        const myStartIndex = runningIndex;
+        if (isOpen) {
+          runningIndex += countVisibleRows(members, remainingFields, remainingSortDirs, openGroups, depth + 1);
+        }
         return (
           <div key={groupKey}>
             <GroupHeader label={label} count={members.length} open={isOpen}
@@ -204,7 +233,8 @@ export function NestedGroups<T extends { id: string }>({
             {isOpen && (
               <NestedGroups rows={members} visibleCols={visibleCols} groupFields={remainingFields}
                 groupSortDirs={remainingSortDirs} depth={depth + 1} openGroups={openGroups}
-                toggleGroup={toggleGroup} onUpdate={onUpdate} showHeaders={isLeafGroup} picklistColors={picklistColors} onCreate={onCreate} />
+                toggleGroup={toggleGroup} onUpdate={onUpdate} showHeaders={isLeafGroup} picklistColors={picklistColors} onCreate={onCreate}
+                startIndex={myStartIndex} />
             )}
           </div>
         );
