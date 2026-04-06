@@ -43,6 +43,26 @@ export function GridCellNav({
           );
           if (target) target.click();
         }
+        // Start editing on printable key press (text cells only)
+        if (
+          !e.defaultPrevented &&
+          e.key.length === 1 &&
+          !e.ctrlKey && !e.metaKey && !e.altKey
+        ) {
+          const editable = ref.current?.querySelector<HTMLElement>(".gt-editable");
+          if (editable) {
+            editable.click();
+            // After React re-renders, the input will exist — type the key into it
+            requestAnimationFrame(() => {
+              const input = ref.current?.querySelector<HTMLInputElement>("input.gt-input");
+              if (input) {
+                input.value = e.key;
+                // Move cursor to end
+                input.setSelectionRange(e.key.length, e.key.length);
+              }
+            });
+          }
+        }
       }}
       onClick={handleClick}
       className={className}
