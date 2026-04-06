@@ -3,8 +3,15 @@ import chroma from "chroma-js";
 /** Pick the best contrasting text color for a given background.
  *  Uses --contrast-light and --contrast-dark from theme. */
 export function contrastText(bg: string): string {
-  const lightText = getComputedStyle(document.documentElement).getPropertyValue("--contrast-light").trim() || "#faf9f6";
-  const darkText = getComputedStyle(document.documentElement).getPropertyValue("--contrast-dark").trim() || "#4a4639";
+  const LIGHT = "#faf9f6";
+  const DARK = "#4a4639";
+  let lightText = LIGHT;
+  let darkText = DARK;
+  if (typeof document !== "undefined") {
+    const style = getComputedStyle(document.documentElement);
+    lightText = style.getPropertyValue("--contrast-light").trim() || LIGHT;
+    darkText = style.getPropertyValue("--contrast-dark").trim() || DARK;
+  }
   try {
     const lightContrast = chroma.contrast(bg, lightText);
     const darkContrast = chroma.contrast(bg, darkText);
