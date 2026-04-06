@@ -384,10 +384,19 @@ export function FlexBody<T extends { id: string }>({
     dragSourceIndex.current = null;
   }, []);
 
+  const gridRef = useRef<HTMLDivElement>(null);
+  const focusFirstCell = useCallback(() => {
+    const cell = gridRef.current?.querySelector<HTMLElement>('[role="gridcell"]');
+    if (cell) cell.focus();
+  }, []);
+
   if (groupFields.length > 0) {
     return (
       <RovingTabIndexProvider>
-        <div role="grid" style={{ display: "flex", flexDirection: "column", gap: GAP_PX }}>
+        <div ref={gridRef} role="grid" tabIndex={0} style={{ display: "flex", flexDirection: "column", gap: GAP_PX, outline: "none" }}
+          onKeyDown={(e) => {
+            if (e.target === gridRef.current) { focusFirstCell(); e.preventDefault(); }
+          }}>
           <NestedGroups rows={rows} visibleCols={visibleCols} groupFields={groupFields}
             groupSortDirs={groupSortDirs} depth={0} openGroups={openGroups}
             toggleGroup={toggleGroup} onUpdate={onUpdate} showHeaders={false} picklistColors={picklistColors} onCreate={onCreate} />
@@ -398,7 +407,10 @@ export function FlexBody<T extends { id: string }>({
 
   return (
     <RovingTabIndexProvider>
-      <div role="grid" style={{ display: "flex", flexDirection: "column", gap: GAP_PX }}>
+      <div ref={gridRef} role="grid" tabIndex={0} style={{ display: "flex", flexDirection: "column", gap: GAP_PX, outline: "none" }}
+        onKeyDown={(e) => {
+          if (e.target === gridRef.current) { focusFirstCell(); e.preventDefault(); }
+        }}>
         <FlexColumnHeaders indent={0} visibleCols={visibleCols} />
         {rows.map((row, i) => {
           if (canDrag) {
