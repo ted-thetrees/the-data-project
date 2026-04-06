@@ -28,9 +28,9 @@ export const GAP_PX = 2;
 export const dataGridStyles = `
   .gt-input {
     width: 100%; padding: 4px 8px; font-size: var(--font-size-base); font-family: var(--font-family);
-    border: var(--border-width) solid var(--ring); border-radius: var(--radius-md);
-    background: var(--background); color: var(--foreground); outline: none;
-    box-shadow: var(--focus-shadow);
+    border: none; border-radius: 0;
+    background: transparent; color: inherit; outline: none;
+    box-shadow: none;
   }
   .gt-picklist {
     display: flex; align-items: center; cursor: pointer;
