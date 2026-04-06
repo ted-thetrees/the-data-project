@@ -161,6 +161,7 @@ export function PicklistColorsTable({ data }: { data: PicklistColorRow[] }) {
   const [groupFields, setGroupFields] = useState<string[]>(["table_name", "field"]);
   const [groupSortDirs, setGroupSortDirs] = useState<("asc" | "desc")[]>(["asc", "asc"]);
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+  const [rowOrder, setRowOrder] = useState<string[]>([]);
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
   const [viewName, setViewName] = useState("");
   const [loaded, setLoaded] = useState(false);
@@ -194,6 +195,7 @@ export function PicklistColorsTable({ data }: { data: PicklistColorRow[] }) {
         if (state.groupFields) setGroupFields(state.groupFields as string[]);
         if (state.groupSortDirs) setGroupSortDirs(state.groupSortDirs as ("asc" | "desc")[]);
         if (state.openGroups) setOpenGroups(new Set(state.openGroups as string[]));
+        if (state.rowOrder) setRowOrder(state.rowOrder as string[]);
       }
       setSavedViews(views);
       setLoaded(true);
@@ -206,11 +208,11 @@ export function PicklistColorsTable({ data }: { data: PicklistColorRow[] }) {
     saveTimer.current = setTimeout(() => {
       saveViewState(STATE_KEY, {
         widths, sorting, columnVisibility, columnOrder, globalFilter,
-        groupFields, groupSortDirs, openGroups: [...openGroups],
+        groupFields, groupSortDirs, openGroups: [...openGroups], rowOrder,
       });
     }, 500);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [loaded, widths, sorting, columnVisibility, columnOrder, globalFilter, groupFields, groupSortDirs, openGroups]);
+  }, [loaded, widths, sorting, columnVisibility, columnOrder, globalFilter, groupFields, groupSortDirs, openGroups, rowOrder]);
 
   const handleGlobalFilterChange = useCallback((value: string | Record<string, unknown>) => {
     setGlobalFilter(typeof value === "string" ? value : String(value.query ?? ""));
@@ -300,6 +302,7 @@ export function PicklistColorsTable({ data }: { data: PicklistColorRow[] }) {
               visibleCols={allVisibleCols} groupFields={groupFields} groupSortDirs={groupSortDirs}
               openGroups={openGroups} toggleGroup={toggleGroup}
               onUpdate={(id, field, value) => updatePicklistColor(id, field, value)}
+              sorting={sorting} rowOrder={rowOrder} onReorder={setRowOrder}
             />
           </ColContext.Provider>
         </DataTableRoot>

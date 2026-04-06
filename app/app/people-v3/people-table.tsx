@@ -82,6 +82,7 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
   const [groupFields, setGroupFields] = useState<string[]>([]);
   const [groupSortDirs, setGroupSortDirs] = useState<("asc" | "desc")[]>([]);
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+  const [rowOrder, setRowOrder] = useState<string[]>([]);
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
   const [viewName, setViewName] = useState("");
   const [loaded, setLoaded] = useState(false);
@@ -116,6 +117,7 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
         if (state.groupFields) setGroupFields(state.groupFields as string[]);
         if (state.groupSortDirs) setGroupSortDirs(state.groupSortDirs as ("asc" | "desc")[]);
         if (state.openGroups) setOpenGroups(new Set(state.openGroups as string[]));
+        if (state.rowOrder) setRowOrder(state.rowOrder as string[]);
       }
       setSavedViews(views);
       setLoaded(true);
@@ -129,11 +131,11 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
     saveTimer.current = setTimeout(() => {
       saveViewState(STATE_KEY, {
         widths, sorting, columnVisibility, columnOrder, globalFilter,
-        groupFields, groupSortDirs, openGroups: [...openGroups],
+        groupFields, groupSortDirs, openGroups: [...openGroups], rowOrder,
       });
     }, 500);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [loaded, widths, sorting, columnVisibility, columnOrder, globalFilter, groupFields, groupSortDirs, openGroups]);
+  }, [loaded, widths, sorting, columnVisibility, columnOrder, globalFilter, groupFields, groupSortDirs, openGroups, rowOrder]);
 
   const handleGlobalFilterChange = useCallback((value: string | Record<string, unknown>) => {
     setGlobalFilter(typeof value === "string" ? value : String(value.query ?? ""));
@@ -227,6 +229,7 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
               onUpdate={(id, field, value) => updatePersonField(id, field, value)}
               picklistColors={picklistColors}
               onCreate={(fields) => createPerson(fields)}
+              sorting={sorting} rowOrder={rowOrder} onReorder={setRowOrder}
             />
           </ColContext.Provider>
         </DataTableRoot>

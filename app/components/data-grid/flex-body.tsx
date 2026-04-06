@@ -1,7 +1,8 @@
 "use client";
 
-import { useContext } from "react";
+import { useContext, useState, useRef, useCallback } from "react";
 import type { Row } from "@tanstack/react-table";
+import type { SortingState } from "@tanstack/react-table";
 import { useDataTable } from "@/components/niko-table/core/data-table-context";
 import { ColContext, ColResizer } from "./col-context";
 import { EditableText, EditableSelect, ImageCell } from "./editable-cells";
@@ -211,10 +212,67 @@ export function NestedGroups<T extends { id: string }>({
   );
 }
 
+// --- Draggable row wrapper ---
+
+function DraggableRow<T extends { id: string }>({
+  row, visibleCols, onUpdate, picklistColors, rowIndex,
+  draggedId, dropIndex, onDragStart, onDragOver, onDrop, onDragEnd,
+}: {
+  row: Row<T>;
+  visibleCols: ColConfig[];
+  onUpdate: (recordId: string, field: string, value: string) => void;
+  picklistColors?: PicklistColorMap;
+  rowIndex: number;
+  draggedId: string | null;
+  dropIndex: number | null;
+  onDragStart: (id: string, index: number) => void;
+  onDragOver: (e: React.DragEvent, index: number) => void;
+  onDrop: () => void;
+  onDragEnd: () => void;
+}) {
+  const isDragged = draggedId === row.original.id;
+  const showDropBefore = dropIndex === rowIndex && draggedId !== null && !isDragged;
+
+  return (
+    <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", row.original.id);
+        onDragStart(row.original.id, rowIndex);
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        onDragOver(e, rowIndex);
+      }}
+      onDrop={(e) => { e.preventDefault(); onDrop(); }}
+      onDragEnd={onDragEnd}
+      style={{
+        cursor: "grab",
+        opacity: isDragged ? 0.4 : 1,
+        position: "relative",
+      }}
+    >
+      {showDropBefore && (
+        <div style={{
+          position: "absolute", top: -1, left: 0, right: 0, height: 2,
+          background: "var(--primary)", zIndex: 20,
+        }} />
+      )}
+      <FlexDataRow
+        row={row} visibleCols={visibleCols} depth={0}
+        onUpdate={onUpdate} picklistColors={picklistColors} rowIndex={rowIndex}
+      />
+    </div>
+  );
+}
+
 // --- Main flex body (reads from Niko Table context) ---
 
 export function FlexBody<T extends { id: string }>({
   visibleCols, groupFields, groupSortDirs, openGroups, toggleGroup, onUpdate, picklistColors, onCreate,
+  sorting, rowOrder, onReorder,
 }: {
   visibleCols: ColConfig[];
   groupFields: string[];
@@ -224,9 +282,65 @@ export function FlexBody<T extends { id: string }>({
   onUpdate: (recordId: string, field: string, value: string) => void;
   picklistColors?: PicklistColorMap;
   onCreate?: (fields: Record<string, string>) => Promise<void>;
+  sorting?: SortingState;
+  rowOrder?: string[];
+  onReorder?: (order: string[]) => void;
 }) {
   const { table } = useDataTable<T>();
-  const rows = table.getRowModel().rows;
+  const allRows = table.getRowModel().rows;
+
+  // Drag state
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const dragSourceIndex = useRef<number | null>(null);
+
+  const canDrag = onReorder && groupFields.length === 0 && (!sorting || sorting.length === 0);
+
+  // Apply custom row order if no sort/group active
+  let rows = allRows;
+  if (canDrag && rowOrder && rowOrder.length > 0) {
+    const orderMap = new Map(rowOrder.map((id, i) => [id, i]));
+    rows = [...allRows].sort((a, b) => {
+      const ai = orderMap.get(a.original.id) ?? Infinity;
+      const bi = orderMap.get(b.original.id) ?? Infinity;
+      return ai - bi;
+    });
+  }
+
+  const handleDragStart = useCallback((id: string, index: number) => {
+    setDraggedId(id);
+    dragSourceIndex.current = index;
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    const targetIndex = e.clientY < midY ? index : index + 1;
+    setDropIndex(targetIndex);
+  }, []);
+
+  const handleDrop = useCallback(() => {
+    if (draggedId === null || dropIndex === null || dragSourceIndex.current === null) return;
+    const currentOrder = rows.map((r) => r.original.id);
+    const fromIndex = currentOrder.indexOf(draggedId);
+    if (fromIndex === -1) return;
+
+    const newOrder = [...currentOrder];
+    newOrder.splice(fromIndex, 1);
+    const adjustedDrop = dropIndex > fromIndex ? dropIndex - 1 : dropIndex;
+    newOrder.splice(adjustedDrop, 0, draggedId);
+
+    onReorder?.(newOrder);
+    setDraggedId(null);
+    setDropIndex(null);
+    dragSourceIndex.current = null;
+  }, [draggedId, dropIndex, rows, onReorder]);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedId(null);
+    setDropIndex(null);
+    dragSourceIndex.current = null;
+  }, []);
 
   if (groupFields.length > 0) {
     return (
@@ -244,9 +358,27 @@ export function FlexBody<T extends { id: string }>({
     <RovingTabIndexProvider>
       <div role="grid" style={{ display: "flex", flexDirection: "column", gap: GAP_PX }}>
         <FlexColumnHeaders indent={0} visibleCols={visibleCols} />
-        {rows.map((row, i) => (
-          <FlexDataRow key={row.id} row={row} visibleCols={visibleCols} depth={0} onUpdate={onUpdate} picklistColors={picklistColors} rowIndex={i} />
-        ))}
+        {rows.map((row, i) => {
+          if (canDrag) {
+            return (
+              <DraggableRow
+                key={row.id} row={row} visibleCols={visibleCols}
+                onUpdate={onUpdate} picklistColors={picklistColors} rowIndex={i}
+                draggedId={draggedId} dropIndex={dropIndex}
+                onDragStart={handleDragStart} onDragOver={handleDragOver}
+                onDrop={handleDrop} onDragEnd={handleDragEnd}
+              />
+            );
+          }
+          return (
+            <FlexDataRow key={row.id} row={row} visibleCols={visibleCols} depth={0}
+              onUpdate={onUpdate} picklistColors={picklistColors} rowIndex={i} />
+          );
+        })}
+        {/* Drop indicator after last row */}
+        {canDrag && dropIndex === rows.length && draggedId !== null && (
+          <div style={{ height: 2, background: "var(--primary)" }} />
+        )}
         {onCreate && <NewRow visibleCols={visibleCols} depth={0} onCreate={onCreate} />}
       </div>
     </RovingTabIndexProvider>
