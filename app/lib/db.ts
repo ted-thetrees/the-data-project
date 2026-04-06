@@ -5,17 +5,80 @@ export const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
+// Baserow table IDs → Postgres table names
+const BR = {
+  Inbox: "database_table_179",
+  Passphrases: "database_table_180",
+  People: "database_table_181",
+  Project_Matrix: "database_table_182",
+  Picklist_Colors: "database_table_183",
+  Colors: "database_table_184",
+} as const;
+
+// Baserow field_* column mappings
+const F = {
+  // Inbox (179)
+  inbox_title: "field_1737",
+  inbox_record_type: "field_1738",
+  inbox_created_date: "field_1739",
+  inbox_teable_id: "field_1740",
+  // Passphrases (180)
+  pass_passphrase: "field_1744",
+  pass_table_name: "field_1745",
+  pass_record_id: "field_1746",
+  pass_created_date: "field_1747",
+  pass_teable_id: "field_1748",
+  // People (181)
+  people_name: "field_1749",
+  people_familiarity: "field_1752",
+  people_gender: "field_1753",
+  people_known_as: "field_1754",
+  people_metro_area: "field_1755",
+  people_created_date: "field_1756",
+  people_has_org_filled: "field_1757",
+  people_teller_status: "field_1758",
+  people_teable_id: "field_1759",
+  // Project_Matrix (182)
+  pm_uber_project: "field_1763",
+  pm_project: "field_1764",
+  pm_project_status: "field_1765",
+  pm_project_order: "field_1766",
+  pm_project_notes: "field_1767",
+  pm_task: "field_1768",
+  pm_task_status: "field_1769",
+  pm_task_order: "field_1770",
+  pm_task_result: "field_1771",
+  pm_task_notes: "field_1772",
+  pm_hyphen: "field_1773",
+  pm_teable_id: "field_1774",
+  pm_tickle_date: "field_1775",
+  pm_tickle_date_cfg: "field_1776",
+  pm_created_date: "field_1777",
+  // Picklist_Colors (183)
+  pc_field: "field_1781",
+  pc_option: "field_1782",
+  pc_color: "field_1783",
+  pc_table: "field_1784",
+  pc_teable_id: "field_1785",
+  // Colors (184)
+  colors_name: "field_1786",
+  colors_hex: "field_1789",
+  colors_palette: "field_1790",
+  colors_teable_id: "field_1791",
+} as const;
+
 export async function getInboxRecords(limit = 100, offset = 0) {
   const result = await pool.query(
     `SELECT
-      i.__id as id,
-      i."Title" as content,
-      i."Record_Type" as record_type,
-      i."Created_Date" as created_date,
-      p."Passphrase" as passphrase
-    FROM "bsePwEnYg0x7fdbsdZR"."Inbox" i
-    LEFT JOIN "bsePwEnYg0x7fdbsdZR"."Passphrases" p ON p."Record_ID" = i.__id
-    ORDER BY i."Created_Date" DESC
+      i.id::text as id,
+      i.${F.inbox_title} as content,
+      i.${F.inbox_record_type} as record_type,
+      i.${F.inbox_created_date} as created_date,
+      p.${F.pass_passphrase} as passphrase
+    FROM ${BR.Inbox} i
+    LEFT JOIN ${BR.Passphrases} p ON p.${F.pass_record_id} = i.${F.inbox_teable_id}
+    WHERE i.trashed = false
+    ORDER BY i.${F.inbox_created_date} DESC
     LIMIT $1 OFFSET $2`,
     [limit, offset]
   );
@@ -25,30 +88,25 @@ export async function getInboxRecords(limit = 100, offset = 0) {
 export async function getProjectMatrix() {
   const result = await pool.query(
     `SELECT
-      __id as id,
-      "Uber_Project" as uber_project,
-      "Task_Status" as task_status,
-      "Task" as task,
-      "Task_Result" as task_result,
-      "Task_Notes" as task_notes,
-      "Tickle_Date" as tickle_date,
-      "Project_Status" as project_status,
-      "Project_Notes" as project_notes,
-      "Project" as project,
-      __created_time as created_date
-    FROM "bsePwEnYg0x7fdbsdZR"."Project_Matrix"
-    ORDER BY "Uber_Project", "Tickle_Date" ASC NULLS LAST, "Project"`
+      id::text as id,
+      ${F.pm_uber_project} as uber_project,
+      ${F.pm_task_status} as task_status,
+      ${F.pm_task} as task,
+      ${F.pm_task_result} as task_result,
+      ${F.pm_task_notes} as task_notes,
+      ${F.pm_tickle_date} as tickle_date,
+      ${F.pm_project_status} as project_status,
+      ${F.pm_project_notes} as project_notes,
+      ${F.pm_project} as project,
+      ${F.pm_created_date} as created_date
+    FROM ${BR.Project_Matrix}
+    WHERE trashed = false
+    ORDER BY ${F.pm_uber_project}, ${F.pm_tickle_date} ASC NULLS LAST, ${F.pm_project}`
   );
   return result.rows;
 }
 
-export async function getPeople() {
-  return getTableData("tblyvrNXdqftQGNIniT", "People");
-}
-
-// --- Dynamic table data fetcher ---
-
-export interface TeableFieldSchema {
+export interface BaserowFieldSchema {
   id: string;
   dbFieldName: string;
   name: string;
@@ -57,153 +115,93 @@ export interface TeableFieldSchema {
   isPrimary?: boolean;
 }
 
-const TEABLE_BASE_SCHEMA = "bsePwEnYg0x7fdbsdZR";
+// Kept for backward compat with components that use this type
+export type TeableFieldSchema = BaserowFieldSchema;
 
-export async function getTeableSchema(tableId: string): Promise<TeableFieldSchema[]> {
-  const teableUrl = process.env.TEABLE_URL || "https://teable.ifnotfor.com";
-  const teableKey = process.env.TEABLE_API_KEY!;
+export async function getBaserowSchema(tableId: number): Promise<BaserowFieldSchema[]> {
+  const baserowUrl = process.env.BASEROW_URL || "https://baserow.ifnotfor.com";
+  const baserowToken = process.env.BASEROW_TOKEN!;
 
-  const res = await fetch(`${teableUrl}/api/table/${tableId}/field`, {
-    headers: { Authorization: `Bearer ${teableKey}` },
-    next: { revalidate: 0 },
+  const res = await fetch(`${baserowUrl}/api/database/fields/table/${tableId}/`, {
+    headers: { Authorization: `Token ${baserowToken}` },
+    cache: "no-store",
   });
 
   if (!res.ok) return [];
 
   const fields = await res.json();
   return fields.map((f: Record<string, unknown>) => ({
-    id: f.id,
-    dbFieldName: f.dbFieldName,
+    id: String(f.id),
+    dbFieldName: `field_${f.id}`,
     name: f.name,
-    type: f.type,
-    isPrimary: f.isPrimary || false,
-    options: f.type === "singleSelect" && (f.options as Record<string, unknown>)?.choices
-      ? ((f.options as Record<string, unknown>).choices as { name: string }[]).map((c) => c.name)
+    type: f.type as string,
+    isPrimary: f.primary || false,
+    options: f.type === "single_select" && Array.isArray((f as Record<string, unknown>).select_options)
+      ? ((f as Record<string, unknown>).select_options as { value: string }[]).map((c) => c.value)
       : undefined,
   }));
 }
 
-export async function getTableData(tableId: string, tableName: string) {
-  const schema = await getTeableSchema(tableId);
+// Alias for backward compat
+export const getTeableSchema = getBaserowSchema;
+
+const BASEROW_TABLE_MAP: Record<string, { pgTable: string; baserowId: number }> = {
+  People: { pgTable: BR.People, baserowId: 181 },
+  Inbox: { pgTable: BR.Inbox, baserowId: 179 },
+  Project_Matrix: { pgTable: BR.Project_Matrix, baserowId: 182 },
+  Picklist_Colors: { pgTable: BR.Picklist_Colors, baserowId: 183 },
+  Colors: { pgTable: BR.Colors, baserowId: 184 },
+  Passphrases: { pgTable: BR.Passphrases, baserowId: 180 },
+};
+
+export async function getTableData(tableIdOrName: string, tableName: string) {
+  const tableInfo = BASEROW_TABLE_MAP[tableName];
+  if (!tableInfo) return { rows: [], schema: [] };
+
+  const schema = await getBaserowSchema(tableInfo.baserowId);
   if (schema.length === 0) return { rows: [], schema };
 
-  const columns = schema.map((f) => `"${f.dbFieldName}" as "${f.dbFieldName.toLowerCase()}"`);
+  const columns = schema.map((f) => `${f.dbFieldName} as "${f.dbFieldName}"`);
   const primaryField = schema.find((f) => f.isPrimary);
-  const orderBy = primaryField ? `ORDER BY "${primaryField.dbFieldName}"` : "";
+  const orderBy = primaryField ? `ORDER BY ${primaryField.dbFieldName}` : "";
 
   const result = await pool.query(
-    `SELECT __id as id, ${columns.join(", ")}
-     FROM "${TEABLE_BASE_SCHEMA}"."${tableName}"
+    `SELECT id::text as id, ${columns.join(", ")}
+     FROM ${tableInfo.pgTable}
+     WHERE trashed = false
      ${orderBy}`
   );
 
   return { rows: result.rows, schema };
 }
 
+export async function getPeople() {
+  return getTableData("181", "People");
+}
+
 export async function getPicklistColors(tableName?: string) {
   const result = await pool.query(
     `SELECT
-      __id as id,
-      "Table" as table_name,
-      "Field" as field,
-      "Option" as option,
-      "Color" as color
-    FROM "bsePwEnYg0x7fdbsdZR"."Picklist_Colors"
-    ${tableName ? 'WHERE "Table" = $1' : ''}
-    ORDER BY "Table", "Field", "Option"`,
+      id::text as id,
+      ${F.pc_table} as table_name,
+      ${F.pc_field} as field,
+      ${F.pc_option} as option,
+      ${F.pc_color} as color
+    FROM ${BR.Picklist_Colors}
+    WHERE trashed = false
+    ${tableName ? `AND ${F.pc_table} = $1` : ''}
+    ORDER BY ${F.pc_table}, ${F.pc_field}, ${F.pc_option}`,
     tableName ? [tableName] : []
   );
   return result.rows;
 }
 
-export async function getTeableFieldOptions(tableId: string): Promise<Record<string, string[]>> {
-  const teableUrl = process.env.TEABLE_URL || "https://teable.ifnotfor.com";
-  const teableKey = process.env.TEABLE_API_KEY!;
-
-  const res = await fetch(`${teableUrl}/api/table/${tableId}/field`, {
-    headers: { Authorization: `Bearer ${teableKey}` },
-    next: { revalidate: 0 },
-  });
-
-  if (!res.ok) return {};
-
-  const fields = await res.json();
-  const result: Record<string, string[]> = {};
-
-  for (const field of fields) {
-    if (field.type === "singleSelect" && field.options?.choices) {
-      result[field.name] = field.options.choices.map((c: { name: string }) => c.name);
-    }
-  }
-
-  return result;
-}
-
-const PAIRED_COLORS = [
-  "#fbb4ae", "#fdcdac", "#fed9a6", "#fff2ae", "#ffffb3", "#f1e2cc",
-  "#e5d8bd", "#e6f5c9", "#ccebc5", "#b3e2cd", "#b3cde3", "#cbd5e8",
-  "#decbe4", "#fddaec", "#f2f2f2", "#d9d9d9",
-];
-
-/**
- * Compare Teable field options against Picklist_Colors table.
- * Auto-create missing mappings with schemePaired colors (cycling).
- */
-export async function syncPicklistColors(
-  tableName: string,
-  tableId: string,
-  fieldLabelMap: Record<string, string> // { "Familiarity": "Familiarity", "Has Org Filled": "Org Filled", ... }
-) {
-  const teableUrl = process.env.TEABLE_URL || "https://teable.ifnotfor.com";
-  const teableKey = process.env.TEABLE_API_KEY!;
-
-  // Get current field options from Teable
-  const fieldOptions = await getTeableFieldOptions(tableId);
-
-  // Get current picklist color mappings
-  const existingColors = await getPicklistColors(tableName);
-  const existingSet = new Set(
-    existingColors.map((r: { field: string; option: string }) => `${r.field}::${r.option}`)
-  );
-
-  // Find missing mappings
-  const toCreate: { field: string; option: string; color: string }[] = [];
-
-  for (const [teableFieldName, displayLabel] of Object.entries(fieldLabelMap)) {
-    const options = fieldOptions[teableFieldName] || [];
-    // Count existing colors for this field to continue the cycling pattern
-    const existingCount = existingColors.filter(
-      (r: { field: string }) => r.field === displayLabel
-    ).length;
-
-    options.forEach((option: string, i: number) => {
-      if (!existingSet.has(`${displayLabel}::${option}`)) {
-        const colorIndex = (existingCount + toCreate.filter((t) => t.field === displayLabel).length) % PAIRED_COLORS.length;
-        toCreate.push({ field: displayLabel, option, color: PAIRED_COLORS[colorIndex] });
-      }
-    });
-  }
-
-  if (toCreate.length === 0) return;
-
-  // Create missing records via Teable API
-  const records = toCreate.map((t) => ({
-    fields: { Table: tableName, Field: t.field, Option: t.option, Color: t.color },
-  }));
-
-  await fetch(`${teableUrl}/api/table/tbl0oH7BL6QQmUd5vak/record`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${teableKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ fieldKeyType: "name", records }),
-  });
-}
-
 export async function getInboxCount() {
   const result = await pool.query(
-    `SELECT COUNT(*) as count FROM "bsePwEnYg0x7fdbsdZR"."Inbox"`
+    `SELECT COUNT(*) as count FROM ${BR.Inbox} WHERE trashed = false`
   );
   return parseInt(result.rows[0].count);
 }
+
+// Field mappings exposed for use by other modules
+export { BR, F };

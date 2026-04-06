@@ -1,38 +1,34 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { pool, BR, F } from "@/lib/db";
 
-const TEABLE_KEY = process.env.TEABLE_API_KEY!;
-const TEABLE_URL = process.env.TEABLE_URL || "https://teable.ifnotfor.com";
-const TABLE_ID = "tbl0oH7BL6QQmUd5vak";
-
-const FIELD_IDS: Record<string, string> = {
-  table_name: "fldmbZOh3X2jOa7EUQC",
-  field: "fldKbYzY5s9EOcNFrnr",
-  option: "fldC2zjZAbDxCwvbb1Q",
-  color: "fldXyaQXtoskZEuaMsR",
+const FIELD_MAP: Record<string, string> = {
+  table_name: F.pc_table,
+  field: F.pc_field,
+  option: F.pc_option,
+  color: F.pc_color,
 };
+
+export async function deletePicklistColor(recordId: string) {
+  await pool.query(
+    `UPDATE ${BR.Picklist_Colors} SET trashed = true WHERE id = $1`,
+    [parseInt(recordId)]
+  );
+  revalidatePath("/picklist-colors");
+}
 
 export async function updatePicklistColor(
   recordId: string,
   field: string,
   value: string
 ) {
-  const fieldId = FIELD_IDS[field];
-  if (!fieldId) throw new Error(`Unknown field: ${field}`);
+  const col = FIELD_MAP[field];
+  if (!col) throw new Error(`Unknown field: ${field}`);
 
-  const res = await fetch(`${TEABLE_URL}/api/table/${TABLE_ID}/record`, {
-    method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${TEABLE_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      fieldKeyType: "id",
-      records: [{ id: recordId, fields: { [fieldId]: value } }],
-    }),
-  });
-
-  if (!res.ok) throw new Error(`Failed to update ${field}`);
+  await pool.query(
+    `UPDATE ${BR.Picklist_Colors} SET ${col} = $1, updated_on = NOW() WHERE id = $2`,
+    [value, parseInt(recordId)]
+  );
   revalidatePath("/picklist-colors");
 }

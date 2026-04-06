@@ -1,7 +1,5 @@
-import { pool } from "./db";
+import { pool, BR, F } from "./db";
 import { evenWords, oddWords } from "./pgp-words";
-
-const PASSPHRASES_TABLE = '"bsePwEnYg0x7fdbsdZR"."Passphrases"';
 
 /**
  * Generate a 3-word passphrase using PGP word lists.
@@ -22,7 +20,7 @@ export async function generatePassphrase(): Promise<string> {
   for (let i = 0; i < 100; i++) {
     const candidate = generateCandidate();
     const existing = await pool.query(
-      `SELECT 1 FROM ${PASSPHRASES_TABLE} WHERE "Passphrase" = $1 LIMIT 1`,
+      `SELECT 1 FROM ${BR.Passphrases} WHERE ${F.pass_passphrase} = $1 AND trashed = false LIMIT 1`,
       [candidate]
     );
     if (existing.rows.length === 0) {
@@ -41,8 +39,8 @@ export async function registerPassphrase(
 ): Promise<string> {
   const passphrase = await generatePassphrase();
   await pool.query(
-    `INSERT INTO ${PASSPHRASES_TABLE} ("Passphrase", "Table_Name", "Record_ID")
-     VALUES ($1, $2, $3)`,
+    `INSERT INTO ${BR.Passphrases} (${F.pass_passphrase}, ${F.pass_table_name}, ${F.pass_record_id}, "order", created_on, updated_on, trashed)
+     VALUES ($1, $2, $3, 1, NOW(), NOW(), false)`,
     [passphrase, tableName, recordId]
   );
   return passphrase;
@@ -55,9 +53,9 @@ export async function lookupPassphrase(
   passphrase: string
 ): Promise<{ tableName: string; recordId: string } | null> {
   const result = await pool.query(
-    `SELECT "Table_Name" as "tableName", "Record_ID" as "recordId"
-     FROM ${PASSPHRASES_TABLE}
-     WHERE LOWER("Passphrase") = LOWER($1)
+    `SELECT ${F.pass_table_name} as "tableName", ${F.pass_record_id} as "recordId"
+     FROM ${BR.Passphrases}
+     WHERE LOWER(${F.pass_passphrase}) = LOWER($1) AND trashed = false
      LIMIT 1`,
     [passphrase]
   );
@@ -70,7 +68,7 @@ export async function lookupPassphrase(
  */
 export async function removePassphrase(recordId: string): Promise<void> {
   await pool.query(
-    `DELETE FROM ${PASSPHRASES_TABLE} WHERE "Record_ID" = $1`,
+    `UPDATE ${BR.Passphrases} SET trashed = true WHERE ${F.pass_record_id} = $1`,
     [recordId]
   );
 }
