@@ -64,6 +64,10 @@ export function GridCellNav({
           }
         }
       }}
+      onMouseDown={() => {
+        // Focus the gridcell on mousedown, before child click handlers fire
+        ref.current?.focus();
+      }}
       onClick={handleClick}
       className={className}
       style={{
