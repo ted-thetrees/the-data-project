@@ -23,7 +23,6 @@ const FIELD_NAME_TO_KEY: Record<string, string> = {
   Familiarity: "familiarity",
   Gender: "gender",
   Has_Org_Filled: "has_org_filled",
-  Target_Desirability: "target_desirability",
   Teller_Status: "teller_status",
 };
 
@@ -37,7 +36,6 @@ function buildColConfig(fieldOptions: Record<string, string[]>): ColConfig[] {
     { key: "known_as", label: "Known As", type: "text", width: 140 },
     { key: "metro_area", label: "Metro Area", type: "text", width: 180 },
     { key: "has_org_filled", label: "Org Filled", type: "select", width: 120, options: opts("Has Org Filled") },
-    { key: "target_desirability", label: "Desirability", type: "select", width: 140, options: opts("Target Desirability") },
     { key: "teller_status", label: "Teller Status", type: "select", width: 180, options: opts("Teller Status") },
     { key: "created_date", label: "Created", type: "date", width: 170 },
   ];
@@ -48,7 +46,6 @@ const GROUPABLE_FIELDS: GroupableField[] = [
   { key: "gender", label: "Gender" },
   { key: "metro_area", label: "Metro Area" },
   { key: "has_org_filled", label: "Org Filled" },
-  { key: "target_desirability", label: "Desirability" },
   { key: "teller_status", label: "Teller Status" },
 ];
 

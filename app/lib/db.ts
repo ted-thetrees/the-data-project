@@ -54,7 +54,6 @@ export async function getPeople() {
       "Metro_Area" as metro_area,
       "Created_Date" as created_date,
       "Has_Org_Filled" as has_org_filled,
-      "Target_Desirability" as target_desirability,
       "Teller_Status" as teller_status
     FROM "bsePwEnYg0x7fdbsdZR"."People"
     ORDER BY "Name"`

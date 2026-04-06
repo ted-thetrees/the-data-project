@@ -14,7 +14,6 @@ export interface PersonRow {
   metro_area: string | null;
   created_date: string | null;
   has_org_filled: string | null;
-  target_desirability: string | null;
   teller_status: string | null;
 }
 
@@ -27,7 +26,6 @@ const FIELD_LABEL_MAP: Record<string, string> = {
   "Familiarity": "Familiarity",
   "Gender": "Gender",
   "Has Org Filled": "Org Filled",
-  "Target Desirability": "Desirability",
   "Teller Status": "Teller Status",
 };
 
