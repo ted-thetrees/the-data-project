@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useState, useRef, useCallback } from "react";
+import { useContext, useState, useRef, useCallback, useEffect } from "react";
 import type { Row } from "@tanstack/react-table";
 import type { SortingState } from "@tanstack/react-table";
 import { useDataTable } from "@/components/niko-table/core/data-table-context";
@@ -389,6 +389,21 @@ export function FlexBody<T extends { id: string }>({
     const cell = gridRef.current?.querySelector<HTMLElement>('[role="gridcell"]');
     if (cell) cell.focus();
   }, []);
+
+  // Global arrow key listener — activate grid when nothing interactive is focused
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+      // If a gridcell already has focus, let the roving tabindex handle it
+      if ((e.target as HTMLElement)?.closest?.('[role="gridcell"]')) return;
+      e.preventDefault();
+      focusFirstCell();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [focusFirstCell]);
 
   if (groupFields.length > 0) {
     return (
