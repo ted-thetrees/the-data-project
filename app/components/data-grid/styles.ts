@@ -27,7 +27,7 @@ export const GAP_PX = 2;
 
 export const dataGridStyles = `
   .gt-input {
-    width: 100%; padding: 4px 8px; font-size: var(--font-size-base); font-family: var(--font-family);
+    width: 100%; padding: 2px 4px; margin: -2px -4px; font-size: var(--font-size-base); font-family: var(--font-family);
     border: none; border-radius: 0;
     background: transparent; color: inherit; outline: none;
     box-shadow: none;
