@@ -89,10 +89,6 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
   const [loaded, setLoaded] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const onResize = useCallback((i: number, delta: number) => {
-    setWidths((prev) => { const next = [...prev]; next[i] = Math.max(60, next[i] + delta); return next; });
-  }, []);
-
   const filteredCols = COL_CONFIG.filter((col) => columnVisibility[col.key] !== false);
   const visibleCols = columnOrder.length > 0
     ? columnOrder.map((key) => filteredCols.find((c) => c.key === key)).filter(Boolean) as ColConfig[]
@@ -100,6 +96,14 @@ export function PeopleTable({ data, picklistColors, fieldOptions = {} }: { data:
   const orderedKeys = new Set(columnOrder);
   const extraCols = filteredCols.filter((c) => columnOrder.length > 0 && !orderedKeys.has(c.key));
   const allVisibleCols = [...visibleCols, ...extraCols];
+
+  const onResize = useCallback((visibleIdx: number, delta: number) => {
+    const col = allVisibleCols[visibleIdx];
+    if (!col) return;
+    const origIdx = COL_CONFIG.findIndex((c) => c.key === col.key);
+    if (origIdx === -1) return;
+    setWidths((prev) => { const next = [...prev]; next[origIdx] = Math.max(60, next[origIdx] + delta); return next; });
+  }, [allVisibleCols]);
 
   const visibleWidths = allVisibleCols.map((col) => {
     const origIdx = COL_CONFIG.findIndex((c) => c.key === col.key);
