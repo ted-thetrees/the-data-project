@@ -36,6 +36,13 @@ export function GridCellNav({
       role="gridcell"
       tabIndex={tabIndex}
       onKeyDown={(e) => {
+        // If an input is being edited, let it handle its own keys
+        const tag = (e.target as HTMLElement)?.tagName;
+        const isEditing = tag === "INPUT" || tag === "TEXTAREA";
+        if (isEditing) {
+          // Only let Escape and Enter bubble out of the input
+          if (e.key !== "Escape" && e.key !== "Enter") return;
+        }
         handleKeyDown(e);
         if (e.key === "Enter" && !e.defaultPrevented) {
           const target = ref.current?.querySelector<HTMLElement>(
