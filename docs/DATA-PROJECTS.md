@@ -25,7 +25,7 @@ This is inherently a graph — people connected to people through typed, directi
 ### 1. People & Relationships (core)
 **What**: The central people database and the web of connections between them.
 **Key data**: Contact info, how I know them, introductions made, friendship interests, gathering history, last contact, contact frequency goals.
-**Where it lives today**: Teable `People` table → custom view at [data.ifnotfor.com/people](https://data.ifnotfor.com/people) (People v001). Fields: Name, Photo, Familiarity, Gender, Known As, Metro Area, Org Filled, Desirability, Teller Status. Photos proxied from Teable via `/api/teable-image/`. Person-to-person relationships tracked in Neo4j.
+**Where it lives today**: Supabase `people` table → custom view at [data.ifnotfor.com/people-v3](https://data.ifnotfor.com/people-v3). Fields: Name, Photo, Familiarity, Gender, Known As, Metro Area, Org Filled, Desirability, Teller Status. Person-to-person relationships tracked in Neo4j. Previously in Teable, migrated to Supabase as the single source of truth.
 **Connects to**: Everything.
 
 ### 2. Gatherings
@@ -37,7 +37,7 @@ This is inherently a graph — people connected to people through typed, directi
 ### 3. Project Management
 **What**: Tracking projects, features, user stories, tasks.
 **Key data**: Uber Project → Project → Task, with status (Tickled/Done), result, notes, tickle dates.
-**Where it lives today**: Teable `Project_Matrix` table → custom views at [data.ifnotfor.com/projects-v5](https://data.ifnotfor.com/projects-v5) (current best, 5 iterations built). Also still in Coda. Previously Neo4j (grid-prototype v1).
+**Where it lives today**: Supabase (normalized: `uber_projects`, `projects`, `tasks`, plus status lookup tables) with bidirectional sync to Coda's Master | Main View Table via n8n webhooks. See [SUPA-CODA-TANGO.md](SUPA-CODA-TANGO.md) for the full sync architecture. Claude Code creates projects via voice dictation (`/new-project`), Coda serves as the visual editing layer. Previously in Teable and Baserow, both retired.
 **Connects to**: People (who's working on what).
 
 ### 4. Business Contacts / CRM
@@ -121,9 +121,9 @@ This is inherently a graph — people connected to people through typed, directi
 
 | Project | Status | View |
 |---------|--------|------|
-| People & Relationships | **Live** — Teable + People v001 + Neo4j graph | `/people` |
+| People & Relationships | **Live** — Supabase + People v003 + Neo4j graph | `/people-v3` |
 | Gatherings | Not started | — |
-| Project Management | **Live** — Teable + Projects v005 (5 iterations) | `/projects-v5` |
+| Project Management | **Live** — Supabase + Coda (bidirectional sync via n8n) | Coda UI + Claude Code |
 | Business Contacts / CRM | Not started | — |
 | Staying in Touch | Not started | — |
 | Home Inventory | Not started | — |
@@ -137,6 +137,17 @@ This is inherently a graph — people connected to people through typed, directi
 
 Additionally, an **Inbox** capture system is live at `/` — not one of the original 13 projects but serves as a general-purpose ingestion point for URLs, text, and notes.
 
+## Database architecture
+
+The system uses a **hybrid Postgres + Neo4j** approach:
+
+- **Supabase (Postgres)** — single source of truth for all entity data (people, projects, tasks, inbox). Normalized schema with UUID primary keys, status lookup tables, and passphrase-based record identification for voice-dictation workflows.
+- **Neo4j** — graph layer for person-to-person relationships. Synced from Supabase via webhooks.
+- **Coda** — visual editing layer for project management. Bidirectional sync with Supabase via n8n webhooks and a custom Coda Pack. Not a source of truth — just a convenient UI.
+- **n8n** — workflow orchestrator running on Hetzner (178.156.235.239). Handles all webhook routing between Supabase, Coda, and Neo4j.
+
+Previous platforms (Teable, Baserow) have been fully retired. All data now lives in Supabase.
+
 ## Open questions
 
 - Is there existing data in Airtable that maps to any of these?
@@ -146,4 +157,4 @@ Additionally, an **Inbox** capture system is live at `/` — not one of the orig
 
 ---
 
-*Last updated: 2026-04-04*
+*Last updated: 2026-04-07*
