@@ -1,4 +1,4 @@
-# Sync or Swim
+# Supa-Coda Tango
 
 > Bidirectional sync between Supabase and Coda, so you can edit your project data in either place and it just stays in sync.
 
