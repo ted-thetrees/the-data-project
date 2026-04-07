@@ -29,6 +29,12 @@ export default function NewProjectPage() {
     const text = lines.join("\n");
     await navigator.clipboard.writeText(text);
 
+    // Trigger Keyboard Maestro to paste into iTerm2
+    fetch(
+      "https://trigger.keyboardmaestro.com/t/57BF8E52-4DC5-48B0-AA69-56B60FE6E916/CACDB70A-15B1-46C8-821B-90876D2EC01D?TriggerValue",
+      { mode: "no-cors" }
+    ).catch(() => {});
+
     setCopied(true);
     setProject("");
     setTask("");
