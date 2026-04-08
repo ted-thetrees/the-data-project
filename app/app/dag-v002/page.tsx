@@ -422,8 +422,8 @@ function DocumentModal({
       onClick={(e) => { if (e.target === e.currentTarget) saveAndClose(); }}
     >
       <div
-        className="w-full h-full rounded-lg border shadow-2xl flex flex-col overflow-hidden"
-        style={{ backgroundColor: "#FFFFFF", borderColor: "#7B66DE" }}
+        className="h-full rounded-lg border shadow-2xl flex flex-col overflow-hidden"
+        style={{ backgroundColor: "#FFFFFF", borderColor: "#7B66DE", maxWidth: 800, width: "100%" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-3 border-b" style={{ borderColor: "#E3DDFD" }}>
