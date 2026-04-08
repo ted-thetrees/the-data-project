@@ -3,13 +3,22 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import type { Value } from "platejs";
+import { KEYS } from "platejs";
 import {
   BoldPlugin,
   ItalicPlugin,
   UnderlinePlugin,
+  BlockquotePlugin,
+  H1Plugin,
+  H2Plugin,
+  H3Plugin,
 } from "@platejs/basic-nodes/react";
+import { ListPlugin } from "@platejs/list/react";
+import { CodeBlockPlugin } from "@platejs/code-block/react";
+import { SlashPlugin, SlashInputPlugin } from "@platejs/slash-command/react";
 import { Plate, usePlateEditor } from "platejs/react";
 import { Editor, EditorContainer } from "@/components/ui/editor";
+import { SlashInputElement } from "@/components/ui/slash-node";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -400,7 +409,26 @@ function DocumentModal({
   const parsed = initialDocument ? JSON.parse(initialDocument) : DEFAULT_VALUE;
 
   const editor = usePlateEditor({
-    plugins: [BoldPlugin, ItalicPlugin, UnderlinePlugin],
+    plugins: [
+      BoldPlugin,
+      ItalicPlugin,
+      UnderlinePlugin,
+      H1Plugin,
+      H2Plugin,
+      H3Plugin,
+      BlockquotePlugin,
+      ListPlugin,
+      CodeBlockPlugin,
+      SlashPlugin.configure({
+        options: {
+          trigger: "/",
+          triggerPreviousCharPattern: /^\s?$/,
+          triggerQuery: (editor) =>
+            !editor.api.some({ match: { type: editor.getType(KEYS.codeBlock) } }),
+        },
+      }),
+      SlashInputPlugin.withComponent(SlashInputElement),
+    ],
     value: parsed,
   });
 
