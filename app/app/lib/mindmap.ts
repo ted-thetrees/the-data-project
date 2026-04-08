@@ -23,7 +23,7 @@ function generatePassphrase() {
 }
 
 export interface MindMapData {
-  nodes: { passphrase: string; name: string; image?: string; completed: boolean }[];
+  nodes: { passphrase: string; name: string; image?: string; completed: boolean; document?: string }[];
   edges: { parent: string; child: string }[];
 }
 
@@ -61,7 +61,7 @@ export async function getMindMapData(): Promise<MindMapData> {
   const session = getSession();
   try {
     const nodesResult = await session.run(
-      `MATCH (n:MindMapNode) RETURN n.passphrase AS passphrase, n.name AS name, n.image AS image, coalesce(n.completed, false) AS completed`
+      `MATCH (n:MindMapNode) RETURN n.passphrase AS passphrase, n.name AS name, n.image AS image, coalesce(n.completed, false) AS completed, n.document AS document`
     );
     const edgesResult = await session.run(
       `MATCH (p:MindMapNode)-[:HAS_CHILD]->(c:MindMapNode)
@@ -73,6 +73,7 @@ export async function getMindMapData(): Promise<MindMapData> {
         name: r.get("name"),
         image: r.get("image") ?? undefined,
         completed: r.get("completed") ?? false,
+        document: r.get("document") ?? undefined,
       })),
       edges: edgesResult.records.map((r) => ({
         parent: r.get("parent"),
@@ -95,6 +96,18 @@ export async function createMindMapNode(name: string) {
     );
     const rec = result.records[0];
     return { passphrase: rec.get("passphrase"), name: rec.get("name") };
+  } finally {
+    await session.close();
+  }
+}
+
+export async function updateMindMapNodeDocument(passphrase: string, document: string) {
+  const session = getSession();
+  try {
+    await session.run(
+      `MATCH (n:MindMapNode {passphrase: $passphrase}) SET n.document = $document`,
+      { passphrase, document }
+    );
   } finally {
     await session.close();
   }

@@ -2,6 +2,14 @@
 
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
+import type { Value } from "platejs";
+import {
+  BoldPlugin,
+  ItalicPlugin,
+  UnderlinePlugin,
+} from "@platejs/basic-nodes/react";
+import { Plate, usePlateEditor } from "platejs/react";
+import { Editor, EditorContainer } from "@/components/ui/editor";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -40,13 +48,14 @@ interface MindMapNodeData {
   passphrase: string;
   image?: string;
   completed: boolean;
+  document?: string;
   isAlias: boolean;
   autoEdit?: boolean;
   [key: string]: unknown;
 }
 
 interface ApiData {
-  nodes: { passphrase: string; name: string; image?: string; completed: boolean }[];
+  nodes: { passphrase: string; name: string; image?: string; completed: boolean; document?: string }[];
   edges: { parent: string; child: string }[];
 }
 
@@ -167,6 +176,7 @@ function toFlowElements(data: ApiData, autoEditPassphrase?: string) {
       passphrase: n.passphrase,
       image: n.image,
       completed: n.completed,
+      document: n.document,
       isAlias: false,
       autoEdit: n.passphrase === autoEditPassphrase,
     },
@@ -334,6 +344,24 @@ function MindMapNodeComponent({ data, id }: NodeProps) {
             </span>
           )}
         </div>
+        {/* Document icon - bottom left */}
+        <button
+          className="absolute bottom-1.5 left-2 cursor-pointer"
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent("mindmap-open-doc", {
+              detail: { passphrase: nodeData.passphrase, name: nodeData.name, document: nodeData.document },
+            }));
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill={nodeData.document ? "#7B66DE" : "none"} stroke="#7B66DE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <polyline points="10 9 9 9 8 9" />
+          </svg>
+        </button>
+        {/* Checkbox - bottom right */}
         <input
           type="checkbox"
           checked={nodeData.completed}
@@ -350,6 +378,73 @@ function MindMapNodeComponent({ data, id }: NodeProps) {
       </div>
 
       <Handle type="source" position={Position.Bottom} style={{ backgroundColor: "#7B66DE", borderColor: "#7B66DE", bottom: -5 }} />
+    </div>
+  );
+}
+
+// ---- Document Editor Modal ---- //
+
+const DEFAULT_VALUE: Value = [{ type: "p", children: [{ text: "" }] }];
+
+function DocumentModal({
+  passphrase,
+  name,
+  initialDocument,
+  onClose,
+}: {
+  passphrase: string;
+  name: string;
+  initialDocument?: string;
+  onClose: () => void;
+}) {
+  const parsed = initialDocument ? JSON.parse(initialDocument) : DEFAULT_VALUE;
+
+  const editor = usePlateEditor({
+    plugins: [BoldPlugin, ItalicPlugin, UnderlinePlugin],
+    value: parsed,
+  });
+
+  const saveAndClose = useCallback(async () => {
+    const content = JSON.stringify(editor.children);
+    await fetch("/api/mindmap", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ passphrase, document: content }),
+    });
+    window.dispatchEvent(new CustomEvent("mindmap-refresh"));
+    onClose();
+  }, [editor, passphrase, onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ padding: 100 }}
+      onClick={(e) => { if (e.target === e.currentTarget) saveAndClose(); }}
+    >
+      <div
+        className="w-full h-full rounded-lg border shadow-2xl flex flex-col overflow-hidden"
+        style={{ backgroundColor: "#FFFFFF", borderColor: "#7B66DE" }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-3 border-b" style={{ borderColor: "#E3DDFD" }}>
+          <h2 className="text-lg font-semibold" style={{ color: "#7B66DE" }}>{name}</h2>
+          <button
+            onClick={saveAndClose}
+            className="text-sm px-3 py-1 rounded"
+            style={{ backgroundColor: "#7B66DE", color: "#FFFFFF" }}
+          >
+            Save & Close
+          </button>
+        </div>
+        {/* Editor */}
+        <div className="flex-1 overflow-auto px-6 py-4">
+          <Plate editor={editor}>
+            <EditorContainer>
+              <Editor placeholder="Start writing..." className="min-h-full" />
+            </EditorContainer>
+          </Plate>
+        </div>
+      </div>
     </div>
   );
 }
@@ -427,6 +522,7 @@ function MindMapFlow() {
   const [loaded, setLoaded] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
   const [aliasSource, setAliasSource] = useState<string | null>(null);
+  const [openDoc, setOpenDoc] = useState<{ passphrase: string; name: string; document?: string } | null>(null);
   const { fitView, screenToFlowPosition } = useReactFlow();
   const connectingRef = useRef<{ nodeId: string; handleType: string } | null>(null);
   const connectedRef = useRef(false);
@@ -482,18 +578,24 @@ function MindMapFlow() {
     [layoutAndSet]
   );
 
-  // Listen for refresh/snapshot events from child components
+  // Listen for refresh/snapshot/open-doc events from child components
   useEffect(() => {
     const refreshHandler = () => refresh();
     const snapshotHandler = (e: Event) => {
       const data = (e as CustomEvent).detail as ApiData;
       undoStackRef.current.push(data);
     };
+    const openDocHandler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      setOpenDoc(detail);
+    };
     window.addEventListener("mindmap-refresh", refreshHandler);
     window.addEventListener("mindmap-snapshot", snapshotHandler);
+    window.addEventListener("mindmap-open-doc", openDocHandler);
     return () => {
       window.removeEventListener("mindmap-refresh", refreshHandler);
       window.removeEventListener("mindmap-snapshot", snapshotHandler);
+      window.removeEventListener("mindmap-open-doc", openDocHandler);
     };
   }, [refresh]);
 
@@ -845,6 +947,15 @@ function MindMapFlow() {
           onRename={contextMenu.type === "node" ? handleRename : undefined}
           onAddChild={contextMenu.type === "node" ? handleAddChild : undefined}
           onNewNode={contextMenu.type === "pane" ? handleNewNode : undefined}
+        />
+      )}
+
+      {openDoc && (
+        <DocumentModal
+          passphrase={openDoc.passphrase}
+          name={openDoc.name}
+          initialDocument={openDoc.document}
+          onClose={() => setOpenDoc(null)}
         />
       )}
     </div>

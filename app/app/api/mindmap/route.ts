@@ -2,6 +2,7 @@ import {
   getMindMapData,
   createMindMapNode,
   updateMindMapNodeName,
+  updateMindMapNodeDocument,
   toggleMindMapNodeCompleted,
   deleteMindMapNode,
   connectMindMapNodes,
@@ -28,12 +29,14 @@ export async function PUT(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const { passphrase, name, toggleCompleted } = await request.json();
+  const { passphrase, name, document, toggleCompleted } = await request.json();
   if (!passphrase) {
     return Response.json({ error: "passphrase required" }, { status: 400 });
   }
   if (toggleCompleted) {
     await toggleMindMapNodeCompleted(passphrase);
+  } else if (document !== undefined) {
+    await updateMindMapNodeDocument(passphrase, document);
   } else if (name) {
     await updateMindMapNodeName(passphrase, name.trim());
   }
