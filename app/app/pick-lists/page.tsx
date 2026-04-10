@@ -40,6 +40,13 @@ async function getTaskStatuses(): Promise<Status[]> {
   return result.rows;
 }
 
+async function getCrimeSeriesStatuses(): Promise<Status[]> {
+  const result = await poolV002.query(
+    `SELECT name, color FROM crime_series_statuses ORDER BY sort_order`
+  );
+  return result.rows;
+}
+
 const statusColumns: Column<Status>[] = [
   { key: "name", header: "Option" },
   {
@@ -102,10 +109,11 @@ function PickListSection({
 }
 
 export default async function PickListsPage() {
-  const [colors, projectStatuses, taskStatuses] = await Promise.all([
+  const [colors, projectStatuses, taskStatuses, crimeSeriesStatuses] = await Promise.all([
     getPicklistColors(),
     getProjectStatuses(),
     getTaskStatuses(),
+    getCrimeSeriesStatuses(),
   ]);
 
   const grouped = new Map<string, PicklistColor[]>();
@@ -131,6 +139,14 @@ export default async function PickListsPage() {
           <DataTable
             columns={statusColumns}
             rows={taskStatuses}
+            rowKey={(r) => r.name}
+          />
+        </PickListSection>
+
+        <PickListSection title="Crime Series Statuses" usedBy="Crime Series">
+          <DataTable
+            columns={statusColumns}
+            rows={crimeSeriesStatuses}
             rowKey={(r) => r.name}
           />
         </PickListSection>
