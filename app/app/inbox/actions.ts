@@ -11,5 +11,5 @@ export async function deleteRecord(recordId: string) {
   );
 
   await removePassphrase(recordId);
-  revalidatePath("/");
+  revalidatePath("/inbox");
 }
