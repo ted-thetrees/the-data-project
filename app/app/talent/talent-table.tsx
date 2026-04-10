@@ -203,53 +203,53 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
           </colgroup>
           <thead>
             <tr>
-              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-zinc-200">
+              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-transparent">
                 Category
               </th>
-              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-zinc-200">
+              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-transparent">
                 Primary Talent
               </th>
-              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-zinc-200">
+              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-transparent">
                 Overall Rating
               </th>
-              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-zinc-200">
+              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-transparent">
                 Resource
               </th>
-              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-zinc-200">
+              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-transparent">
                 Website
               </th>
-              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-zinc-200">
+              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-transparent">
                 Instagram
               </th>
-              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 border-b border-zinc-200">
+              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 border-b border-transparent">
                 Arch
               </th>
-              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 border-b border-zinc-200">
+              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 border-b border-transparent">
                 Int
               </th>
-              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 border-b border-zinc-200">
+              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 border-b border-transparent">
                 Land
               </th>
-              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 border-b border-zinc-200">
+              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 border-b border-transparent">
                 Light
               </th>
-              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 border-b border-zinc-200">
+              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 border-b border-transparent">
                 Kit
               </th>
-              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 border-b border-zinc-200">
+              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 border-b border-transparent">
                 AViz
               </th>
-              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-zinc-200">
+              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-transparent">
                 Areas
               </th>
-              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-zinc-200">
+              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-transparent">
                 Notes
               </th>
             </tr>
           </thead>
           <tbody>
             {sorted.map((row, i) => (
-              <tr key={row.id} className="border-b border-zinc-50 hover:bg-zinc-50/50">
+              <tr key={row.id} className="border-b border-transparent hover:bg-zinc-50/50">
                 {/* Icicle Column 1: Category */}
                 {categoryStartSet.has(i) && (() => {
                   const span = categoryByIndex[i];
@@ -258,7 +258,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                   return (
                     <td
                       rowSpan={span.rowSpan}
-                      className="align-top px-3 pt-2 font-semibold border-r border-zinc-100"
+                      className="align-top px-3 pt-2 font-semibold border-r border-transparent"
                       style={{ backgroundColor: bg, height: span.rowSpan * ROW_HEIGHT }}
                     >
                       <div className="flex justify-between items-start">
@@ -279,7 +279,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                   return (
                     <td
                       rowSpan={span.rowSpan}
-                      className="align-top px-3 pt-2 font-semibold border-r border-zinc-100"
+                      className="align-top px-3 pt-2 font-semibold border-r border-transparent"
                       style={{ backgroundColor: bg, height: span.rowSpan * ROW_HEIGHT }}
                     >
                       <div className="flex justify-between items-start">
@@ -300,7 +300,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                   return (
                     <td
                       rowSpan={span.rowSpan}
-                      className="align-top px-3 pt-2 font-semibold border-r border-zinc-100"
+                      className="align-top px-3 pt-2 font-semibold border-r border-transparent"
                       style={{ backgroundColor: bg, height: span.rowSpan * ROW_HEIGHT }}
                     >
                       <div className="flex justify-between items-start">
