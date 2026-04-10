@@ -8,6 +8,7 @@ const shortcuts: Record<string, string> = {
   "2": "/talent",
   "3": "/dag-v002",
   "4": "/new-project",
+  "5": "/pick-lists",
 };
 
 export function NavShortcuts() {

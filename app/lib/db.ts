@@ -5,6 +5,11 @@ export const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
+export const poolV002 = new Pool({
+  connectionString: process.env.DATABASE_URL_V002,
+  ssl: { rejectUnauthorized: false },
+});
+
 export async function getInboxRecords(limit = 100, offset = 0) {
   const result = await pool.query(
     `SELECT

@@ -8,6 +8,7 @@ import {
   DiamondIcon,
   HierarchyIcon,
   FolderAddIcon,
+  SwatchIcon,
 } from "@hugeicons/core-free-icons";
 import {
   Sidebar,
@@ -26,6 +27,7 @@ const navItems = [
   { title: "Talent", href: "/talent", icon: DiamondIcon },
   { title: "DAG", href: "/dag-v002", icon: HierarchyIcon },
   { title: "New Project", href: "/new-project", icon: FolderAddIcon },
+  { title: "Pick Lists", href: "/pick-lists", icon: SwatchIcon },
 ];
 
 export function AppSidebar() {
