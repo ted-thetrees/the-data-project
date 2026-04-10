@@ -176,9 +176,9 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
       <div className="overflow-x-auto">
         <table className="w-full text-[length:var(--cell-font-size)]" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: "var(--row-gap)" }}>
           <colgroup>
-            <col style={{ width: 90 }} /> {/* Category */}
-            <col style={{ width: 90 }} /> {/* Primary Talent */}
-            <col style={{ width: 110 }} /> {/* Overall Rating */}
+            <col style={{ width: 120 }} /> {/* Category */}
+            <col style={{ width: 130 }} /> {/* Primary Talent */}
+            <col style={{ width: 175 }} /> {/* Overall Rating */}
             <col style={{ width: 220 }} /> {/* Resource */}
             <col style={{ width: 180 }} /> {/* Website */}
             <col style={{ width: 100 }} /> {/* Instagram */}
@@ -252,7 +252,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                       style={{ backgroundColor: bg, minHeight: span.rowSpan * ROW_HEIGHT }}
                     >
                       <div>
-                        <span style={{ color: textColor }} className="text-sm leading-snug">
+                        <span style={{ color: textColor }} className="text-sm leading-snug whitespace-nowrap">
                           {span.value}
                         </span>
                       </div>
@@ -272,7 +272,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                       style={{ backgroundColor: bg, minHeight: span.rowSpan * ROW_HEIGHT }}
                     >
                       <div>
-                        <span style={{ color: textColor }} className="text-sm leading-snug">
+                        <span style={{ color: textColor }} className="text-sm leading-snug whitespace-nowrap">
                           {span.value}
                         </span>
                       </div>
@@ -292,7 +292,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                       style={{ backgroundColor: bg, minHeight: span.rowSpan * ROW_HEIGHT }}
                     >
                       <div>
-                        <span style={{ color: textColor }} className="text-sm leading-snug">
+                        <span style={{ color: textColor }} className="text-sm leading-snug whitespace-nowrap">
                           {span.value}
                         </span>
                       </div>

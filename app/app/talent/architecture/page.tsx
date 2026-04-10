@@ -79,11 +79,11 @@ const columns: Column<Row>[] = [
   {
     key: "overall_rating",
     header: "Overall Rating",
-    width: 130,
+    width: 175,
     render: (row) => {
       if (!row.overall_rating) return <Empty />;
       return (
-        <span className="text-sm text-white leading-snug">
+        <span className="text-sm text-white leading-snug whitespace-nowrap">
           {row.overall_rating}
         </span>
       );
