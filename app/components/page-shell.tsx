@@ -15,15 +15,15 @@ export function PageShell({
   children,
   className,
 }: PageShellProps) {
+  const classes = [
+    "px-[var(--page-padding-x)] py-[var(--page-padding-y)]",
+    maxWidth,
+    maxWidth ? "mx-auto" : "",
+    className,
+  ].filter(Boolean).join(" ");
+
   return (
-    <div
-      className={cn(
-        "px-[var(--page-padding-x)] py-[var(--page-padding-y)]",
-        maxWidth,
-        className
-      )}
-      style={{ marginInline: "auto" }}
-    >
+    <div className={classes}>
       <div className="flex items-baseline justify-between mb-6">
         <h1 className="text-[length:var(--title-font-size)] font-[number:var(--title-font-weight)] tracking-[var(--letter-spacing-tight)]">
           {title}
