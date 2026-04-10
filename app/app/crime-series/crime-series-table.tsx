@@ -34,10 +34,10 @@ export function CrimeSeriesTable({ data }: { data: SeriesRow[] }) {
           style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: "var(--row-gap)" }}
         >
           <colgroup>
-            <col style={{ width: 240 }} />
-            <col style={{ width: 120 }} />
-            <col style={{ width: 380 }} />
-            <col style={{ width: 200 }} />
+            <col style={{ width: 220 }} />
+            <col style={{ width: 130 }} />
+            <col style={{ width: 480 }} />
+            <col style={{ width: 220 }} />
             <col style={{ width: 110 }} />
           </colgroup>
           <thead>
@@ -57,21 +57,21 @@ export function CrimeSeriesTable({ data }: { data: SeriesRow[] }) {
               const embedUrl = row.youtube_trailer ? youtubeEmbedUrl(row.youtube_trailer) : null;
               return (
                 <tr key={row.id}>
-                  <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] font-medium">
-                    {row.title}
+                  <td className="px-[var(--cell-padding-x)] py-4 bg-[color:var(--cell-bg)] font-medium align-top">
+                    <span className="text-base">{row.title}</span>
                   </td>
-                  <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]">
+                  <td className="px-[var(--cell-padding-x)] py-4 bg-[color:var(--cell-bg)] align-top">
                     {row.network || <Empty />}
                   </td>
-                  <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]">
+                  <td className="px-[var(--cell-padding-x)] py-3 bg-[color:var(--cell-bg)]">
                     {embedUrl ? (
                       <iframe
                         src={embedUrl}
-                        width="340"
-                        height="190"
+                        width="440"
+                        height="248"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
-                        className="rounded"
+                        className="rounded-md"
                         style={{ border: "none" }}
                       />
                     ) : row.youtube_trailer ? (
@@ -83,12 +83,12 @@ export function CrimeSeriesTable({ data }: { data: SeriesRow[] }) {
                     )}
                   </td>
                   <td
-                    className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] align-middle"
+                    className="px-[var(--cell-padding-x)] py-4 align-top"
                     style={row.status_color ? { backgroundColor: row.status_color, color: "#ffffff" } : undefined}
                   >
                     <span className="text-sm leading-snug whitespace-nowrap">{row.status || <Empty />}</span>
                   </td>
-                  <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm">
+                  <td className="px-[var(--cell-padding-x)] py-4 bg-[color:var(--cell-bg)] text-sm align-top">
                     {row.release_date || <Empty />}
                   </td>
                 </tr>
