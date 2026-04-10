@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Outfit, Source_Sans_3 } from "next/font/google";
+import { Outfit, Source_Sans_3, Nunito } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,12 @@ const sourceSans = Source_Sans_3({
   weight: ["300", "400", "500", "600", "700"],
 });
 
+const nunito = Nunito({
+  subsets: ["latin"],
+  variable: "--font-nunito",
+  weight: ["300", "400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   title: "The Data Project",
   description: "Project and task management",
@@ -26,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("h-full", "antialiased", outfit.variable, sourceSans.variable)}>
+    <html lang="en" className={cn("h-full", "antialiased", outfit.variable, sourceSans.variable, nunito.variable)}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

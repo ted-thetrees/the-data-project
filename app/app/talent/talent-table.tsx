@@ -21,12 +21,7 @@ interface TalentRow {
   areas: string | null;
 }
 
-const RATING_ORDER: Record<string, number> = {
-  "1 Absolute Top": 1,
-  "2 Probably Absolute Top": 2,
-  "3 Contenders to (Re)Mull": 3,
-  "4 Other": 4,
-};
+// Sort order is now handled by the server query via pick list tables
 
 // Light background fills for the icicle bands (matching Coda's pastel style)
 const CATEGORY_BG: Record<string, string> = {
@@ -45,10 +40,11 @@ const TALENT_BG: Record<string, string> = {
 };
 
 const RATING_BG: Record<string, string> = {
-  "1 Absolute Top": "hsl(140, 40%, 92%)",
-  "2 Probably Absolute Top": "hsl(170, 35%, 92%)",
-  "3 Contenders to (Re)Mull": "hsl(270, 30%, 93%)",
-  "4 Other": "hsl(0, 0%, 94%)",
+  "Absolute Top": "hsl(140, 40%, 92%)",
+  "Probably Absolute Top": "hsl(170, 35%, 92%)",
+  "Contenders to (Re)Mull": "hsl(270, 30%, 93%)",
+  "Other": "hsl(0, 0%, 94%)",
+  "Rejects": "hsl(0, 40%, 93%)",
 };
 
 // Bold label colors for the group text
@@ -68,10 +64,11 @@ const TALENT_TEXT: Record<string, string> = {
 };
 
 const RATING_TEXT: Record<string, string> = {
-  "1 Absolute Top": "hsl(140, 50%, 30%)",
-  "2 Probably Absolute Top": "hsl(170, 40%, 30%)",
-  "3 Contenders to (Re)Mull": "hsl(270, 35%, 35%)",
-  "4 Other": "hsl(0, 0%, 45%)",
+  "Absolute Top": "hsl(140, 50%, 30%)",
+  "Probably Absolute Top": "hsl(170, 40%, 30%)",
+  "Contenders to (Re)Mull": "hsl(270, 35%, 35%)",
+  "Other": "hsl(0, 0%, 45%)",
+  "Rejects": "hsl(0, 40%, 40%)",
 };
 
 interface GroupSpan {
@@ -128,24 +125,8 @@ function WebsiteLink({ url }: { url: string | null }) {
 }
 
 export function TalentTable({ data }: { data: TalentRow[] }) {
-  // Sort data by group hierarchy, then by name within groups
-  const sorted = useMemo(() => {
-    return [...data].sort((a, b) => {
-      const catA = a.primary_talent_category || "";
-      const catB = b.primary_talent_category || "";
-      if (catA !== catB) return catA.localeCompare(catB);
-
-      const talA = a.primary_talent || "";
-      const talB = b.primary_talent || "";
-      if (talA !== talB) return talA.localeCompare(talB);
-
-      const ratA = RATING_ORDER[a.overall_rating || ""] ?? 99;
-      const ratB = RATING_ORDER[b.overall_rating || ""] ?? 99;
-      if (ratA !== ratB) return ratA - ratB;
-
-      return (a.name || "").localeCompare(b.name || "");
-    });
-  }, [data]);
+  // Data arrives pre-sorted from the server via pick list sort_order
+  const sorted = data;
 
   // Compute rowSpan groups for each icicle column
   const categorySpans = useMemo(

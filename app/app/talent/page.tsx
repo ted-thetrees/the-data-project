@@ -30,8 +30,11 @@ async function getTalent(): Promise<TalentRow[]> {
     FROM talent t
     LEFT JOIN talent_area_links tal ON t.id = tal.talent_id
     LEFT JOIN talent_areas ta ON tal.area_id = ta.id
-    GROUP BY t.id
-    ORDER BY t.primary_talent_category, t.primary_talent, t.overall_rating, t.name
+    LEFT JOIN talent_categories tc ON t.primary_talent_category = tc.name
+    LEFT JOIN talent_types tt ON t.primary_talent = tt.name
+    LEFT JOIN talent_rating_levels trl ON t.overall_rating = trl.name
+    GROUP BY t.id, tc.sort_order, tt.sort_order, trl.sort_order
+    ORDER BY tc.sort_order NULLS LAST, tt.sort_order NULLS LAST, trl.sort_order NULLS LAST, t.name
   `);
   return result.rows;
 }
