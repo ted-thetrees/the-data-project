@@ -11,6 +11,7 @@ import {
   SwatchIcon,
   Building06Icon,
   GridTableIcon,
+  Tv01Icon,
 } from "@hugeicons/core-free-icons";
 import {
   Sidebar,
@@ -32,6 +33,7 @@ const navItems = [
   { title: "DAG", href: "/dag-v002", icon: HierarchyIcon },
   { title: "New Project", href: "/new-project", icon: FolderAddIcon },
   { title: "Pick Lists", href: "/pick-lists", icon: SwatchIcon },
+  { title: "Crime Series", href: "/crime-series", icon: Tv01Icon },
 ];
 
 export function AppSidebar() {

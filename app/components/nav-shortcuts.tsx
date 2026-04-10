@@ -11,6 +11,7 @@ const shortcuts: Record<string, string> = {
   "5": "/dag-v002",
   "6": "/new-project",
   "7": "/pick-lists",
+  "8": "/crime-series",
 };
 
 export function NavShortcuts() {
