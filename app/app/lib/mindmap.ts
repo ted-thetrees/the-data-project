@@ -1,12 +1,19 @@
 import neo4j from "neo4j-driver";
 
-const driver = neo4j.driver(
-  process.env.NEO4J_URI!,
-  neo4j.auth.basic(process.env.NEO4J_USERNAME!, process.env.NEO4J_PASSWORD!)
-);
+let _driver: ReturnType<typeof neo4j.driver> | null = null;
+
+function getDriver() {
+  if (!_driver) {
+    _driver = neo4j.driver(
+      process.env.NEO4J_URI!,
+      neo4j.auth.basic(process.env.NEO4J_USERNAME!, process.env.NEO4J_PASSWORD!)
+    );
+  }
+  return _driver;
+}
 
 function getSession() {
-  return driver.session({ database: process.env.NEO4J_DATABASE });
+  return getDriver().session({ database: process.env.NEO4J_DATABASE });
 }
 
 const WORDS = [
