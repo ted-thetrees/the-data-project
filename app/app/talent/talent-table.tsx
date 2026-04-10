@@ -172,9 +172,9 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
   const ROW_HEIGHT = 36; // px per row
 
   return (
-    <PageShell title="Talent" count={sorted.length} maxWidth="" className="talent-page">
+    <PageShell title="Talent" count={sorted.length} maxWidth=""  className="talent-page">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm" style={{ tableLayout: "fixed", borderSpacing: 2, borderCollapse: "separate" }}>
+        <table className="w-full text-[length:var(--cell-font-size)]" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: "var(--row-gap)" }}>
           <colgroup>
             <col style={{ width: 90 }} /> {/* Category */}
             <col style={{ width: 90 }} /> {/* Primary Talent */}
@@ -193,46 +193,46 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
           </colgroup>
           <thead>
             <tr>
-              <th className="text-left text-xs  text-zinc-400 px-3 py-2 bg-white">
+              <th className="text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
                 Category
               </th>
-              <th className="text-left text-xs  text-zinc-400 px-3 py-2 bg-white">
+              <th className="text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
                 Primary Talent
               </th>
-              <th className="text-left text-xs  text-zinc-400 px-3 py-2 bg-white">
+              <th className="text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
                 Overall Rating
               </th>
-              <th className="text-left text-xs  text-zinc-400 px-3 py-2 bg-white">
+              <th className="text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
                 Resource
               </th>
-              <th className="text-left text-xs  text-zinc-400 px-3 py-2 bg-white">
+              <th className="text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
                 Website
               </th>
-              <th className="text-left text-xs  text-zinc-400 px-3 py-2 bg-white">
+              <th className="text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
                 Instagram
               </th>
-              <th className="text-center text-xs  text-zinc-400 px-1 py-2 bg-white">
+              <th className="text-center text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-1 py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
                 Arch
               </th>
-              <th className="text-center text-xs  text-zinc-400 px-1 py-2 bg-white">
+              <th className="text-center text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-1 py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
                 Int
               </th>
-              <th className="text-center text-xs  text-zinc-400 px-1 py-2 bg-white">
+              <th className="text-center text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-1 py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
                 Land
               </th>
-              <th className="text-center text-xs  text-zinc-400 px-1 py-2 bg-white">
+              <th className="text-center text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-1 py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
                 Light
               </th>
-              <th className="text-center text-xs  text-zinc-400 px-1 py-2 bg-white">
+              <th className="text-center text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-1 py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
                 Kit
               </th>
-              <th className="text-center text-xs  text-zinc-400 px-1 py-2 bg-white">
+              <th className="text-center text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-1 py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
                 AViz
               </th>
-              <th className="text-left text-xs  text-zinc-400 px-3 py-2 bg-white">
+              <th className="text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
                 Areas
               </th>
-              <th className="text-left text-xs  text-zinc-400 px-3 py-2 bg-white">
+              <th className="text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
                 Notes
               </th>
             </tr>
@@ -301,16 +301,16 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                 })()}
 
                 {/* Data columns */}
-                <td className="px-3 py-1.5  text-zinc-900 bg-white">{row.name}</td>
-                <td className="px-3 py-1.5 bg-white"><WebsiteLink url={row.website} /></td>
-                <td className="px-3 py-1.5 bg-white"><WebsiteLink url={row.instagram} /></td>
-                <td className="px-1 py-1.5 text-center bg-white"><YesBadge value={row.architecture} /></td>
-                <td className="px-1 py-1.5 text-center bg-white"><YesBadge value={row.interiors} /></td>
-                <td className="px-1 py-1.5 text-center bg-white"><YesBadge value={row.landscape} /></td>
-                <td className="px-1 py-1.5 text-center bg-white"><YesBadge value={row.lighting} /></td>
-                <td className="px-1 py-1.5 text-center bg-white"><YesBadge value={row.kitchens} /></td>
-                <td className="px-1 py-1.5 text-center bg-white"><YesBadge value={row.archviz} /></td>
-                <td className="px-3 py-1.5 bg-white">
+                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] text-foreground bg-[color:var(--cell-bg)]">{row.name}</td>
+                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]"><WebsiteLink url={row.website} /></td>
+                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]"><WebsiteLink url={row.instagram} /></td>
+                <td className="px-1 py-[var(--cell-padding-y)] text-center bg-[color:var(--cell-bg)]"><YesBadge value={row.architecture} /></td>
+                <td className="px-1 py-[var(--cell-padding-y)] text-center bg-[color:var(--cell-bg)]"><YesBadge value={row.interiors} /></td>
+                <td className="px-1 py-[var(--cell-padding-y)] text-center bg-[color:var(--cell-bg)]"><YesBadge value={row.landscape} /></td>
+                <td className="px-1 py-[var(--cell-padding-y)] text-center bg-[color:var(--cell-bg)]"><YesBadge value={row.lighting} /></td>
+                <td className="px-1 py-[var(--cell-padding-y)] text-center bg-[color:var(--cell-bg)]"><YesBadge value={row.kitchens} /></td>
+                <td className="px-1 py-[var(--cell-padding-y)] text-center bg-[color:var(--cell-bg)]"><YesBadge value={row.archviz} /></td>
+                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]">
                   {row.areas ? (
                     <div className="flex gap-1 flex-wrap">
                       {row.areas.split(", ").map((area) => (
@@ -326,7 +326,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                     <span className="text-zinc-300">—</span>
                   )}
                 </td>
-                <td className="px-3 py-1.5 bg-white">
+                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]">
                   {row.notes ? (
                     <span className="text-zinc-500 truncate block max-w-[160px]" title={row.notes}>
                       {row.notes}

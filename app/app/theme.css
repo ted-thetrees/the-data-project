@@ -9,7 +9,7 @@
 
 :root {
   /* ── Palette ── */
-  --background: #faf9f5;
+  --background: #efeeec;
   --foreground: #3d3929;
   --card: #f5f4ef;
   --card-foreground: #141413;
@@ -37,20 +37,20 @@
   --depth-4: #f0f2f1;
 
   /* ── Default cell background ── */
-  --cell-bg: #F3F0E9;
+  --cell-bg: #ffffff;
 
   /* ── Contrast text (auto dark/light on colored backgrounds) ── */
   --contrast-light: #faf9f6;
   --contrast-dark: #4a4639;
 
   /* ── Typography ── */
-  --font-family: var(--font-outfit), 'Outfit', sans-serif;
+  --font-family: var(--font-nunito), 'Nunito', sans-serif;
   --font-size-xs: 11px;
   --font-size-sm: 12px;
   --font-size-base: 14px;
   --font-size-lg: 16px;
   --font-size-xl: 28px;
-  --font-weight-normal: 400;
+  --font-weight-normal: 500;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
@@ -75,17 +75,17 @@
 
   /* ── Column headers ── */
   --header-font-size: 11px;
-  --header-font-weight: 600;
-  --header-text-transform: uppercase;
-  --header-letter-spacing: 0.06em;
-  --header-bg: var(--muted);
-  --header-color: var(--muted-foreground);
+  --header-font-weight: 500;
+  --header-text-transform: none;
+  --header-letter-spacing: normal;
+  --header-bg: #ffffff;
+  --header-color: #a1a1aa;
   --header-padding-x: 12px;
   --header-padding-y: 8px;
 
   /* ── Cells ── */
   --cell-padding-x: 12px;
-  --cell-padding-y: 8px;
+  --cell-padding-y: 6px;
   --cell-font-size: var(--font-size-base);
   --cell-min-height: 36px;
 
@@ -173,7 +173,7 @@
   --chart-5: #3d3929;
 
   /* ── Sidebar (shadcn compat) ── */
-  --sidebar: #faf9f5;
+  --sidebar: #efeeec;
   --sidebar-foreground: #3d3929;
   --sidebar-primary: #c96442;
   --sidebar-primary-foreground: #ffffff;
