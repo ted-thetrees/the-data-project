@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { PageShell } from "@/components/page-shell";
 import "./talent.css";
 
 interface TalentRow {
@@ -171,12 +172,8 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
   const ROW_HEIGHT = 36; // px per row
 
   return (
-    <div className="talent-page min-h-screen" style={{ backgroundColor: "#efeeec" }}>
-      <div className="py-4" style={{ paddingLeft: 70, paddingRight: 70 }}>
-        <h1 className="text-2xl  text-zinc-900">Talent</h1>
-      </div>
-
-      <div className="overflow-x-auto" style={{ paddingLeft: 70, paddingRight: 70 }}>
+    <PageShell title="Talent" count={sorted.length} maxWidth="" className="talent-page">
+      <div className="overflow-x-auto">
         <table className="w-full text-sm" style={{ tableLayout: "fixed", borderSpacing: 2, borderCollapse: "separate" }}>
           <colgroup>
             <col style={{ width: 90 }} /> {/* Category */}
@@ -343,6 +340,6 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
           </tbody>
         </table>
       </div>
-    </div>
+    </PageShell>
   );
 }

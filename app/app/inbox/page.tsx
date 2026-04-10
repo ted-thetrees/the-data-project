@@ -5,6 +5,7 @@ import { getInboxRecords, getInboxCount } from "@/lib/db";
 import { detectContentType, extractYouTubeId, extractDomain, cleanUrl } from "@/lib/content";
 import { fetchOgImage } from "@/lib/og";
 import { Badge } from "@/components/ui/badge";
+import { PageShell } from "@/components/page-shell";
 import { DeleteButton } from "./delete-button";
 import { ExternalLink } from "./external-link";
 import { format as timeago } from "timeago.js";
@@ -105,20 +106,12 @@ export default async function Home() {
   ]);
 
   return (
-    <div className="min-h-screen bg-background p-6 md:p-10">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-baseline justify-between mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">Inbox</h1>
-          <span className="text-sm text-muted-foreground">
-            {count.toLocaleString()} records
-          </span>
-        </div>
-        <div className="flex flex-col gap-3">
-          {records.map((row) => (
-            <InboxCard key={row.id} row={row} />
-          ))}
-        </div>
+    <PageShell title="Inbox" count={count} maxWidth="max-w-2xl">
+      <div className="flex flex-col gap-3">
+        {records.map((row) => (
+          <InboxCard key={row.id} row={row} />
+        ))}
       </div>
-    </div>
+    </PageShell>
   );
 }

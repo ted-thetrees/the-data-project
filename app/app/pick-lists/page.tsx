@@ -1,4 +1,7 @@
 import { poolV002 } from "@/lib/db";
+import { PageShell } from "@/components/page-shell";
+import { DataTable, type Column } from "@/components/data-table";
+import { Swatch } from "@/components/swatch";
 
 export const metadata = { title: "Pick Lists" };
 export const dynamic = "force-dynamic";
@@ -37,64 +40,63 @@ async function getTaskStatuses(): Promise<Status[]> {
   return result.rows;
 }
 
-function Swatch({ color }: { color: string }) {
-  return (
-    <span
-      className="inline-block w-5 h-5 rounded-sm border border-border shrink-0"
-      style={{ backgroundColor: color }}
-    />
-  );
-}
+const statusColumns: Column<Status>[] = [
+  { key: "name", header: "Option" },
+  {
+    key: "color",
+    header: "Color",
+    render: (row) => <Swatch color={row.color} />,
+  },
+  {
+    key: "hex",
+    header: "Hex",
+    render: (row) => (
+      <span className="font-mono text-xs text-muted-foreground">{row.color}</span>
+    ),
+  },
+];
 
-function StatusTable({
+const statusColumnsWithVisible: Column<Status>[] = [
+  ...statusColumns,
+  {
+    key: "visible",
+    header: "Visible",
+    render: (row) => (
+      <span className="text-muted-foreground">{row.visible ? "Yes" : "No"}</span>
+    ),
+  },
+];
+
+const picklistColumns: Column<PicklistColor>[] = [
+  { key: "option", header: "Option" },
+  {
+    key: "color",
+    header: "Color",
+    render: (row) => <Swatch color={row.color} />,
+  },
+  {
+    key: "hex",
+    header: "Hex",
+    render: (row) => (
+      <span className="font-mono text-xs text-muted-foreground">{row.color}</span>
+    ),
+  },
+];
+
+function PickListSection({
   title,
   usedBy,
-  rows,
-  showVisible,
+  children,
 }: {
   title: string;
-  usedBy: string[];
-  rows: Status[];
-  showVisible?: boolean;
+  usedBy: string;
+  children: React.ReactNode;
 }) {
   return (
     <section>
       <h2 className="text-lg font-semibold mb-1">{title}</h2>
-      <p className="text-sm text-muted-foreground mb-3">
-        Used by: {usedBy.join(", ")}
-      </p>
-      <div className="rounded-lg border border-border overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-muted text-muted-foreground text-xs uppercase tracking-wide">
-              <th className="text-left px-3 py-2 font-semibold">Option</th>
-              <th className="text-left px-3 py-2 font-semibold">Color</th>
-              <th className="text-left px-3 py-2 font-semibold">Hex</th>
-              {showVisible && (
-                <th className="text-left px-3 py-2 font-semibold">Visible</th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.name} className="border-t border-border hover:bg-muted/40">
-                <td className="px-3 py-2">{row.name}</td>
-                <td className="px-3 py-2">
-                  <Swatch color={row.color} />
-                </td>
-                <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
-                  {row.color}
-                </td>
-                {showVisible && (
-                  <td className="px-3 py-2 text-muted-foreground">
-                    {row.visible ? "Yes" : "No"}
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <p className="text-sm text-muted-foreground mb-3">Used by: {usedBy}</p>
+      {children}
     </section>
   );
 }
@@ -106,7 +108,6 @@ export default async function PickListsPage() {
     getTaskStatuses(),
   ]);
 
-  // Group picklist_colors by table + field
   const grouped = new Map<string, PicklistColor[]>();
   for (const row of colors) {
     const key = `${row.table} → ${row.field}`;
@@ -116,60 +117,34 @@ export default async function PickListsPage() {
   }
 
   return (
-    <div className="px-[var(--page-padding-x)] py-[var(--page-padding-y)] max-w-4xl space-y-10">
-      <h1 className="text-2xl font-bold tracking-tight">Pick Lists</h1>
+    <PageShell title="Pick Lists">
+      <div className="space-y-10">
+        <PickListSection title="Project Statuses" usedBy="Projects">
+          <DataTable
+            columns={statusColumnsWithVisible}
+            rows={projectStatuses}
+            rowKey={(r) => r.name}
+          />
+        </PickListSection>
 
-      <StatusTable
-        title="Project Statuses"
-        usedBy={["Projects"]}
-        rows={projectStatuses}
-        showVisible
-      />
+        <PickListSection title="Task Statuses" usedBy="Tasks">
+          <DataTable
+            columns={statusColumns}
+            rows={taskStatuses}
+            rowKey={(r) => r.name}
+          />
+        </PickListSection>
 
-      <StatusTable
-        title="Task Statuses"
-        usedBy={["Tasks"]}
-        rows={taskStatuses}
-      />
-
-      {Array.from(grouped.entries()).map(([key, rows]) => {
-        const tableName = rows[0].table;
-        return (
-          <section key={key}>
-            <h2 className="text-lg font-semibold mb-1">{key}</h2>
-            <p className="text-sm text-muted-foreground mb-3">
-              Used by: {tableName}
-            </p>
-            <div className="rounded-lg border border-border overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-muted text-muted-foreground text-xs uppercase tracking-wide">
-                    <th className="text-left px-3 py-2 font-semibold">Option</th>
-                    <th className="text-left px-3 py-2 font-semibold">Color</th>
-                    <th className="text-left px-3 py-2 font-semibold">Hex</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <tr
-                      key={row.option}
-                      className="border-t border-border hover:bg-muted/40"
-                    >
-                      <td className="px-3 py-2">{row.option}</td>
-                      <td className="px-3 py-2">
-                        <Swatch color={row.color} />
-                      </td>
-                      <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
-                        {row.color}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        );
-      })}
-    </div>
+        {Array.from(grouped.entries()).map(([key, rows]) => (
+          <PickListSection key={key} title={key} usedBy={rows[0].table}>
+            <DataTable
+              columns={picklistColumns}
+              rows={rows}
+              rowKey={(r) => r.option}
+            />
+          </PickListSection>
+        ))}
+      </div>
+    </PageShell>
   );
 }
