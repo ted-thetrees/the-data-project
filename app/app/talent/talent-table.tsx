@@ -32,11 +32,11 @@ const CATEGORY_BG: Record<string, string> = {
 
 const TALENT_BG: Record<string, string> = {
   "Architecture": "hsl(215, 50%, 40%)",
-  "Interiors": "hsl(35, 50%, 42%)",
-  "Landscape": "hsl(130, 35%, 38%)",
-  "Lighting": "hsl(55, 45%, 40%)",
+  "Interior Design": "hsl(35, 50%, 42%)",
+  "Landscape Design": "hsl(130, 35%, 38%)",
+  "Lighting Design": "hsl(55, 45%, 40%)",
   "ArchViz": "hsl(200, 45%, 40%)",
-  "Kitchens": "hsl(340, 40%, 42%)",
+  "Web Design": "hsl(340, 40%, 42%)",
 };
 
 const RATING_BG: Record<string, string> = {
@@ -56,11 +56,11 @@ const CATEGORY_TEXT: Record<string, string> = {
 
 const TALENT_TEXT: Record<string, string> = {
   "Architecture": "#ffffff",
-  "Interiors": "#ffffff",
-  "Landscape": "#ffffff",
-  "Lighting": "#ffffff",
+  "Interior Design": "#ffffff",
+  "Landscape Design": "#ffffff",
+  "Lighting Design": "#ffffff",
   "ArchViz": "#ffffff",
-  "Kitchens": "#ffffff",
+  "Web Design": "#ffffff",
 };
 
 const RATING_TEXT: Record<string, string> = {
@@ -79,14 +79,22 @@ interface GroupSpan {
 
 function computeGroupSpans(
   data: TalentRow[],
-  accessor: (row: TalentRow) => string
+  accessor: (row: TalentRow) => string,
+  parentAccessors?: ((row: TalentRow) => string)[]
 ): GroupSpan[] {
   const spans: GroupSpan[] = [];
   let current: GroupSpan | null = null;
 
   data.forEach((row, i) => {
     const val = accessor(row) || "(none)";
-    if (!current || current.value !== val) {
+    // Break when own value changes OR any parent value changes
+    let parentChanged = false;
+    if (parentAccessors && i > 0) {
+      parentChanged = parentAccessors.some(
+        (pa) => (pa(data[i]) || "(none)") !== (pa(data[i - 1]) || "(none)")
+      );
+    }
+    if (!current || current.value !== val || parentChanged) {
       if (current) spans.push(current);
       current = { value: val, rowSpan: 1, startIndex: i };
     } else {
@@ -133,12 +141,15 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
     () => computeGroupSpans(sorted, (r) => r.primary_talent_category || "(none)"),
     [sorted]
   );
+  const categoryAccessor = (r: TalentRow) => r.primary_talent_category || "(none)";
+  const talentAccessor = (r: TalentRow) => r.primary_talent || "(none)";
+
   const talentSpans = useMemo(
-    () => computeGroupSpans(sorted, (r) => r.primary_talent || "(none)"),
+    () => computeGroupSpans(sorted, talentAccessor, [categoryAccessor]),
     [sorted]
   );
   const ratingSpans = useMemo(
-    () => computeGroupSpans(sorted, (r) => r.overall_rating || "(none)"),
+    () => computeGroupSpans(sorted, (r) => r.overall_rating || "(none)", [categoryAccessor, talentAccessor]),
     [sorted]
   );
 
