@@ -178,7 +178,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
   const ROW_HEIGHT = 36; // px per row
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#f9f9f7" }}>
+    <div className="min-h-screen font-[var(--font-source-sans)] font-light" style={{ backgroundColor: "#f9f9f7" }}>
       <div className="px-6 py-4">
         <h1 className="text-2xl font-bold text-zinc-900">Talent</h1>
       </div>
