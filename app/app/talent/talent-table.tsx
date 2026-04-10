@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import "./talent.css";
 
 interface TalentRow {
   id: string;
@@ -178,7 +179,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
   const ROW_HEIGHT = 36; // px per row
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#f9f9f7", ["--font-family" as any]: "var(--font-source-sans)", fontWeight: 300 }}>
+    <div className="talent-page min-h-screen" style={{ backgroundColor: "#f9f9f7" }}>
       <div className="px-6 py-4">
         <h1 className="text-2xl font-bold text-zinc-900">Talent</h1>
       </div>
