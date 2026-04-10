@@ -1,12 +1,19 @@
 import neo4j from "neo4j-driver";
 
-const driver = neo4j.driver(
-  process.env.NEO4J_URI!,
-  neo4j.auth.basic(process.env.NEO4J_USERNAME!, process.env.NEO4J_PASSWORD!)
-);
+let _driver: ReturnType<typeof neo4j.driver> | null = null;
+
+function getDriver() {
+  if (!_driver) {
+    _driver = neo4j.driver(
+      process.env.NEO4J_URI!,
+      neo4j.auth.basic(process.env.NEO4J_USERNAME!, process.env.NEO4J_PASSWORD!)
+    );
+  }
+  return _driver;
+}
 
 export async function getDagData() {
-  const session = driver.session({ database: process.env.NEO4J_DATABASE });
+  const session = getDriver().session({ database: process.env.NEO4J_DATABASE });
   try {
     const result = await session.run(`
       MATCH (t:DagTask)
@@ -48,7 +55,7 @@ export async function createDagTask(
   connectedFromId?: string,
   handleType?: "source" | "target"
 ) {
-  const session = driver.session({ database: process.env.NEO4J_DATABASE });
+  const session = getDriver().session({ database: process.env.NEO4J_DATABASE });
   try {
     // Generate a passphrase
     const words = [
@@ -101,7 +108,7 @@ export async function createDagTask(
 }
 
 export async function deleteDagTask(id: string) {
-  const session = driver.session({ database: process.env.NEO4J_DATABASE });
+  const session = getDriver().session({ database: process.env.NEO4J_DATABASE });
   try {
     await session.run(`MATCH (t:DagTask {id: $id}) DETACH DELETE t`, { id });
   } finally {
@@ -110,7 +117,7 @@ export async function deleteDagTask(id: string) {
 }
 
 export async function deleteDagEdge(sourceId: string, targetId: string) {
-  const session = driver.session({ database: process.env.NEO4J_DATABASE });
+  const session = getDriver().session({ database: process.env.NEO4J_DATABASE });
   try {
     await session.run(
       `MATCH (a:DagTask {id: $sourceId})-[r:DEPENDS_ON]->(b:DagTask {id: $targetId}) DELETE r`,
@@ -122,7 +129,7 @@ export async function deleteDagEdge(sourceId: string, targetId: string) {
 }
 
 export async function createDagEdge(sourceId: string, targetId: string) {
-  const session = driver.session({ database: process.env.NEO4J_DATABASE });
+  const session = getDriver().session({ database: process.env.NEO4J_DATABASE });
   try {
     await session.run(
       `MATCH (a:DagTask {id: $sourceId}), (b:DagTask {id: $targetId})
@@ -135,7 +142,7 @@ export async function createDagEdge(sourceId: string, targetId: string) {
 }
 
 export async function updateDagTaskText(id: string, text: string) {
-  const session = driver.session({ database: process.env.NEO4J_DATABASE });
+  const session = getDriver().session({ database: process.env.NEO4J_DATABASE });
   try {
     await session.run(
       `MATCH (t:DagTask {id: $id}) SET t.text = $text`,
