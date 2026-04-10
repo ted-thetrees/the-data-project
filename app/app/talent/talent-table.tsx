@@ -263,7 +263,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                       style={{ backgroundColor: bg, height: span.rowSpan * ROW_HEIGHT }}
                     >
                       <div>
-                        <span style={{ color: textColor }} className="text-xs leading-tight">
+                        <span style={{ color: textColor }} className="text-sm leading-snug">
                           {span.value}
                         </span>
                       </div>
@@ -283,7 +283,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                       style={{ backgroundColor: bg, height: span.rowSpan * ROW_HEIGHT }}
                     >
                       <div>
-                        <span style={{ color: textColor }} className="text-xs leading-tight">
+                        <span style={{ color: textColor }} className="text-sm leading-snug">
                           {span.value}
                         </span>
                       </div>
@@ -303,7 +303,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                       style={{ backgroundColor: bg, height: span.rowSpan * ROW_HEIGHT }}
                     >
                       <div>
-                        <span style={{ color: textColor }} className="text-xs leading-tight">
+                        <span style={{ color: textColor }} className="text-sm leading-snug">
                           {span.value}
                         </span>
                       </div>
