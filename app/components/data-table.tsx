@@ -14,6 +14,9 @@ interface DataTableProps<T> {
   rows: T[];
   rowKey: (row: T) => string;
   className?: string;
+  fixedLayout?: boolean;
+  ratingColumn?: string;
+  ratingColors?: Record<string, string>;
 }
 
 export function DataTable<T>({
@@ -21,12 +24,16 @@ export function DataTable<T>({
   rows,
   rowKey,
   className,
+  fixedLayout,
+  ratingColumn,
+  ratingColors,
 }: DataTableProps<T>) {
   return (
     <div className={cn("overflow-x-auto", className)}>
       <table
         className="w-full text-[length:var(--cell-font-size)]"
         style={{
+          tableLayout: fixedLayout ? "fixed" : undefined,
           borderCollapse: "separate",
           borderSpacing: "var(--row-gap)",
         }}
@@ -52,7 +59,6 @@ export function DataTable<T>({
                     : col.align === "right"
                       ? "text-right"
                       : "text-left",
-                  col.className
                 )}
               >
                 {col.header}
@@ -61,29 +67,39 @@ export function DataTable<T>({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={rowKey(row)}>
-              {columns.map((col) => (
-                <td
-                  key={col.key}
-                  className={cn(
-                    "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)]",
-                    "bg-[color:var(--cell-bg)]",
-                    col.align === "center"
-                      ? "text-center"
-                      : col.align === "right"
-                        ? "text-right"
-                        : "text-left",
-                    col.className
-                  )}
-                >
-                  {col.render
-                    ? col.render(row)
-                    : String((row as Record<string, unknown>)[col.key] ?? "")}
-                </td>
-              ))}
-            </tr>
-          ))}
+          {rows.map((row) => {
+            const record = row as Record<string, unknown>;
+            return (
+              <tr key={rowKey(row)}>
+                {columns.map((col) => {
+                  const isRating = ratingColumn && col.key === ratingColumn;
+                  const ratingValue = isRating ? String(record[col.key] ?? "") : "";
+                  const ratingBg = isRating && ratingColors ? ratingColors[ratingValue] : undefined;
+
+                  return (
+                    <td
+                      key={col.key}
+                      className={cn(
+                        "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)]",
+                        !ratingBg && "bg-[color:var(--cell-bg)]",
+                        col.align === "center"
+                          ? "text-center"
+                          : col.align === "right"
+                            ? "text-right"
+                            : "text-left",
+                        col.className,
+                      )}
+                      style={ratingBg ? { backgroundColor: ratingBg, padding: "6px 12px" } : undefined}
+                    >
+                      {col.render
+                        ? col.render(row)
+                        : String(record[col.key] ?? "")}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

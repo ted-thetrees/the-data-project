@@ -39,27 +39,18 @@ async function getData(): Promise<Row[]> {
   return result.rows;
 }
 
-function RatingCell({ value }: { value: string | null }) {
-  if (!value) return <span className="text-muted-foreground">—</span>;
-  const bg = RATING_BG[value] || "hsl(0, 0%, 45%)";
-  return (
-    <span
-      className="inline-block px-2.5 py-1 rounded text-xs font-medium text-white"
-      style={{ backgroundColor: bg }}
-    >
-      {value}
-    </span>
-  );
+function Empty() {
+  return <span className="text-zinc-300">—</span>;
 }
 
 function WebLink({ url }: { url: string | null }) {
-  if (!url) return <span className="text-muted-foreground">—</span>;
+  if (!url) return <Empty />;
   return (
     <a
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-primary hover:underline text-sm truncate block max-w-[200px]"
+      className="text-blue-600 hover:text-blue-800 hover:underline text-sm truncate block"
       title={url}
     >
       {url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
@@ -68,13 +59,13 @@ function WebLink({ url }: { url: string | null }) {
 }
 
 function AreaTags({ areas }: { areas: string | null }) {
-  if (!areas) return <span className="text-muted-foreground">—</span>;
+  if (!areas) return <Empty />;
   return (
     <div className="flex gap-1 flex-wrap">
       {areas.split(", ").map((area) => (
         <span
           key={area}
-          className="inline-block px-1.5 py-0.5 rounded text-xs bg-muted text-muted-foreground"
+          className="inline-block px-1.5 py-0.5 rounded text-xs bg-zinc-100 text-zinc-600"
         >
           {area}
         </span>
@@ -84,37 +75,49 @@ function AreaTags({ areas }: { areas: string | null }) {
 }
 
 const columns: Column<Row>[] = [
-  { key: "name", header: "Name" },
+  { key: "name", header: "Resource", width: 220 },
   {
     key: "overall_rating",
-    header: "Rating",
-    render: (row) => <RatingCell value={row.overall_rating} />,
+    header: "Overall Rating",
+    width: 130,
+    render: (row) => {
+      if (!row.overall_rating) return <Empty />;
+      return (
+        <span className="text-sm text-white leading-snug">
+          {row.overall_rating}
+        </span>
+      );
+    },
   },
   {
     key: "website",
     header: "Website",
+    width: 200,
     render: (row) => <WebLink url={row.website} />,
   },
   {
     key: "instagram",
     header: "Instagram",
+    width: 180,
     render: (row) => <WebLink url={row.instagram} />,
   },
   {
     key: "areas",
     header: "Areas",
+    width: 160,
     render: (row) => <AreaTags areas={row.areas} />,
   },
   {
     key: "notes",
     header: "Notes",
+    width: 200,
     render: (row) =>
       row.notes ? (
-        <span className="text-muted-foreground truncate block max-w-[200px]" title={row.notes}>
+        <span className="text-zinc-500 truncate block" title={row.notes}>
           {row.notes}
         </span>
       ) : (
-        <span className="text-muted-foreground">—</span>
+        <Empty />
       ),
   },
 ];
@@ -123,11 +126,18 @@ export default async function ArchitecturePage() {
   const data = await getData();
 
   return (
-    <PageShell title="Architecture" count={data.length}>
+    <PageShell title="Architecture" count={data.length} maxWidth="">
       <p className="text-sm text-muted-foreground -mt-4 mb-6">
         Places &middot; Architecture &middot; sorted by Rating
       </p>
-      <DataTable columns={columns} rows={data} rowKey={(r) => r.id} />
+      <DataTable
+        columns={columns}
+        rows={data}
+        rowKey={(r) => r.id}
+        fixedLayout
+        ratingColumn="overall_rating"
+        ratingColors={RATING_BG}
+      />
     </PageShell>
   );
 }
