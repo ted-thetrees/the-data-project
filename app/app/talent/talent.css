@@ -6,3 +6,8 @@
 .talent-page * {
   font-family: inherit;
 }
+
+.talent-page td,
+.talent-page th {
+  text-wrap: balance;
+}
