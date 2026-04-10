@@ -35,8 +35,10 @@ export function AllisonEvalList({ data }: { data: AllisonRow[] }) {
               {embedUrl ? (
                 <iframe
                   src={embedUrl}
-                  className="w-full rounded-md"
-                  style={{ aspectRatio: "16/9", border: "none" }}
+                  width="750"
+                  height="422"
+                  className="rounded-md"
+                  style={{ border: "none", maxWidth: "100%" }}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
