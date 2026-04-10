@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generatePassphrase } from "@/lib/passphrase";
 import { tidyText, detectContentType, cleanUrl } from "@/lib/content";
-import { pool, BR, F } from "@/lib/db";
+import { pool } from "@/lib/db";
 
 const MAX_RETRIES = 5;
 
@@ -18,8 +18,8 @@ export async function POST(req: NextRequest) {
     try {
       // Insert passphrase directly via SQL
       await pool.query(
-        `INSERT INTO ${BR.Passphrases} (${F.pass_passphrase}, ${F.pass_table_name}, ${F.pass_record_id}, "order", created_on, updated_on, trashed)
-         VALUES ($1, $2, $3, 1, NOW(), NOW(), false)`,
+        `INSERT INTO passphrases (passphrase, table_name, record_id)
+         VALUES ($1, $2, $3)`,
         [passphrase, tableName, recordId]
       );
 
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       if (tableName === "Inbox") {
         try {
           const recordRes = await pool.query(
-            `SELECT ${F.inbox_title} as content FROM ${BR.Inbox} WHERE ${F.inbox_teable_id} = $1 OR id::text = $1 LIMIT 1`,
+            `SELECT title as content FROM inbox WHERE teable_id = $1 OR id::text = $1 LIMIT 1`,
             [recordId]
           );
           if (recordRes.rows.length > 0) {
@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
               const tidied = tidyText(content);
               if (tidied !== content) {
                 await pool.query(
-                  `UPDATE ${BR.Inbox} SET ${F.inbox_title} = $1, updated_on = NOW()
-                   WHERE ${F.inbox_teable_id} = $2 OR id::text = $2`,
+                  `UPDATE inbox SET title = $1
+                   WHERE teable_id = $2 OR id::text = $2`,
                   [tidied, recordId]
                 );
               }
@@ -45,8 +45,8 @@ export async function POST(req: NextRequest) {
               const cleaned = cleanUrl(content);
               if (cleaned !== content) {
                 await pool.query(
-                  `UPDATE ${BR.Inbox} SET ${F.inbox_title} = $1, updated_on = NOW()
-                   WHERE ${F.inbox_teable_id} = $2 OR id::text = $2`,
+                  `UPDATE inbox SET title = $1
+                   WHERE teable_id = $2 OR id::text = $2`,
                   [cleaned, recordId]
                 );
               }
