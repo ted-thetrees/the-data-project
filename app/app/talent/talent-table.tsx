@@ -251,8 +251,8 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                   return (
                     <td
                       rowSpan={span.rowSpan}
-                      className="align-top px-3 pt-2"
-                      style={{ backgroundColor: bg, height: span.rowSpan * ROW_HEIGHT }}
+                      className="align-top px-3 py-2"
+                      style={{ backgroundColor: bg, minHeight: span.rowSpan * ROW_HEIGHT }}
                     >
                       <div>
                         <span style={{ color: textColor }} className="text-sm leading-snug">
@@ -271,8 +271,8 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                   return (
                     <td
                       rowSpan={span.rowSpan}
-                      className="align-top px-3 pt-2"
-                      style={{ backgroundColor: bg, height: span.rowSpan * ROW_HEIGHT }}
+                      className="align-top px-3 py-2"
+                      style={{ backgroundColor: bg, minHeight: span.rowSpan * ROW_HEIGHT }}
                     >
                       <div>
                         <span style={{ color: textColor }} className="text-sm leading-snug">
@@ -291,8 +291,8 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                   return (
                     <td
                       rowSpan={span.rowSpan}
-                      className="align-top px-3 pt-2"
-                      style={{ backgroundColor: bg, height: span.rowSpan * ROW_HEIGHT }}
+                      className="align-top px-3 py-2"
+                      style={{ backgroundColor: bg, minHeight: span.rowSpan * ROW_HEIGHT }}
                     >
                       <div>
                         <span style={{ color: textColor }} className="text-sm leading-snug">
