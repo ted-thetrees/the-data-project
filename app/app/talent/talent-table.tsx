@@ -184,7 +184,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm" style={{ tableLayout: "fixed" }}>
+        <table className="w-full text-sm" style={{ tableLayout: "fixed", borderSpacing: 2, borderCollapse: "separate" }}>
           <colgroup>
             <col style={{ width: 160 }} /> {/* Category */}
             <col style={{ width: 160 }} /> {/* Primary Talent */}
@@ -203,53 +203,53 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
           </colgroup>
           <thead>
             <tr>
-              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-transparent">
+              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 bg-white">
                 Category
               </th>
-              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-transparent">
+              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 bg-white">
                 Primary Talent
               </th>
-              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-transparent">
+              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 bg-white">
                 Overall Rating
               </th>
-              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-transparent">
+              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 bg-white">
                 Resource
               </th>
-              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-transparent">
+              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 bg-white">
                 Website
               </th>
-              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-transparent">
+              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 bg-white">
                 Instagram
               </th>
-              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 border-b border-transparent">
+              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 bg-white">
                 Arch
               </th>
-              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 border-b border-transparent">
+              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 bg-white">
                 Int
               </th>
-              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 border-b border-transparent">
+              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 bg-white">
                 Land
               </th>
-              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 border-b border-transparent">
+              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 bg-white">
                 Light
               </th>
-              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 border-b border-transparent">
+              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 bg-white">
                 Kit
               </th>
-              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 border-b border-transparent">
+              <th className="text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1 py-2 bg-white">
                 AViz
               </th>
-              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-transparent">
+              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 bg-white">
                 Areas
               </th>
-              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-transparent">
+              <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 py-2 bg-white">
                 Notes
               </th>
             </tr>
           </thead>
           <tbody>
             {sorted.map((row, i) => (
-              <tr key={row.id} className="border-b border-transparent hover:bg-zinc-50/50">
+              <tr key={row.id}>
                 {/* Icicle Column 1: Category */}
                 {categoryStartSet.has(i) && (() => {
                   const span = categoryByIndex[i];
@@ -258,7 +258,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                   return (
                     <td
                       rowSpan={span.rowSpan}
-                      className="align-top px-3 pt-2 font-semibold border-r border-transparent"
+                      className="align-top px-3 pt-2 font-semibold "
                       style={{ backgroundColor: bg, height: span.rowSpan * ROW_HEIGHT }}
                     >
                       <div className="flex justify-between items-start">
@@ -279,7 +279,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                   return (
                     <td
                       rowSpan={span.rowSpan}
-                      className="align-top px-3 pt-2 font-semibold border-r border-transparent"
+                      className="align-top px-3 pt-2 font-semibold "
                       style={{ backgroundColor: bg, height: span.rowSpan * ROW_HEIGHT }}
                     >
                       <div className="flex justify-between items-start">
@@ -300,7 +300,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                   return (
                     <td
                       rowSpan={span.rowSpan}
-                      className="align-top px-3 pt-2 font-semibold border-r border-transparent"
+                      className="align-top px-3 pt-2 font-semibold "
                       style={{ backgroundColor: bg, height: span.rowSpan * ROW_HEIGHT }}
                     >
                       <div className="flex justify-between items-start">
@@ -314,16 +314,16 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                 })()}
 
                 {/* Data columns */}
-                <td className="px-3 py-1.5 font-medium text-zinc-900">{row.name}</td>
-                <td className="px-3 py-1.5"><WebsiteLink url={row.website} /></td>
-                <td className="px-3 py-1.5"><WebsiteLink url={row.instagram} /></td>
-                <td className="px-1 py-1.5 text-center"><YesBadge value={row.architecture} /></td>
-                <td className="px-1 py-1.5 text-center"><YesBadge value={row.interiors} /></td>
-                <td className="px-1 py-1.5 text-center"><YesBadge value={row.landscape} /></td>
-                <td className="px-1 py-1.5 text-center"><YesBadge value={row.lighting} /></td>
-                <td className="px-1 py-1.5 text-center"><YesBadge value={row.kitchens} /></td>
-                <td className="px-1 py-1.5 text-center"><YesBadge value={row.archviz} /></td>
-                <td className="px-3 py-1.5">
+                <td className="px-3 py-1.5 font-medium text-zinc-900 bg-white">{row.name}</td>
+                <td className="px-3 py-1.5 bg-white"><WebsiteLink url={row.website} /></td>
+                <td className="px-3 py-1.5 bg-white"><WebsiteLink url={row.instagram} /></td>
+                <td className="px-1 py-1.5 text-center bg-white"><YesBadge value={row.architecture} /></td>
+                <td className="px-1 py-1.5 text-center bg-white"><YesBadge value={row.interiors} /></td>
+                <td className="px-1 py-1.5 text-center bg-white"><YesBadge value={row.landscape} /></td>
+                <td className="px-1 py-1.5 text-center bg-white"><YesBadge value={row.lighting} /></td>
+                <td className="px-1 py-1.5 text-center bg-white"><YesBadge value={row.kitchens} /></td>
+                <td className="px-1 py-1.5 text-center bg-white"><YesBadge value={row.archviz} /></td>
+                <td className="px-3 py-1.5 bg-white">
                   {row.areas ? (
                     <div className="flex gap-1 flex-wrap">
                       {row.areas.split(", ").map((area) => (
@@ -339,7 +339,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                     <span className="text-zinc-300">—</span>
                   )}
                 </td>
-                <td className="px-3 py-1.5">
+                <td className="px-3 py-1.5 bg-white">
                   {row.notes ? (
                     <span className="text-zinc-500 truncate block max-w-[160px]" title={row.notes}>
                       {row.notes}
