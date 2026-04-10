@@ -240,7 +240,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                   return (
                     <td
                       rowSpan={span.rowSpan}
-                      className="align-top px-2 pt-2  "
+                      className="align-top px-3 pt-2"
                       style={{ backgroundColor: bg, height: span.rowSpan * ROW_HEIGHT }}
                     >
                       <div>
@@ -260,7 +260,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                   return (
                     <td
                       rowSpan={span.rowSpan}
-                      className="align-top px-2 pt-2  "
+                      className="align-top px-3 pt-2"
                       style={{ backgroundColor: bg, height: span.rowSpan * ROW_HEIGHT }}
                     >
                       <div>
@@ -280,7 +280,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                   return (
                     <td
                       rowSpan={span.rowSpan}
-                      className="align-top px-2 pt-2  "
+                      className="align-top px-3 pt-2"
                       style={{ backgroundColor: bg, height: span.rowSpan * ROW_HEIGHT }}
                     >
                       <div>
