@@ -19,7 +19,7 @@ function youtubeEmbedUrl(url: string): string | null {
 
 export function AllisonEvalList({ data }: { data: AllisonRow[] }) {
   return (
-    <div className="mx-auto px-6 py-10" style={{ maxWidth: 800 }}>
+    <div className="w-full mx-auto px-6 py-10" style={{ maxWidth: 800 }}>
       <h1 className="text-[length:var(--title-font-size)] font-[number:var(--title-font-weight)] tracking-[var(--letter-spacing-tight)] mb-2">
         Allison to Eval
       </h1>
