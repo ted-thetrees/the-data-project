@@ -33,15 +33,15 @@ export function AllisonEvalList({ data }: { data: AllisonRow[] }) {
             <div key={row.id}>
               <h2 className="text-base font-medium mb-3">{row.title}</h2>
               {embedUrl ? (
-                <iframe
-                  src={embedUrl}
-                  width="750"
-                  height="422"
-                  className="rounded-md"
-                  style={{ border: "none", maxWidth: "100%" }}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+                <div className="relative w-full rounded-md overflow-hidden" style={{ paddingBottom: "56.25%" }}>
+                  <iframe
+                    src={embedUrl}
+                    className="absolute inset-0 w-full h-full"
+                    style={{ border: "none" }}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
               ) : (
                 <p className="text-sm text-zinc-400">No trailer available</p>
               )}
