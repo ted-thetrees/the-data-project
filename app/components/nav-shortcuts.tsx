@@ -6,9 +6,10 @@ import { useRouter } from "next/navigation";
 const shortcuts: Record<string, string> = {
   "1": "/inbox",
   "2": "/talent",
-  "3": "/dag-v002",
-  "4": "/new-project",
-  "5": "/pick-lists",
+  "3": "/talent/architecture",
+  "4": "/dag-v002",
+  "5": "/new-project",
+  "6": "/pick-lists",
 };
 
 export function NavShortcuts() {

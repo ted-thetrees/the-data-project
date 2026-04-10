@@ -9,6 +9,7 @@ import {
   HierarchyIcon,
   FolderAddIcon,
   SwatchIcon,
+  Building06Icon,
 } from "@hugeicons/core-free-icons";
 import {
   Sidebar,
@@ -25,6 +26,7 @@ import {
 const navItems = [
   { title: "Inbox", href: "/inbox", icon: InboxIcon },
   { title: "Talent", href: "/talent", icon: DiamondIcon },
+  { title: "Architecture", href: "/talent/architecture", icon: Building06Icon },
   { title: "DAG", href: "/dag-v002", icon: HierarchyIcon },
   { title: "New Project", href: "/new-project", icon: FolderAddIcon },
   { title: "Pick Lists", href: "/pick-lists", icon: SwatchIcon },
