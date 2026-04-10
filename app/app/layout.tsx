@@ -25,7 +25,10 @@ const nunito = Nunito({
 });
 
 export const metadata: Metadata = {
-  title: "The Data Project",
+  title: {
+    default: "The Data Project",
+    template: "%s — The Data Project",
+  },
   description: "Project and task management",
 };
 

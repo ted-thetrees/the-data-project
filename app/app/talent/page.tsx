@@ -1,6 +1,7 @@
 import { pool } from "@/lib/db";
 import { TalentTable } from "./talent-table";
 
+export const metadata = { title: "Talent" };
 export const dynamic = "force-dynamic";
 
 interface TalentRow {
