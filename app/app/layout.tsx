@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { NavShortcuts } from "@/components/nav-shortcuts";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const outfit = Outfit({
@@ -43,6 +44,7 @@ export default function RootLayout({
         <TooltipProvider>
           <SidebarProvider defaultOpen={false}>
             <AppSidebar />
+            <NavShortcuts />
             <SidebarInset>
               <header className="flex h-12 items-center px-4">
                 <SidebarTrigger />
