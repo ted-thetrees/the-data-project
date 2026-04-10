@@ -1,7 +1,41 @@
 "use client";
 
+import { useMemo } from "react";
 import { PageShell } from "@/components/page-shell";
 import type { SeriesRow } from "./page";
+
+interface GroupSpan {
+  value: string;
+  rowSpan: number;
+  startIndex: number;
+  color?: string;
+}
+
+function computeGroupSpans(
+  data: SeriesRow[],
+  accessor: (row: SeriesRow) => string,
+  colorAccessor?: (row: SeriesRow) => string
+): GroupSpan[] {
+  const spans: GroupSpan[] = [];
+  let current: GroupSpan | null = null;
+
+  data.forEach((row, i) => {
+    const val = accessor(row) || "(none)";
+    if (!current || current.value !== val) {
+      if (current) spans.push(current);
+      current = {
+        value: val,
+        rowSpan: 1,
+        startIndex: i,
+        color: colorAccessor?.(row),
+      };
+    } else {
+      current.rowSpan++;
+    }
+  });
+  if (current) spans.push(current);
+  return spans;
+}
 
 function Empty() {
   return <span className="text-zinc-300">—</span>;
@@ -23,10 +57,23 @@ function youtubeEmbedUrl(url: string): string | null {
 }
 
 export function CrimeSeriesTable({ data }: { data: SeriesRow[] }) {
+  const statusSpans = useMemo(
+    () =>
+      computeGroupSpans(
+        data,
+        (r) => r.status || "(none)",
+        (r) => r.status_color || ""
+      ),
+    [data]
+  );
+
+  const statusStartSet = new Set(statusSpans.map((s) => s.startIndex));
+  const statusByIndex = Object.fromEntries(statusSpans.map((s) => [s.startIndex, s]));
+
   return (
     <PageShell title="Crime Series" count={data.length} maxWidth="">
       <p className="text-sm text-muted-foreground -mt-4 mb-6">
-        British crime &amp; murder TV &middot; sorted by release date
+        British crime &amp; murder TV &middot; grouped by status
       </p>
       <div className="overflow-x-auto">
         <table
@@ -34,15 +81,15 @@ export function CrimeSeriesTable({ data }: { data: SeriesRow[] }) {
           style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: "var(--row-gap)" }}
         >
           <colgroup>
+            <col style={{ width: 180 }} />
             <col style={{ width: 220 }} />
             <col style={{ width: 130 }} />
             <col style={{ width: 480 }} />
-            <col style={{ width: 220 }} />
             <col style={{ width: 110 }} />
           </colgroup>
           <thead>
             <tr>
-              {["Series Title", "Network", "Trailer", "Status", "Release Date"].map((h) => (
+              {["Status", "Series Title", "Network", "Trailer", "Release Date"].map((h) => (
                 <th
                   key={h}
                   className="text-left text-[length:var(--header-font-size)] font-[number:var(--header-font-weight)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]"
@@ -53,10 +100,22 @@ export function CrimeSeriesTable({ data }: { data: SeriesRow[] }) {
             </tr>
           </thead>
           <tbody>
-            {data.map((row) => {
+            {data.map((row, i) => {
               const embedUrl = row.youtube_trailer ? youtubeEmbedUrl(row.youtube_trailer) : null;
               return (
                 <tr key={row.id}>
+                  {statusStartSet.has(i) && (() => {
+                    const span = statusByIndex[i];
+                    return (
+                      <td
+                        rowSpan={span.rowSpan}
+                        className="align-top px-3 py-3"
+                        style={{ backgroundColor: span.color || "hsl(0, 0%, 45%)", color: "#ffffff" }}
+                      >
+                        <span className="text-sm leading-snug whitespace-nowrap">{span.value}</span>
+                      </td>
+                    );
+                  })()}
                   <td className="px-[var(--cell-padding-x)] py-4 bg-[color:var(--cell-bg)] font-medium align-top">
                     <span className="text-base">{row.title}</span>
                   </td>
@@ -81,12 +140,6 @@ export function CrimeSeriesTable({ data }: { data: SeriesRow[] }) {
                     ) : (
                       <Empty />
                     )}
-                  </td>
-                  <td
-                    className="px-[var(--cell-padding-x)] py-4 align-top"
-                    style={row.status_color ? { backgroundColor: row.status_color, color: "#ffffff" } : undefined}
-                  >
-                    <span className="text-sm leading-snug whitespace-nowrap">{row.status || <Empty />}</span>
                   </td>
                   <td className="px-[var(--cell-padding-x)] py-4 bg-[color:var(--cell-bg)] text-sm align-top">
                     {row.release_date || <Empty />}
