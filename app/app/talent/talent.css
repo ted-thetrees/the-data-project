@@ -1,6 +1,7 @@
 .talent-page {
   font-family: var(--font-nunito), 'Nunito', sans-serif;
-  font-weight: 400;
+  font-weight: 500;
+  font-size: 14px;
 }
 
 .talent-page * {
@@ -10,4 +11,10 @@
 .talent-page td,
 .talent-page th {
   text-wrap: balance;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.talent-page h1 {
+  font-weight: 500;
 }
