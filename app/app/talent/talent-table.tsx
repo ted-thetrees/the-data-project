@@ -161,11 +161,11 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
 
   return (
     <div className="talent-page min-h-screen" style={{ backgroundColor: "#f9f9f7" }}>
-      <div className="px-6 py-4">
+      <div className="py-4" style={{ paddingLeft: 70, paddingRight: 70 }}>
         <h1 className="text-2xl  text-zinc-900">Talent</h1>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" style={{ paddingLeft: 70, paddingRight: 70 }}>
         <table className="w-full text-sm" style={{ tableLayout: "fixed", borderSpacing: 2, borderCollapse: "separate" }}>
           <colgroup>
             <col style={{ width: 90 }} /> {/* Category */}
