@@ -185,46 +185,46 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
           </colgroup>
           <thead>
             <tr>
-              <th className="text-left text-xs  text-zinc-400 uppercase tracking-wider px-3 py-2 bg-white">
+              <th className="text-left text-xs  text-zinc-400 px-3 py-2 bg-white">
                 Category
               </th>
-              <th className="text-left text-xs  text-zinc-400 uppercase tracking-wider px-3 py-2 bg-white">
+              <th className="text-left text-xs  text-zinc-400 px-3 py-2 bg-white">
                 Primary Talent
               </th>
-              <th className="text-left text-xs  text-zinc-400 uppercase tracking-wider px-3 py-2 bg-white">
+              <th className="text-left text-xs  text-zinc-400 px-3 py-2 bg-white">
                 Overall Rating
               </th>
-              <th className="text-left text-xs  text-zinc-400 uppercase tracking-wider px-3 py-2 bg-white">
+              <th className="text-left text-xs  text-zinc-400 px-3 py-2 bg-white">
                 Resource
               </th>
-              <th className="text-left text-xs  text-zinc-400 uppercase tracking-wider px-3 py-2 bg-white">
+              <th className="text-left text-xs  text-zinc-400 px-3 py-2 bg-white">
                 Website
               </th>
-              <th className="text-left text-xs  text-zinc-400 uppercase tracking-wider px-3 py-2 bg-white">
+              <th className="text-left text-xs  text-zinc-400 px-3 py-2 bg-white">
                 Instagram
               </th>
-              <th className="text-center text-xs  text-zinc-400 uppercase tracking-wider px-1 py-2 bg-white">
+              <th className="text-center text-xs  text-zinc-400 px-1 py-2 bg-white">
                 Arch
               </th>
-              <th className="text-center text-xs  text-zinc-400 uppercase tracking-wider px-1 py-2 bg-white">
+              <th className="text-center text-xs  text-zinc-400 px-1 py-2 bg-white">
                 Int
               </th>
-              <th className="text-center text-xs  text-zinc-400 uppercase tracking-wider px-1 py-2 bg-white">
+              <th className="text-center text-xs  text-zinc-400 px-1 py-2 bg-white">
                 Land
               </th>
-              <th className="text-center text-xs  text-zinc-400 uppercase tracking-wider px-1 py-2 bg-white">
+              <th className="text-center text-xs  text-zinc-400 px-1 py-2 bg-white">
                 Light
               </th>
-              <th className="text-center text-xs  text-zinc-400 uppercase tracking-wider px-1 py-2 bg-white">
+              <th className="text-center text-xs  text-zinc-400 px-1 py-2 bg-white">
                 Kit
               </th>
-              <th className="text-center text-xs  text-zinc-400 uppercase tracking-wider px-1 py-2 bg-white">
+              <th className="text-center text-xs  text-zinc-400 px-1 py-2 bg-white">
                 AViz
               </th>
-              <th className="text-left text-xs  text-zinc-400 uppercase tracking-wider px-3 py-2 bg-white">
+              <th className="text-left text-xs  text-zinc-400 px-3 py-2 bg-white">
                 Areas
               </th>
-              <th className="text-left text-xs  text-zinc-400 uppercase tracking-wider px-3 py-2 bg-white">
+              <th className="text-left text-xs  text-zinc-400 px-3 py-2 bg-white">
                 Notes
               </th>
             </tr>
