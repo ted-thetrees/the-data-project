@@ -187,9 +187,9 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm" style={{ tableLayout: "fixed", borderSpacing: 2, borderCollapse: "separate" }}>
           <colgroup>
-            <col style={{ width: 160 }} /> {/* Category */}
-            <col style={{ width: 160 }} /> {/* Primary Talent */}
-            <col style={{ width: 200 }} /> {/* Overall Rating */}
+            <col style={{ width: 90 }} /> {/* Category */}
+            <col style={{ width: 90 }} /> {/* Primary Talent */}
+            <col style={{ width: 110 }} /> {/* Overall Rating */}
             <col style={{ width: 220 }} /> {/* Resource */}
             <col style={{ width: 180 }} /> {/* Website */}
             <col style={{ width: 100 }} /> {/* Instagram */}
@@ -259,14 +259,13 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                   return (
                     <td
                       rowSpan={span.rowSpan}
-                      className="align-top px-3 pt-2 font-semibold "
+                      className="align-top px-2 pt-2 font-semibold "
                       style={{ backgroundColor: bg, height: span.rowSpan * ROW_HEIGHT }}
                     >
-                      <div className="flex justify-between items-start">
-                        <span style={{ color: textColor }} className="text-sm">
-                          ▼ {span.value}
+                      <div>
+                        <span style={{ color: textColor }} className="text-xs leading-tight">
+                          {span.value}
                         </span>
-                        <span className="text-xs text-zinc-400 ml-1">{span.rowSpan}</span>
                       </div>
                     </td>
                   );
@@ -280,14 +279,13 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                   return (
                     <td
                       rowSpan={span.rowSpan}
-                      className="align-top px-3 pt-2 font-semibold "
+                      className="align-top px-2 pt-2 font-semibold "
                       style={{ backgroundColor: bg, height: span.rowSpan * ROW_HEIGHT }}
                     >
-                      <div className="flex justify-between items-start">
-                        <span style={{ color: textColor }} className="text-sm">
-                          ▼ {span.value}
+                      <div>
+                        <span style={{ color: textColor }} className="text-xs leading-tight">
+                          {span.value}
                         </span>
-                        <span className="text-xs text-zinc-400 ml-1">{span.rowSpan}</span>
                       </div>
                     </td>
                   );
@@ -301,14 +299,13 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                   return (
                     <td
                       rowSpan={span.rowSpan}
-                      className="align-top px-3 pt-2 font-semibold "
+                      className="align-top px-2 pt-2 font-semibold "
                       style={{ backgroundColor: bg, height: span.rowSpan * ROW_HEIGHT }}
                     >
-                      <div className="flex justify-between items-start">
-                        <span style={{ color: textColor }} className="text-sm">
-                          ▼ {span.value}
+                      <div>
+                        <span style={{ color: textColor }} className="text-xs leading-tight">
+                          {span.value}
                         </span>
-                        <span className="text-xs text-zinc-400 ml-1">{span.rowSpan}</span>
                       </div>
                     </td>
                   );
