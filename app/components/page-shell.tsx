@@ -18,7 +18,7 @@ export function PageShell({
   return (
     <div
       className={cn(
-        "px-[var(--page-padding-x)] py-[var(--page-padding-y)]",
+        "px-[var(--page-padding-x)] py-[var(--page-padding-y)] mx-auto",
         maxWidth,
         className
       )}

@@ -93,7 +93,7 @@ async function UrlCard({ url }: { url: string }) {
 
 function TextCard({ text }: { text: string }) {
   return (
-    <p className="text-sm leading-relaxed whitespace-pre-wrap text-balance">
+    <p className="text-sm leading-relaxed whitespace-pre-wrap text-balance break-words">
       <LinkifiedText text={text} />
     </p>
   );
