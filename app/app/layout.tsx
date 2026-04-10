@@ -38,9 +38,12 @@ export default function RootLayout({
     <html lang="en" className={cn("h-full", "antialiased", outfit.variable, sourceSans.variable, nunito.variable)}>
       <body className="min-h-full flex flex-col">
         <TooltipProvider>
-          <SidebarProvider>
+          <SidebarProvider defaultOpen={false}>
             <AppSidebar />
             <SidebarInset>
+              <header className="flex h-12 items-center px-4">
+                <SidebarTrigger />
+              </header>
               {children}
             </SidebarInset>
           </SidebarProvider>
