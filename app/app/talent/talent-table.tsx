@@ -23,52 +23,52 @@ interface TalentRow {
 
 // Sort order is now handled by the server query via pick list tables
 
-// Light background fills for the icicle bands (matching Coda's pastel style)
+// Dark background fills for the icicle bands
 const CATEGORY_BG: Record<string, string> = {
-  "Places": "hsl(25, 70%, 92%)",
-  "Objects & Assets": "hsl(200, 60%, 92%)",
-  "Visuals": "hsl(280, 50%, 92%)",
+  "Places": "hsl(25, 55%, 45%)",
+  "Objects & Assets": "hsl(200, 50%, 42%)",
+  "Visuals": "hsl(280, 40%, 45%)",
 };
 
 const TALENT_BG: Record<string, string> = {
-  "Architecture": "hsl(215, 60%, 93%)",
-  "Interiors": "hsl(35, 60%, 92%)",
-  "Landscape": "hsl(130, 40%, 92%)",
-  "Lighting": "hsl(55, 60%, 92%)",
-  "ArchViz": "hsl(200, 50%, 92%)",
-  "Kitchens": "hsl(340, 45%, 92%)",
+  "Architecture": "hsl(215, 50%, 40%)",
+  "Interiors": "hsl(35, 50%, 42%)",
+  "Landscape": "hsl(130, 35%, 38%)",
+  "Lighting": "hsl(55, 45%, 40%)",
+  "ArchViz": "hsl(200, 45%, 40%)",
+  "Kitchens": "hsl(340, 40%, 42%)",
 };
 
 const RATING_BG: Record<string, string> = {
-  "Absolute Top": "hsl(140, 40%, 92%)",
-  "Probably Absolute Top": "hsl(170, 35%, 92%)",
-  "Contenders to (Re)Mull": "hsl(270, 30%, 93%)",
-  "Other": "hsl(0, 0%, 94%)",
-  "Rejects": "hsl(0, 40%, 93%)",
+  "Absolute Top": "hsl(140, 35%, 38%)",
+  "Probably Absolute Top": "hsl(170, 30%, 38%)",
+  "Contenders to (Re)Mull": "hsl(270, 25%, 42%)",
+  "Other": "hsl(0, 0%, 45%)",
+  "Rejects": "hsl(0, 35%, 40%)",
 };
 
-// Bold label colors for the group text
+// White text for all group labels
 const CATEGORY_TEXT: Record<string, string> = {
-  "Places": "hsl(15, 75%, 45%)",
-  "Objects & Assets": "hsl(200, 65%, 40%)",
-  "Visuals": "hsl(280, 55%, 45%)",
+  "Places": "#ffffff",
+  "Objects & Assets": "#ffffff",
+  "Visuals": "#ffffff",
 };
 
 const TALENT_TEXT: Record<string, string> = {
-  "Architecture": "hsl(215, 60%, 35%)",
-  "Interiors": "hsl(35, 65%, 35%)",
-  "Landscape": "hsl(130, 50%, 30%)",
-  "Lighting": "hsl(55, 65%, 30%)",
-  "ArchViz": "hsl(200, 55%, 35%)",
-  "Kitchens": "hsl(340, 50%, 35%)",
+  "Architecture": "#ffffff",
+  "Interiors": "#ffffff",
+  "Landscape": "#ffffff",
+  "Lighting": "#ffffff",
+  "ArchViz": "#ffffff",
+  "Kitchens": "#ffffff",
 };
 
 const RATING_TEXT: Record<string, string> = {
-  "Absolute Top": "hsl(140, 50%, 30%)",
-  "Probably Absolute Top": "hsl(170, 40%, 30%)",
-  "Contenders to (Re)Mull": "hsl(270, 35%, 35%)",
-  "Other": "hsl(0, 0%, 45%)",
-  "Rejects": "hsl(0, 40%, 40%)",
+  "Absolute Top": "#ffffff",
+  "Probably Absolute Top": "#ffffff",
+  "Contenders to (Re)Mull": "#ffffff",
+  "Other": "#ffffff",
+  "Rejects": "#ffffff",
 };
 
 interface GroupSpan {
