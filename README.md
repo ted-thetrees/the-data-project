@@ -4,6 +4,25 @@ A unified system for managing Ted's structured data — project management, peop
 
 **Live at**: [data.ifnotfor.com](https://data.ifnotfor.com)
 
+## Pages & Navigation
+
+The app runs as a Unite Pro SSB (`/Applications/Data.app`) with a collapsible sidebar and keyboard shortcuts.
+
+| # | Page | Path | Shortcut |
+|---|------|------|----------|
+| 1 | Inbox | `/inbox` | `Cmd+1` |
+| 2 | Talent | `/talent` | `Cmd+2` |
+| 3 | DAG | `/dag-v002` | `Cmd+3` |
+| 4 | New Project | `/new-project` | `Cmd+4` |
+
+### Raycast Scripts
+
+Raycast script commands live in `~/Library/CloudStorage/Dropbox/Raycast Scripts/data-*.sh`. Each activates Data.app and sends the corresponding `Cmd+N` shortcut to navigate without opening new tabs. The keyboard shortcuts are handled by `components/nav-shortcuts.tsx` in the Next.js app.
+
+### Sidebar
+
+The sidebar (`components/app-sidebar.tsx`) defaults to collapsed. Toggle with the hamburger icon or `Cmd+B`.
+
 ## Versions
 
 ### [v002](v002/) — Current (Supabase + Coda + n8n)
