@@ -1,0 +1,42 @@
+import { pool } from "@/lib/db";
+import { TalentTable } from "./talent-table";
+
+export const dynamic = "force-dynamic";
+
+interface TalentRow {
+  id: string;
+  name: string;
+  architecture: string | null;
+  interiors: string | null;
+  landscape: string | null;
+  lighting: string | null;
+  kitchens: string | null;
+  archviz: string | null;
+  primary_talent: string | null;
+  primary_talent_category: string | null;
+  overall_rating: string | null;
+  website: string | null;
+  instagram: string | null;
+  notes: string | null;
+  areas: string | null;
+}
+
+async function getTalent(): Promise<TalentRow[]> {
+  const result = await pool.query(`
+    SELECT t.id, t.name, t.architecture, t.interiors, t.landscape, t.lighting,
+           t.kitchens, t.archviz, t.primary_talent, t.primary_talent_category,
+           t.overall_rating, t.website, t.instagram, t.notes,
+           string_agg(DISTINCT ta.name, ', ') as areas
+    FROM talent t
+    LEFT JOIN talent_area_links tal ON t.id = tal.talent_id
+    LEFT JOIN talent_areas ta ON tal.area_id = ta.id
+    GROUP BY t.id
+    ORDER BY t.primary_talent_category, t.primary_talent, t.overall_rating, t.name
+  `);
+  return result.rows;
+}
+
+export default async function TalentPage() {
+  const talent = await getTalent();
+  return <TalentTable data={talent} />;
+}

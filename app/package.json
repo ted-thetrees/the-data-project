@@ -38,6 +38,7 @@
     "@radix-ui/react-toolbar": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-virtual": "^3.13.23",
     "@types/d3": "^7.4.3",
     "@udecode/plate": "^48.0.5",
     "@udecode/plate-basic-marks": "^48.0.0",
