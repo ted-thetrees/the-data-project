@@ -4,12 +4,13 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 const shortcuts: Record<string, string> = {
-  "1": "/inbox",
-  "2": "/talent",
-  "3": "/talent/architecture",
-  "4": "/dag-v002",
-  "5": "/new-project",
-  "6": "/pick-lists",
+  "1": "/projects",
+  "2": "/inbox",
+  "3": "/talent",
+  "4": "/talent/architecture",
+  "5": "/dag-v002",
+  "6": "/new-project",
+  "7": "/pick-lists",
 };
 
 export function NavShortcuts() {

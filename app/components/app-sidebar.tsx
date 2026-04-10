@@ -10,6 +10,7 @@ import {
   FolderAddIcon,
   SwatchIcon,
   Building06Icon,
+  GridTableIcon,
 } from "@hugeicons/core-free-icons";
 import {
   Sidebar,
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const navItems = [
+  { title: "Projects", href: "/projects", icon: GridTableIcon },
   { title: "Inbox", href: "/inbox", icon: InboxIcon },
   { title: "Talent", href: "/talent", icon: DiamondIcon },
   { title: "Architecture", href: "/talent/architecture", icon: Building06Icon },
