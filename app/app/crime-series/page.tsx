@@ -22,7 +22,7 @@ async function getData(): Promise<SeriesRow[]> {
            s.name as status, s.color as status_color, s.sort_order as status_sort
     FROM crime_series cs
     LEFT JOIN crime_series_statuses s ON cs.status_id = s.id
-    ORDER BY s.sort_order NULLS LAST, cs.release_date DESC NULLS LAST, cs.title
+    ORDER BY s.sort_order NULLS LAST, cs.has_trailer DESC, cs.title ASC
   `);
   return result.rows;
 }
