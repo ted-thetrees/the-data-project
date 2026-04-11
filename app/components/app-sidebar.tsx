@@ -21,11 +21,21 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar";
 
-const navItems = [
+interface NavItem {
+  title: string;
+  href: string;
+  icon: typeof Tv01Icon;
+  children?: { title: string; href: string }[];
+}
+
+const navItems: NavItem[] = [
   { title: "Projects", href: "/projects", icon: GridTableIcon },
   { title: "Inbox", href: "/inbox", icon: InboxIcon },
   { title: "Talent", href: "/talent", icon: DiamondIcon },
@@ -33,8 +43,14 @@ const navItems = [
   { title: "DAG", href: "/dag-v002", icon: HierarchyIcon },
   { title: "New Project", href: "/new-project", icon: FolderAddIcon },
   { title: "Pick Lists", href: "/pick-lists", icon: SwatchIcon },
-  { title: "Crime Series", href: "/crime-series", icon: Tv01Icon },
-  { title: "Sort", href: "/crime-series/sort", icon: Tv01Icon },
+  {
+    title: "Crime Series",
+    href: "/crime-series",
+    icon: Tv01Icon,
+    children: [
+      { title: "Sort", href: "/crime-series/sort" },
+    ],
+  },
 ];
 
 export function AppSidebar() {
@@ -56,11 +72,32 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     render={<Link href={item.href} />}
                     isActive={pathname === item.href}
-                    tooltip={item.title}
+                    tooltip={item.children
+                      ? `${item.title}: ${item.children.map((c) => c.title).join(", ")}`
+                      : item.title}
                   >
-                    <HugeiconsIcon icon={item.icon} size={18} />
+                    <div className="relative">
+                      <HugeiconsIcon icon={item.icon} size={18} />
+                      {item.children && (
+                        <span className="absolute -bottom-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-sidebar-foreground/40" />
+                      )}
+                    </div>
                     <span>{item.title}</span>
                   </SidebarMenuButton>
+                  {item.children && (
+                    <SidebarMenuSub>
+                      {item.children.map((child) => (
+                        <SidebarMenuSubItem key={child.href}>
+                          <SidebarMenuSubButton
+                            render={<Link href={child.href} />}
+                            isActive={pathname === child.href}
+                          >
+                            <span>{child.title}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
