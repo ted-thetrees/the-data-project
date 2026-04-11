@@ -34,6 +34,7 @@ const navItems = [
   { title: "New Project", href: "/new-project", icon: FolderAddIcon },
   { title: "Pick Lists", href: "/pick-lists", icon: SwatchIcon },
   { title: "Crime Series", href: "/crime-series", icon: Tv01Icon },
+  { title: "Sort", href: "/crime-series/sort", icon: Tv01Icon },
 ];
 
 export function AppSidebar() {
