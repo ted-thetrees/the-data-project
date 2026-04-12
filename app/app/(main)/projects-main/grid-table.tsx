@@ -24,6 +24,7 @@ import {
   finalizeProject,
   createTask,
 } from "./actions";
+import { contrastTextColor } from "@/lib/contrast";
 
 const COLUMN_KEYS = [
   "project",
@@ -424,41 +425,40 @@ export function GridTable({
                   );
                 })()}
 
-                {/* Uber Project (single-select from pick list, colored) */}
-                <td
-                  className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] text-sm"
-                  style={
-                    row.uber_color
-                      ? { backgroundColor: row.uber_color, color: "#ffffff" }
-                      : undefined
-                  }
-                >
-                  <EditableSelect
-                    value={row.uber_project_id}
-                    options={uberProjects}
-                    onSave={(v) =>
-                      updateProjectField(row.project_id, "uber_project_id", v)
-                    }
-                  />
+                {/* Uber Project (pill, single-select from pick list) */}
+                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] text-sm bg-[color:var(--cell-bg)]">
+                  <Pill color={row.uber_color}>
+                    <EditableSelect
+                      value={row.uber_project_id}
+                      options={uberProjects}
+                      onSave={(v) =>
+                        updateProjectField(
+                          row.project_id,
+                          "uber_project_id",
+                          v
+                        )
+                      }
+                    />
+                  </Pill>
                 </td>
 
-                {/* Icicle: Project Status (rowspan-merged, colored by project status) */}
+                {/* Icicle: Project Status (rowspan-merged pill) */}
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
-                  const bg = span.color || "hsl(0, 0%, 45%)";
                   return (
                     <td
                       rowSpan={span.rowSpan}
-                      className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)]"
-                      style={{ backgroundColor: bg, color: "#ffffff" }}
+                      className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
                     >
-                      <EditableSelect
-                        value={row.project_status_id}
-                        options={projectStatuses}
-                        onSave={(v) =>
-                          updateProjectField(row.project_id, "status_id", v)
-                        }
-                      />
+                      <Pill color={span.color}>
+                        <EditableSelect
+                          value={row.project_status_id}
+                          options={projectStatuses}
+                          onSave={(v) =>
+                            updateProjectField(row.project_id, "status_id", v)
+                          }
+                        />
+                      </Pill>
                     </td>
                   );
                 })()}
@@ -471,18 +471,17 @@ export function GridTable({
                   />
                 </td>
 
-                {/* Task Status (colored cell with select) */}
-                <td
-                  className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)]"
-                  style={{ backgroundColor: row.task_color, color: "#ffffff" }}
-                >
-                  <EditableSelect
-                    value={row.task_status_id}
-                    options={taskStatuses}
-                    onSave={(v) =>
-                      updateTaskField(row.id, "status_id", v)
-                    }
-                  />
+                {/* Task Status (pill) */}
+                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm">
+                  <Pill color={row.task_color}>
+                    <EditableSelect
+                      value={row.task_status_id}
+                      options={taskStatuses}
+                      onSave={(v) =>
+                        updateTaskField(row.id, "status_id", v)
+                      }
+                    />
+                  </Pill>
                 </td>
 
                 {/* Result */}
@@ -512,6 +511,25 @@ export function GridTable({
         </table>
       </div>
     </PageShell>
+  );
+}
+
+function Pill({
+  color,
+  children,
+}: {
+  color: string | null | undefined;
+  children: React.ReactNode;
+}) {
+  const bg = color || "hsl(0, 0%, 45%)";
+  const fg = contrastTextColor(color);
+  return (
+    <span
+      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap"
+      style={{ backgroundColor: bg, color: fg, width: "fit-content" }}
+    >
+      {children}
+    </span>
   );
 }
 
@@ -789,7 +807,7 @@ function EditableSelect({
         border: 0,
         padding: 0,
         font: "inherit",
-        width: "100%",
+        width: "auto",
         outline: "none",
         cursor: "pointer",
         appearance: "none",

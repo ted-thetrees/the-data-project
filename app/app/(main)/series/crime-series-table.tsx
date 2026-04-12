@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { PageShell } from "@/components/page-shell";
 import type { SeriesRow } from "./page";
+import { contrastTextColor } from "@/lib/contrast";
 
 interface GroupSpan {
   value: string;
@@ -106,13 +107,19 @@ export function CrimeSeriesTable({ data }: { data: SeriesRow[] }) {
                 <tr key={row.id}>
                   {statusStartSet.has(i) && (() => {
                     const span = statusByIndex[i];
+                    const bg = span.color || "hsl(0, 0%, 45%)";
+                    const fg = contrastTextColor(span.color);
                     return (
                       <td
                         rowSpan={span.rowSpan}
-                        className="align-top px-3 py-3"
-                        style={{ backgroundColor: span.color || "hsl(0, 0%, 45%)", color: "#ffffff" }}
+                        className="align-top px-3 py-3 bg-[color:var(--cell-bg)]"
                       >
-                        <span className="text-sm leading-snug whitespace-nowrap">{span.value}</span>
+                        <span
+                          className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap"
+                          style={{ backgroundColor: bg, color: fg }}
+                        >
+                          {span.value}
+                        </span>
                       </td>
                     );
                   })()}
