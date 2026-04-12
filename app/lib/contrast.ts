@@ -8,12 +8,6 @@ export function contrastTextColor(
   const r = (n >> 16) & 255;
   const g = (n >> 8) & 255;
   const b = n & 255;
-  const lin = (c: number) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  };
-  const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-  const contrastWhite = 1.05 / (L + 0.05);
-  const contrastBlack = (L + 0.05) / 0.05;
-  return contrastBlack >= contrastWhite ? "#000" : "#fff";
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 150 ? "#000" : "#fff";
 }
