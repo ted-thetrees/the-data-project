@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Fragment,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -357,8 +358,21 @@ export function GridTable({
             </tr>
           </thead>
           <tbody>
-            {data.map((row, i) => (
-              <tr key={row.id}>
+            {data.map((row, i) => {
+              const prev = i > 0 ? data[i - 1] : null;
+              const tickleChanged =
+                prev !== null && prev.tickle_date !== row.tickle_date;
+              return (
+            <Fragment key={row.id}>
+              {tickleChanged && (
+                <tr aria-hidden="true">
+                  <td
+                    colSpan={COLUMN_KEYS.length}
+                    style={{ height: 14, padding: 0, background: "transparent" }}
+                  />
+                </tr>
+              )}
+              <tr>
                 {/* Uber Project (single-select from pick list, colored) */}
                 <td
                   className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] text-sm"
@@ -491,7 +505,9 @@ export function GridTable({
                   />
                 </td>
               </tr>
-            ))}
+            </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>
