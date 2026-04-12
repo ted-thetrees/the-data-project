@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLayoutEffect, useRef } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   InboxIcon,
@@ -21,9 +22,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar";
@@ -32,7 +30,6 @@ interface NavItem {
   title: string;
   href: string;
   icon: typeof Tv01Icon;
-  children?: { title: string; href: string }[];
 }
 
 const navItems: NavItem[] = [
@@ -43,18 +40,31 @@ const navItems: NavItem[] = [
   { title: "DAG", href: "/dag-v002", icon: HierarchyIcon },
   { title: "New Project", href: "/new-project", icon: FolderAddIcon },
   { title: "Pick Lists", href: "/pick-lists", icon: SwatchIcon },
-  {
-    title: "Crime Series",
-    href: "/crime-series",
-    icon: Tv01Icon,
-    children: [
-      { title: "Sort", href: "/crime-series/sort" },
-    ],
-  },
+  { title: "Series", href: "/crime-series", icon: Tv01Icon },
+  { title: "Series | Sort", href: "/crime-series/sort", icon: Tv01Icon },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const menuRef = useRef<HTMLUListElement>(null);
+
+  // Size the sidebar to the widest menu item by measuring the rendered menu
+  // at its natural (max-content) width and writing it to --sidebar-width on
+  // the sidebar-wrapper ancestor. Runs before paint to avoid a flash.
+  useLayoutEffect(() => {
+    const el = menuRef.current;
+    if (!el) return;
+    const prev = el.style.width;
+    el.style.width = "max-content";
+    const natural = el.offsetWidth;
+    el.style.width = prev;
+    const wrapper = el.closest(
+      '[data-slot="sidebar-wrapper"]'
+    ) as HTMLElement | null;
+    if (wrapper) {
+      wrapper.style.setProperty("--sidebar-width", `${natural}px`);
+    }
+  }, []);
 
   return (
     <Sidebar collapsible="icon">
@@ -66,38 +76,17 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu ref={menuRef}>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     render={<Link href={item.href} />}
                     isActive={pathname === item.href}
-                    tooltip={item.children
-                      ? `${item.title}: ${item.children.map((c) => c.title).join(", ")}`
-                      : item.title}
+                    tooltip={item.title}
                   >
-                    <div className="relative">
-                      <HugeiconsIcon icon={item.icon} size={18} />
-                      {item.children && (
-                        <span className="absolute -bottom-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-sidebar-foreground/40" />
-                      )}
-                    </div>
+                    <HugeiconsIcon icon={item.icon} size={18} />
                     <span>{item.title}</span>
                   </SidebarMenuButton>
-                  {item.children && (
-                    <SidebarMenuSub>
-                      {item.children.map((child) => (
-                        <SidebarMenuSubItem key={child.href}>
-                          <SidebarMenuSubButton
-                            render={<Link href={child.href} />}
-                            isActive={pathname === child.href}
-                          >
-                            <span>{child.title}</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
