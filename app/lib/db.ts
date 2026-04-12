@@ -17,9 +17,10 @@ export async function getInboxRecords(limit = 100, offset = 0) {
       i.title as content,
       i.record_type,
       i.created_at as created_date,
-      COALESCE(p.passphrase, i.passphrase) as passphrase
+      p.passphrase
     FROM inbox i
-    LEFT JOIN passphrases p ON p.record_id = i.id::text
+    LEFT JOIN passphrases p
+      ON p.record_id = i.id::text AND p.table_name = 'Inbox'
     ORDER BY i.created_at DESC
     LIMIT $1 OFFSET $2`,
     [limit, offset]
