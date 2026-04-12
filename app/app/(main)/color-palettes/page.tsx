@@ -71,7 +71,7 @@ export default async function ColorPalettesPage() {
   const palettes = await getPalettes();
 
   return (
-    <PageShell title="Color Palettes" maxWidth="max-w-6xl">
+    <PageShell title="Color Palettes" maxWidth="" className="!px-[70px]">
       <div className="space-y-8">
         {palettes.length === 0 ? (
           <p className="text-sm text-muted-foreground">No palettes yet.</p>
