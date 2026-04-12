@@ -425,24 +425,18 @@ export function GridTable({
                   );
                 })()}
 
-                {/* Uber Project (pill, single-select from pick list) */}
+                {/* Uber Project (pill select) */}
                 <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] text-sm bg-[color:var(--cell-bg)]">
-                  <Pill color={row.uber_color}>
-                    <EditableSelect
-                      value={row.uber_project_id}
-                      options={uberProjects}
-                      onSave={(v) =>
-                        updateProjectField(
-                          row.project_id,
-                          "uber_project_id",
-                          v
-                        )
-                      }
-                    />
-                  </Pill>
+                  <PillSelect
+                    value={row.uber_project_id}
+                    options={uberProjects}
+                    onSave={(v) =>
+                      updateProjectField(row.project_id, "uber_project_id", v)
+                    }
+                  />
                 </td>
 
-                {/* Icicle: Project Status (rowspan-merged pill) */}
+                {/* Icicle: Project Status (rowspan-merged pill select) */}
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
                   return (
@@ -450,15 +444,13 @@ export function GridTable({
                       rowSpan={span.rowSpan}
                       className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
                     >
-                      <Pill color={span.color}>
-                        <EditableSelect
-                          value={row.project_status_id}
-                          options={projectStatuses}
-                          onSave={(v) =>
-                            updateProjectField(row.project_id, "status_id", v)
-                          }
-                        />
-                      </Pill>
+                      <PillSelect
+                        value={row.project_status_id}
+                        options={projectStatuses}
+                        onSave={(v) =>
+                          updateProjectField(row.project_id, "status_id", v)
+                        }
+                      />
                     </td>
                   );
                 })()}
@@ -471,17 +463,15 @@ export function GridTable({
                   />
                 </td>
 
-                {/* Task Status (pill) */}
+                {/* Task Status (pill select) */}
                 <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm">
-                  <Pill color={row.task_color}>
-                    <EditableSelect
-                      value={row.task_status_id}
-                      options={taskStatuses}
-                      onSave={(v) =>
-                        updateTaskField(row.id, "status_id", v)
-                      }
-                    />
-                  </Pill>
+                  <PillSelect
+                    value={row.task_status_id}
+                    options={taskStatuses}
+                    onSave={(v) =>
+                      updateTaskField(row.id, "status_id", v)
+                    }
+                  />
                 </td>
 
                 {/* Result */}
@@ -514,6 +504,9 @@ export function GridTable({
   );
 }
 
+const PILL_CLASS =
+  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap";
+
 function Pill({
   color,
   children,
@@ -525,11 +518,70 @@ function Pill({
   const fg = contrastTextColor(color);
   return (
     <span
-      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap"
+      className={PILL_CLASS}
       style={{ backgroundColor: bg, color: fg, width: "fit-content" }}
     >
       {children}
     </span>
+  );
+}
+
+function PillSelect({
+  value,
+  options,
+  onSave,
+}: {
+  value: string;
+  options: StatusOption[];
+  onSave: (v: string) => void | Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const current = options.find((o) => o.id === value);
+  const bg = current?.color || "hsl(0, 0%, 45%)";
+  const fg = contrastTextColor(current?.color ?? null);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        className={`${PILL_CLASS} cursor-pointer`}
+        style={{
+          backgroundColor: bg,
+          color: fg,
+          width: "fit-content",
+          opacity: isPending ? 0.6 : 1,
+        }}
+      >
+        {current?.name ?? "—"}
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-auto min-w-[160px] gap-1 p-2">
+        <div className="flex flex-col items-start gap-1.5">
+          {options.map((opt) => {
+            const isSelected = opt.id === value;
+            const obg = opt.color || "hsl(0, 0%, 45%)";
+            const ofg = contrastTextColor(opt.color ?? null);
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => {
+                  startTransition(() => {
+                    onSave(opt.id);
+                  });
+                  setOpen(false);
+                }}
+                className={`${PILL_CLASS} cursor-pointer ring-offset-1 ${
+                  isSelected ? "ring-2 ring-foreground/40" : ""
+                }`}
+                style={{ backgroundColor: obg, color: ofg }}
+              >
+                {opt.name}
+              </button>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
