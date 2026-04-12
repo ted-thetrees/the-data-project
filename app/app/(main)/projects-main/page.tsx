@@ -79,17 +79,26 @@ async function getProjectStatuses(): Promise<StatusOption[]> {
   return result.rows;
 }
 
+async function getUberProjects(): Promise<StatusOption[]> {
+  const result = await poolV002.query(
+    `SELECT id, name, NULL::text as color FROM uber_projects ORDER BY name`
+  );
+  return result.rows;
+}
+
 export default async function GridPage() {
-  const [data, taskStatuses, projectStatuses] = await Promise.all([
+  const [data, taskStatuses, projectStatuses, uberProjects] = await Promise.all([
     getData(),
     getTaskStatuses(),
     getProjectStatuses(),
+    getUberProjects(),
   ]);
   return (
     <GridTable
       data={data}
       taskStatuses={taskStatuses}
       projectStatuses={projectStatuses}
+      uberProjects={uberProjects}
     />
   );
 }

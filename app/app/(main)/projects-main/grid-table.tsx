@@ -20,7 +20,6 @@ import type { TaskRow, StatusOption } from "./page";
 import {
   updateTaskField,
   updateProjectField,
-  updateUberField,
   finalizeProject,
   createTask,
 } from "./actions";
@@ -160,10 +159,12 @@ export function GridTable({
   data,
   taskStatuses,
   projectStatuses,
+  uberProjects,
 }: {
   data: TaskRow[];
   taskStatuses: StatusOption[];
   projectStatuses: StatusOption[];
+  uberProjects: StatusOption[];
 }) {
   const projectAccessor = (r: TaskRow) => r.project;
 
@@ -354,12 +355,13 @@ export function GridTable({
           <tbody>
             {data.map((row, i) => (
               <tr key={row.id}>
-                {/* Uber Project (regular cell) */}
+                {/* Uber Project (single-select from pick list) */}
                 <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm">
-                  <EditableTextWrap
-                    value={row.uber_project}
+                  <EditableSelect
+                    value={row.uber_project_id}
+                    options={uberProjects}
                     onSave={(v) =>
-                      updateUberField(row.uber_project_id, "name", v)
+                      updateProjectField(row.project_id, "uber_project_id", v)
                     }
                   />
                 </td>

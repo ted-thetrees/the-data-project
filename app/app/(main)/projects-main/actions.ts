@@ -4,7 +4,13 @@ import { poolV002 } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
 const TASK_FIELDS = new Set(["name", "status_id", "result", "notes"]);
-const PROJECT_FIELDS = new Set(["name", "tickle_date", "notes", "status_id"]);
+const PROJECT_FIELDS = new Set([
+  "name",
+  "tickle_date",
+  "notes",
+  "status_id",
+  "uber_project_id",
+]);
 const UBER_FIELDS = new Set(["name"]);
 
 export async function updateTaskField(
