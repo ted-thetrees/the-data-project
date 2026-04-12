@@ -431,16 +431,28 @@ export function GridTable({
                   );
                 })()}
 
-                {/* Uber Project (pill select) */}
-                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] text-sm bg-[color:var(--cell-bg)]">
-                  <PillSelect
-                    value={row.uber_project_id}
-                    options={uberProjects}
-                    onSave={(v) =>
-                      updateProjectField(row.project_id, "uber_project_id", v)
-                    }
-                  />
-                </td>
+                {/* Icicle: Uber Project (rowspan-merged pill select, project-level) */}
+                {projectStartSet.has(i) && (() => {
+                  const span = projectByIndex[i];
+                  return (
+                    <td
+                      rowSpan={span.rowSpan}
+                      className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] text-sm bg-[color:var(--cell-bg)]"
+                    >
+                      <PillSelect
+                        value={row.uber_project_id}
+                        options={uberProjects}
+                        onSave={(v) =>
+                          updateProjectField(
+                            row.project_id,
+                            "uber_project_id",
+                            v
+                          )
+                        }
+                      />
+                    </td>
+                  );
+                })()}
 
                 {/* Icicle: Project Status (rowspan-merged pill select) */}
                 {projectStartSet.has(i) && (() => {
