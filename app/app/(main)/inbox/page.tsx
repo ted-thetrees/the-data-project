@@ -7,6 +7,7 @@ import { fetchOgImage } from "@/lib/og";
 import { Badge } from "@/components/ui/badge";
 import { PageShell } from "@/components/page-shell";
 import { DeleteButton } from "./delete-button";
+import { MigrateButton } from "./migrate-button";
 import { ExternalLink } from "./external-link";
 import { format as timeago } from "timeago.js";
 import { LinkifiedText } from "./linkified-text";
@@ -37,6 +38,7 @@ async function InboxCard({ row }: { row: Record<string, unknown> }) {
               {row.passphrase as string}
             </span>
           )}
+          <MigrateButton recordId={row.id as string} />
           <DeleteButton recordId={row.id as string} />
         </div>
       </div>

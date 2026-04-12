@@ -21,6 +21,7 @@ export async function getInboxRecords(limit = 100, offset = 0) {
     FROM inbox i
     LEFT JOIN passphrases p
       ON p.record_id = i.id::text AND p.table_name = 'Inbox'
+    WHERE i.migrated_at IS NULL
     ORDER BY i.created_at DESC
     LIMIT $1 OFFSET $2`,
     [limit, offset]
@@ -30,7 +31,7 @@ export async function getInboxRecords(limit = 100, offset = 0) {
 
 export async function getInboxCount() {
   const result = await pool.query(
-    `SELECT COUNT(*) as count FROM inbox`
+    `SELECT COUNT(*) as count FROM inbox WHERE migrated_at IS NULL`
   );
   return parseInt(result.rows[0].count);
 }

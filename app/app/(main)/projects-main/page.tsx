@@ -49,7 +49,9 @@ async function getData(): Promise<TaskRow[]> {
     JOIN uber_projects up ON p.uber_project_id = up.id
     JOIN task_statuses ts ON t.status_id = ts.id
     WHERE ps.name = 'Active'
-    ORDER BY p.tickle_date ASC NULLS LAST, p.name,
+    ORDER BY
+      CASE WHEN p.name = 'Migrated' THEN 0 ELSE 1 END,
+      p.tickle_date ASC NULLS LAST, p.name,
              CASE ts.name
                WHEN 'Tickled' THEN 1
                WHEN 'Done' THEN 2
