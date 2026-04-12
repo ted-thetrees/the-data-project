@@ -16,6 +16,7 @@ export interface TaskRow {
   project: string;
   project_id: string;
   project_status: string;
+  project_status_id: string;
   project_color: string;
   project_order: number | null;
   tickle_date: string | null;
@@ -37,6 +38,7 @@ async function getData(): Promise<TaskRow[]> {
            t.status_id as task_status_id,
            ts.name as task_status, ts.color as task_color,
            p.id as project_id,
+           p.status_id as project_status_id,
            p.name as project, p.tickle_date::text, p.notes as project_notes, p."order" as project_order,
            ps.name as project_status, ps.color as project_color,
            up.id as uber_project_id,
@@ -66,10 +68,24 @@ async function getTaskStatuses(): Promise<StatusOption[]> {
   return result.rows;
 }
 
+async function getProjectStatuses(): Promise<StatusOption[]> {
+  const result = await poolV002.query(
+    `SELECT id, name, color FROM project_statuses ORDER BY name`
+  );
+  return result.rows;
+}
+
 export default async function GridPage() {
-  const [data, taskStatuses] = await Promise.all([
+  const [data, taskStatuses, projectStatuses] = await Promise.all([
     getData(),
     getTaskStatuses(),
+    getProjectStatuses(),
   ]);
-  return <GridTable data={data} taskStatuses={taskStatuses} />;
+  return (
+    <GridTable
+      data={data}
+      taskStatuses={taskStatuses}
+      projectStatuses={projectStatuses}
+    />
+  );
 }

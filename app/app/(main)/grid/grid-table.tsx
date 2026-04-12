@@ -27,6 +27,7 @@ const COLUMN_KEYS = [
   "uber_project",
   "project",
   "tickle",
+  "project_status",
   "task",
   "task_status",
   "result",
@@ -38,6 +39,7 @@ const COLUMN_HEADERS: { key: ColumnKey; label: string }[] = [
   { key: "uber_project", label: "Uber Project" },
   { key: "project", label: "Project" },
   { key: "tickle", label: "Tickle" },
+  { key: "project_status", label: "Project Status" },
   { key: "task", label: "Task" },
   { key: "task_status", label: "Task Status" },
   { key: "result", label: "Result" },
@@ -48,6 +50,7 @@ const DEFAULT_COLUMN_WIDTHS: Record<ColumnKey, number> = {
   uber_project: 140,
   project: 220,
   tickle: 110,
+  project_status: 110,
   task: 280,
   task_status: 100,
   result: 220,
@@ -154,9 +157,11 @@ function computeGroupSpans(
 export function GridTable({
   data,
   taskStatuses,
+  projectStatuses,
 }: {
   data: TaskRow[];
   taskStatuses: StatusOption[];
+  projectStatuses: StatusOption[];
 }) {
   const projectAccessor = (r: TaskRow) => r.project;
 
@@ -388,6 +393,27 @@ export function GridTable({
                             "tickle_date",
                             v
                           )
+                        }
+                      />
+                    </td>
+                  );
+                })()}
+
+                {/* Icicle: Project Status (rowspan-merged, colored by project status) */}
+                {projectStartSet.has(i) && (() => {
+                  const span = projectByIndex[i];
+                  const bg = span.color || "hsl(0, 0%, 45%)";
+                  return (
+                    <td
+                      rowSpan={span.rowSpan}
+                      className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)]"
+                      style={{ backgroundColor: bg, color: "#ffffff" }}
+                    >
+                      <EditableSelect
+                        value={row.project_status_id}
+                        options={projectStatuses}
+                        onSave={(v) =>
+                          updateProjectField(row.project_id, "status_id", v)
                         }
                       />
                     </td>
