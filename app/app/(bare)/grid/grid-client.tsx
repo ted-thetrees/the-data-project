@@ -1,7 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { DataTable } from "primereact/datatable";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  DataTable,
+  type DataTableExpandedRows,
+  type DataTableRowToggleEvent,
+} from "primereact/datatable";
 import { Column, type ColumnEditorOptions } from "primereact/column";
 import { InputText } from "primereact/inputtext";
 import { InputNumber } from "primereact/inputnumber";
@@ -232,14 +236,24 @@ const commonTableProps = {
   dataKey: "id",
 };
 
-function groupingProps(groupBy: string | null) {
+function groupingProps(
+  groupBy: string | null,
+  expandedRows: DataTableExpandedRows | undefined,
+  setExpandedRows: (v: DataTableExpandedRows | undefined) => void,
+  headerTemplate: (row: Record<string, unknown>) => ReactNode
+) {
   if (!groupBy) return { sortMode: "multiple" as const };
   return {
-    rowGroupMode: "rowspan" as const,
+    rowGroupMode: "subheader" as const,
     groupRowsBy: groupBy,
     sortMode: "single" as const,
     sortField: groupBy,
     sortOrder: 1 as 1,
+    expandableRowGroups: true,
+    expandedRows,
+    onRowToggle: (e: DataTableRowToggleEvent) =>
+      setExpandedRows(e.data as DataTableExpandedRows),
+    rowGroupHeaderTemplate: headerTemplate,
   };
 }
 
@@ -288,6 +302,22 @@ function TasksTable({
   loading: boolean;
 }) {
   const [groupBy, setGroupBy] = useState<string | null>(null);
+  const [expandedRows, setExpandedRows] = useState<
+    DataTableExpandedRows | undefined
+  >(undefined);
+
+  useEffect(() => {
+    setExpandedRows(undefined);
+  }, [groupBy]);
+
+  const headerTemplate = (row: Record<string, unknown>) => {
+    if (!groupBy) return null;
+    return (
+      <span style={{ fontWeight: 600 }}>
+        {(row[groupBy] as string) ?? "—"}
+      </span>
+    );
+  };
 
   const onCellEditComplete = (e: {
     rowData: JoinedTask;
@@ -312,7 +342,7 @@ function TasksTable({
       />
       <DataTable
         {...commonTableProps}
-        {...groupingProps(groupBy)}
+        {...groupingProps(groupBy, expandedRows, setExpandedRows, headerTemplate)}
         value={data}
         loading={loading}
         editMode="cell"
@@ -412,6 +442,22 @@ function ProjectsTable({
   loading: boolean;
 }) {
   const [groupBy, setGroupBy] = useState<string | null>(null);
+  const [expandedRows, setExpandedRows] = useState<
+    DataTableExpandedRows | undefined
+  >(undefined);
+
+  useEffect(() => {
+    setExpandedRows(undefined);
+  }, [groupBy]);
+
+  const headerTemplate = (row: Record<string, unknown>) => {
+    if (!groupBy) return null;
+    return (
+      <span style={{ fontWeight: 600 }}>
+        {(row[groupBy] as string) ?? "—"}
+      </span>
+    );
+  };
 
   const onCellEditComplete = (e: {
     rowData: JoinedProject;
@@ -435,7 +481,7 @@ function ProjectsTable({
       />
       <DataTable
         {...commonTableProps}
-        {...groupingProps(groupBy)}
+        {...groupingProps(groupBy, expandedRows, setExpandedRows, headerTemplate)}
         value={data}
         loading={loading}
         editMode="cell"
