@@ -162,11 +162,15 @@ export function GridTable({
   taskStatuses,
   projectStatuses,
   uberProjects,
+  wrapped = true,
+  title = "Projects | Main",
 }: {
   data: TaskRow[];
   taskStatuses: StatusOption[];
   projectStatuses: StatusOption[];
   uberProjects: StatusOption[];
+  wrapped?: boolean;
+  title?: string;
 }) {
   const projectAccessor = (r: TaskRow) => r.project;
 
@@ -283,8 +287,8 @@ export function GridTable({
     }));
   };
 
-  return (
-    <PageShell title="Projects | Main" count={data.length} maxWidth="">
+  const body = (
+    <>
       <div className="flex items-center gap-2 -mt-4 mb-6 text-sm">
         <span className="text-muted-foreground">View:</span>
         <select
@@ -518,6 +522,13 @@ export function GridTable({
           </tbody>
         </table>
       </div>
+    </>
+  );
+
+  if (!wrapped) return body;
+  return (
+    <PageShell title={title} count={data.length} maxWidth="">
+      {body}
     </PageShell>
   );
 }
