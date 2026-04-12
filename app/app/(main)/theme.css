@@ -74,7 +74,7 @@
   --border-width: 1px;
 
   /* ── Column headers ── */
-  --header-font-size: 11px;
+  --header-font-size: var(--cell-font-size);
   --header-font-weight: 500;
   --header-text-transform: none;
   --header-letter-spacing: normal;
