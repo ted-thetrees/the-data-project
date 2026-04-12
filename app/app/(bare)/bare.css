@@ -1,31 +1,3 @@
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
-  font-size: 13px;
-  color: #0a0a0a;
-  background: #ffffff;
-}
-
-table {
-  border-collapse: collapse;
-}
-
-th,
-td {
-  text-align: left;
-  vertical-align: top;
-  padding: 4px 8px;
-  border-bottom: 1px solid #eee;
-  font-weight: normal;
-}
-
-th {
-  border-bottom: 1px solid #999;
-}
-
-input,
-select,
-button {
-  font: inherit;
-  color: inherit;
 }

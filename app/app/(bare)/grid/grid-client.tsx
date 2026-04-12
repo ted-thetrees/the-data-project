@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
-  type ColumnDef,
-} from "@tanstack/react-table";
+import { DataTable } from "primereact/datatable";
+import { Column, type ColumnEditorOptions } from "primereact/column";
+import { InputText } from "primereact/inputtext";
+import { InputNumber } from "primereact/inputnumber";
+import { Dropdown } from "primereact/dropdown";
+import { SelectButton } from "primereact/selectbutton";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 
 type TableKind = "tasks" | "projects" | "uber_projects";
@@ -165,389 +165,388 @@ export default function GridClient() {
     []
   );
 
-  const taskColumns = useMemo<ColumnDef<JoinedTask>[]>(
-    () => buildTaskColumns({ updateTask, taskStatuses, projects: joinedProjects }),
-    [updateTask, taskStatuses, joinedProjects]
-  );
-
-  const projectColumns = useMemo<ColumnDef<JoinedProject>[]>(
-    () => buildProjectColumns({ updateProject, projectStatuses, ubers }),
-    [updateProject, projectStatuses, ubers]
-  );
-
-  const uberColumns = useMemo<ColumnDef<UberProject>[]>(
-    () => buildUberColumns({ updateUber }),
-    [updateUber]
-  );
+  const tableOptions = [
+    { label: "Tasks", value: "tasks" },
+    { label: "Projects", value: "projects" },
+    { label: "Uber", value: "uber_projects" },
+  ];
 
   return (
-    <div style={{ padding: 16 }}>
+    <div style={{ padding: "1rem" }}>
       <div
         style={{
-          marginBottom: 12,
           display: "flex",
-          alignItems: "baseline",
-          gap: 16,
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "1rem",
         }}
       >
-        <h1 style={{ fontSize: 18, fontWeight: 600, margin: 0 }}>Grid</h1>
-        <span>
-          <button
-            onClick={() => setTableKind("tasks")}
-            disabled={tableKind === "tasks"}
-          >
-            Tasks
-          </button>{" "}
-          <button
-            onClick={() => setTableKind("projects")}
-            disabled={tableKind === "projects"}
-          >
-            Projects
-          </button>{" "}
-          <button
-            onClick={() => setTableKind("uber_projects")}
-            disabled={tableKind === "uber_projects"}
-          >
-            Uber
-          </button>
-        </span>
-        {loading && <span style={{ color: "#999" }}>loading…</span>}
+        <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 600 }}>Grid</h1>
+        <SelectButton
+          value={tableKind}
+          onChange={(e) => e.value && setTableKind(e.value as TableKind)}
+          options={tableOptions}
+          allowEmpty={false}
+        />
       </div>
 
       {tableKind === "tasks" && (
-        <PlainTable key="tasks" data={joinedTasks} columns={taskColumns} />
+        <TasksTable
+          data={joinedTasks}
+          taskStatuses={taskStatuses}
+          projects={joinedProjects}
+          updateTask={updateTask}
+          loading={loading}
+        />
       )}
       {tableKind === "projects" && (
-        <PlainTable key="projects" data={joinedProjects} columns={projectColumns} />
+        <ProjectsTable
+          data={joinedProjects}
+          projectStatuses={projectStatuses}
+          ubers={ubers}
+          updateProject={updateProject}
+          loading={loading}
+        />
       )}
       {tableKind === "uber_projects" && (
-        <PlainTable key="uber_projects" data={ubers} columns={uberColumns} />
+        <UbersTable data={ubers} updateUber={updateUber} loading={loading} />
       )}
     </div>
   );
 }
 
-function PlainTable<T extends object>({
+const commonTableProps = {
+  paginator: true,
+  rows: 50,
+  rowsPerPageOptions: [25, 50, 100, 200],
+  sortMode: "multiple" as const,
+  removableSort: true,
+  filterDisplay: "menu" as const,
+  resizableColumns: true,
+  columnResizeMode: "expand" as const,
+  reorderableColumns: true,
+  scrollable: true,
+  scrollHeight: "calc(100vh - 220px)",
+  stripedRows: true,
+  showGridlines: false,
+  size: "small" as const,
+  dataKey: "id",
+};
+
+function TasksTable({
   data,
-  columns,
-}: {
-  data: T[];
-  columns: ColumnDef<T>[];
-}) {
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
-  return (
-    <div>
-      <table>
-        <thead>
-          {table.getHeaderGroups().map((hg) => (
-            <tr key={hg.id}>
-              {hg.headers.map((h) => (
-                <th key={h.id}>
-                  {flexRender(h.column.columnDef.header, h.getContext())}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div style={{ marginTop: 8, color: "#666" }}>{data.length} rows</div>
-    </div>
-  );
-}
-
-function buildTaskColumns({
-  updateTask,
   taskStatuses,
   projects,
+  updateTask,
+  loading,
 }: {
-  updateTask: (id: string, field: keyof Task, value: unknown) => Promise<void>;
+  data: JoinedTask[];
   taskStatuses: Status[];
   projects: JoinedProject[];
-}): ColumnDef<JoinedTask>[] {
-  const projectOptions = projects.map((p) => ({ id: p.id, name: p.name }));
-  return [
-    {
-      id: "name",
-      accessorKey: "name",
-      header: "Name",
-      cell: ({ row, getValue }) => (
-        <PlainText
-          value={(getValue() as string) ?? ""}
-          onCommit={(v) => updateTask(row.original.id, "name", v)}
-        />
-      ),
-    },
-    {
-      id: "status",
-      accessorKey: "status_name",
-      header: "Status",
-      cell: ({ row }) => (
-        <PlainSelect
-          value={row.original.status_id}
-          options={taskStatuses}
-          onChange={(v) => updateTask(row.original.id, "status_id", v)}
-        />
-      ),
-    },
-    {
-      id: "project",
-      accessorKey: "project_name",
-      header: "Project",
-      cell: ({ row }) => (
-        <PlainSelect
-          value={row.original.project_id}
-          options={projectOptions}
-          onChange={(v) => updateTask(row.original.id, "project_id", v)}
-        />
-      ),
-    },
-    {
-      id: "uber_project",
-      accessorKey: "uber_project_name",
-      header: "Uber Project",
-      cell: ({ row }) => <span>{row.original.uber_project_name ?? "—"}</span>,
-    },
-    {
-      id: "order",
-      accessorKey: "order",
-      header: "Order",
-      cell: ({ row, getValue }) => (
-        <PlainNumber
-          value={(getValue() as number | null) ?? null}
-          onCommit={(v) => updateTask(row.original.id, "order", v)}
-        />
-      ),
-    },
-    {
-      id: "result",
-      accessorKey: "result",
-      header: "Result",
-      cell: ({ row, getValue }) => (
-        <PlainText
-          value={(getValue() as string) ?? ""}
-          onCommit={(v) => updateTask(row.original.id, "result", v || null)}
-        />
-      ),
-    },
-    {
-      id: "notes",
-      accessorKey: "notes",
-      header: "Notes",
-      cell: ({ row, getValue }) => (
-        <PlainText
-          value={(getValue() as string) ?? ""}
-          onCommit={(v) => updateTask(row.original.id, "notes", v || null)}
-        />
-      ),
-    },
-  ];
+  updateTask: (id: string, field: keyof Task, value: unknown) => Promise<void>;
+  loading: boolean;
+}) {
+  const onCellEditComplete = (e: {
+    rowData: JoinedTask;
+    newValue: unknown;
+    field: string;
+  }) => {
+    const { rowData, newValue, field } = e;
+    if (newValue === (rowData as Record<string, unknown>)[field]) return;
+    updateTask(rowData.id, field as keyof Task, newValue);
+  };
+
+  return (
+    <DataTable
+      {...commonTableProps}
+      value={data}
+      loading={loading}
+      editMode="cell"
+      emptyMessage="No tasks"
+    >
+      <Column
+        field="name"
+        header="Name"
+        sortable
+        filter
+        filterPlaceholder="Search name"
+        editor={textEditor}
+        onCellEditComplete={onCellEditComplete}
+        style={{ minWidth: "16rem" }}
+      />
+      <Column
+        field="status_id"
+        header="Status"
+        sortField="status_name"
+        filterField="status_name"
+        sortable
+        filter
+        body={(row: JoinedTask) => row.status_name ?? "—"}
+        editor={(opts) => statusEditor(opts, taskStatuses)}
+        onCellEditComplete={onCellEditComplete}
+        style={{ minWidth: "10rem" }}
+      />
+      <Column
+        field="project_id"
+        header="Project"
+        sortField="project_name"
+        filterField="project_name"
+        sortable
+        filter
+        body={(row: JoinedTask) => row.project_name ?? "—"}
+        editor={(opts) =>
+          relationEditor(
+            opts,
+            projects.map((p) => ({ id: p.id, name: p.name }))
+          )
+        }
+        onCellEditComplete={onCellEditComplete}
+        style={{ minWidth: "14rem" }}
+      />
+      <Column
+        field="uber_project_name"
+        header="Uber Project"
+        sortable
+        filter
+        filterPlaceholder="Search uber"
+        style={{ minWidth: "12rem" }}
+      />
+      <Column
+        field="order"
+        header="Order"
+        sortable
+        editor={numberEditor}
+        onCellEditComplete={onCellEditComplete}
+        style={{ width: "6rem" }}
+      />
+      <Column
+        field="result"
+        header="Result"
+        sortable
+        filter
+        filterPlaceholder="Search result"
+        editor={textEditor}
+        onCellEditComplete={onCellEditComplete}
+        style={{ minWidth: "14rem" }}
+      />
+      <Column
+        field="notes"
+        header="Notes"
+        sortable
+        filter
+        filterPlaceholder="Search notes"
+        editor={textEditor}
+        onCellEditComplete={onCellEditComplete}
+        style={{ minWidth: "16rem" }}
+      />
+    </DataTable>
+  );
 }
 
-function buildProjectColumns({
-  updateProject,
+function ProjectsTable({
+  data,
   projectStatuses,
   ubers,
+  updateProject,
+  loading,
 }: {
-  updateProject: (id: string, field: keyof Project, value: unknown) => Promise<void>;
+  data: JoinedProject[];
   projectStatuses: Status[];
   ubers: UberProject[];
-}): ColumnDef<JoinedProject>[] {
-  const uberOptions = ubers.map((u) => ({ id: u.id, name: u.name }));
-  return [
-    {
-      id: "name",
-      accessorKey: "name",
-      header: "Name",
-      cell: ({ row, getValue }) => (
-        <PlainText
-          value={(getValue() as string) ?? ""}
-          onCommit={(v) => updateProject(row.original.id, "name", v)}
-        />
-      ),
-    },
-    {
-      id: "status",
-      accessorKey: "status_name",
-      header: "Status",
-      cell: ({ row }) => (
-        <PlainSelect
-          value={row.original.status_id}
-          options={projectStatuses}
-          onChange={(v) => updateProject(row.original.id, "status_id", v)}
-        />
-      ),
-    },
-    {
-      id: "uber_project",
-      accessorKey: "uber_project_name",
-      header: "Uber Project",
-      cell: ({ row }) => (
-        <PlainSelect
-          value={row.original.uber_project_id}
-          options={uberOptions}
-          onChange={(v) => updateProject(row.original.id, "uber_project_id", v)}
-        />
-      ),
-    },
-    {
-      id: "tickle_date",
-      accessorKey: "tickle_date",
-      header: "Tickle",
-      cell: ({ row, getValue }) => (
-        <PlainText
-          value={(getValue() as string) ?? ""}
-          placeholder="YYYY-MM-DD"
-          onCommit={(v) =>
-            updateProject(row.original.id, "tickle_date", v || null)
-          }
-        />
-      ),
-    },
-    {
-      id: "order",
-      accessorKey: "order",
-      header: "Order",
-      cell: ({ row, getValue }) => (
-        <PlainNumber
-          value={(getValue() as number | null) ?? null}
-          onCommit={(v) => updateProject(row.original.id, "order", v)}
-        />
-      ),
-    },
-    {
-      id: "notes",
-      accessorKey: "notes",
-      header: "Notes",
-      cell: ({ row, getValue }) => (
-        <PlainText
-          value={(getValue() as string) ?? ""}
-          onCommit={(v) => updateProject(row.original.id, "notes", v || null)}
-        />
-      ),
-    },
-  ];
-}
-
-function buildUberColumns({
-  updateUber,
-}: {
-  updateUber: (id: string, field: keyof UberProject, value: unknown) => Promise<void>;
-}): ColumnDef<UberProject>[] {
-  return [
-    {
-      id: "name",
-      accessorKey: "name",
-      header: "Name",
-      cell: ({ row, getValue }) => (
-        <PlainText
-          value={(getValue() as string) ?? ""}
-          onCommit={(v) => updateUber(row.original.id, "name", v)}
-        />
-      ),
-    },
-    {
-      id: "order",
-      accessorKey: "order",
-      header: "Order",
-      cell: ({ row, getValue }) => (
-        <PlainNumber
-          value={(getValue() as number | null) ?? null}
-          onCommit={(v) => updateUber(row.original.id, "order", v)}
-        />
-      ),
-    },
-  ];
-}
-
-function PlainText({
-  value,
-  onCommit,
-  placeholder,
-}: {
-  value: string;
-  onCommit: (v: string) => void;
-  placeholder?: string;
+  updateProject: (id: string, field: keyof Project, value: unknown) => Promise<void>;
+  loading: boolean;
 }) {
-  const [v, setV] = useState(value);
-  useEffect(() => setV(value), [value]);
-  return (
-    <input
-      type="text"
-      value={v}
-      placeholder={placeholder}
-      onChange={(e) => setV(e.target.value)}
-      onBlur={() => {
-        if (v !== value) onCommit(v);
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
-        if (e.key === "Escape") {
-          setV(value);
-          (e.currentTarget as HTMLInputElement).blur();
-        }
-      }}
-    />
-  );
-}
+  const onCellEditComplete = (e: {
+    rowData: JoinedProject;
+    newValue: unknown;
+    field: string;
+  }) => {
+    const { rowData, newValue, field } = e;
+    if (newValue === (rowData as Record<string, unknown>)[field]) return;
+    updateProject(rowData.id, field as keyof Project, newValue);
+  };
 
-function PlainNumber({
-  value,
-  onCommit,
-}: {
-  value: number | null;
-  onCommit: (v: number | null) => void;
-}) {
-  const [v, setV] = useState(value?.toString() ?? "");
-  useEffect(() => setV(value?.toString() ?? ""), [value]);
   return (
-    <input
-      type="number"
-      value={v}
-      onChange={(e) => setV(e.target.value)}
-      onBlur={() => {
-        const next = v === "" ? null : Number(v);
-        if (next !== value) onCommit(next);
-      }}
-    />
-  );
-}
-
-function PlainSelect({
-  value,
-  options,
-  onChange,
-}: {
-  value: string | null;
-  options: { id: string; name: string }[];
-  onChange: (v: string | null) => void;
-}) {
-  return (
-    <select
-      value={value ?? ""}
-      onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
+    <DataTable
+      {...commonTableProps}
+      value={data}
+      loading={loading}
+      editMode="cell"
+      emptyMessage="No projects"
     >
-      <option value="">—</option>
-      {options.map((o) => (
-        <option key={o.id} value={o.id}>
-          {o.name}
-        </option>
-      ))}
-    </select>
+      <Column
+        field="name"
+        header="Name"
+        sortable
+        filter
+        filterPlaceholder="Search name"
+        editor={textEditor}
+        onCellEditComplete={onCellEditComplete}
+        style={{ minWidth: "16rem" }}
+      />
+      <Column
+        field="status_id"
+        header="Status"
+        sortField="status_name"
+        filterField="status_name"
+        sortable
+        filter
+        body={(row: JoinedProject) => row.status_name ?? "—"}
+        editor={(opts) => statusEditor(opts, projectStatuses)}
+        onCellEditComplete={onCellEditComplete}
+        style={{ minWidth: "10rem" }}
+      />
+      <Column
+        field="uber_project_id"
+        header="Uber Project"
+        sortField="uber_project_name"
+        filterField="uber_project_name"
+        sortable
+        filter
+        body={(row: JoinedProject) => row.uber_project_name ?? "—"}
+        editor={(opts) =>
+          relationEditor(
+            opts,
+            ubers.map((u) => ({ id: u.id, name: u.name }))
+          )
+        }
+        onCellEditComplete={onCellEditComplete}
+        style={{ minWidth: "14rem" }}
+      />
+      <Column
+        field="tickle_date"
+        header="Tickle"
+        sortable
+        filter
+        filterPlaceholder="YYYY-MM-DD"
+        editor={textEditor}
+        onCellEditComplete={onCellEditComplete}
+        style={{ width: "9rem" }}
+      />
+      <Column
+        field="order"
+        header="Order"
+        sortable
+        editor={numberEditor}
+        onCellEditComplete={onCellEditComplete}
+        style={{ width: "6rem" }}
+      />
+      <Column
+        field="notes"
+        header="Notes"
+        sortable
+        filter
+        filterPlaceholder="Search notes"
+        editor={textEditor}
+        onCellEditComplete={onCellEditComplete}
+        style={{ minWidth: "16rem" }}
+      />
+    </DataTable>
+  );
+}
+
+function UbersTable({
+  data,
+  updateUber,
+  loading,
+}: {
+  data: UberProject[];
+  updateUber: (id: string, field: keyof UberProject, value: unknown) => Promise<void>;
+  loading: boolean;
+}) {
+  const onCellEditComplete = (e: {
+    rowData: UberProject;
+    newValue: unknown;
+    field: string;
+  }) => {
+    const { rowData, newValue, field } = e;
+    if (newValue === (rowData as Record<string, unknown>)[field]) return;
+    updateUber(rowData.id, field as keyof UberProject, newValue);
+  };
+
+  return (
+    <DataTable
+      {...commonTableProps}
+      value={data}
+      loading={loading}
+      editMode="cell"
+      emptyMessage="No uber projects"
+    >
+      <Column
+        field="name"
+        header="Name"
+        sortable
+        filter
+        filterPlaceholder="Search name"
+        editor={textEditor}
+        onCellEditComplete={onCellEditComplete}
+        style={{ minWidth: "20rem" }}
+      />
+      <Column
+        field="order"
+        header="Order"
+        sortable
+        editor={numberEditor}
+        onCellEditComplete={onCellEditComplete}
+        style={{ width: "6rem" }}
+      />
+    </DataTable>
+  );
+}
+
+function textEditor(options: ColumnEditorOptions) {
+  return (
+    <InputText
+      type="text"
+      value={(options.value as string) ?? ""}
+      onChange={(e) => options.editorCallback?.(e.target.value)}
+      onKeyDown={(e) => e.stopPropagation()}
+      style={{ width: "100%" }}
+    />
+  );
+}
+
+function numberEditor(options: ColumnEditorOptions) {
+  return (
+    <InputNumber
+      value={options.value as number | null}
+      onValueChange={(e) => options.editorCallback?.(e.value ?? null)}
+      onKeyDown={(e) => e.stopPropagation()}
+      inputStyle={{ width: "100%" }}
+    />
+  );
+}
+
+function statusEditor(options: ColumnEditorOptions, statuses: Status[]) {
+  return (
+    <Dropdown
+      value={options.value as string | null}
+      options={statuses}
+      optionLabel="name"
+      optionValue="id"
+      placeholder="—"
+      showClear
+      onChange={(e) => options.editorCallback?.(e.value)}
+      style={{ width: "100%" }}
+    />
+  );
+}
+
+function relationEditor(
+  options: ColumnEditorOptions,
+  items: { id: string; name: string }[]
+) {
+  return (
+    <Dropdown
+      value={options.value as string | null}
+      options={items}
+      optionLabel="name"
+      optionValue="id"
+      placeholder="—"
+      filter
+      showClear
+      onChange={(e) => options.editorCallback?.(e.value)}
+      style={{ width: "100%" }}
+    />
   );
 }
