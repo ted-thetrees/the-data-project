@@ -37,6 +37,8 @@
     "@platejs/toc": "^52.3.10",
     "@radix-ui/react-toolbar": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@radix-ui/themes": "^3.3.0",
+    "@supabase/supabase-js": "^2.103.0",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.23",
     "@types/d3": "^7.4.3",
