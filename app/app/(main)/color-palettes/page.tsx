@@ -71,7 +71,7 @@ export default async function ColorPalettesPage() {
   const palettes = await getPalettes();
 
   return (
-    <PageShell title="Color Palettes">
+    <PageShell title="Color Palettes" maxWidth="max-w-6xl">
       <div className="space-y-8">
         {palettes.length === 0 ? (
           <p className="text-sm text-muted-foreground">No palettes yet.</p>
@@ -79,10 +79,15 @@ export default async function ColorPalettesPage() {
           palettes.map((p) => (
             <section key={p.id}>
               <h2 className="text-lg font-semibold mb-3">{p.name}</h2>
-              <div className="grid grid-cols-15 gap-1" style={{ gridTemplateColumns: "repeat(15, minmax(0, 1fr))" }}>
-                {COLOR_COLUMNS.map((col) => (
-                  <Swatch key={col} hex={p[col]} />
-                ))}
+              <div className="overflow-x-auto">
+                <div
+                  className="grid gap-1"
+                  style={{ gridTemplateColumns: "repeat(15, minmax(95px, 1fr))" }}
+                >
+                  {COLOR_COLUMNS.map((col) => (
+                    <Swatch key={col} hex={p[col]} />
+                  ))}
+                </div>
               </div>
             </section>
           ))
