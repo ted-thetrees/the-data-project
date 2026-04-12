@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { PageShell } from "@/components/page-shell";
 import type { TaskRow, StatusOption } from "./page";
 import {
@@ -366,7 +373,7 @@ export function GridTable({
                       className="align-top px-3 py-2"
                       style={{ backgroundColor: bg, color: "#ffffff" }}
                     >
-                      <EditableText
+                      <EditableTextWrap
                         value={span.value}
                         onSave={(v) =>
                           updateProjectField(row.project_id, "name", v)
@@ -391,7 +398,7 @@ export function GridTable({
 
                 {/* Task */}
                 <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]">
-                  <EditableText
+                  <EditableTextWrap
                     value={row.task}
                     onSave={(v) => updateTaskField(row.id, "name", v)}
                   />
@@ -505,6 +512,70 @@ function ColumnResizer({
         width: "6px",
         cursor: "col-resize",
         userSelect: "none",
+      }}
+    />
+  );
+}
+
+function EditableTextWrap({
+  value,
+  onSave,
+  placeholder,
+}: {
+  value: string;
+  onSave: (v: string) => void | Promise<void>;
+  placeholder?: string;
+}) {
+  const [v, setV] = useState(value);
+  const [isPending, startTransition] = useTransition();
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => setV(value), [value]);
+  useLayoutEffect(() => {
+    const ta = ref.current;
+    if (ta) {
+      ta.style.height = "0px";
+      ta.style.height = `${ta.scrollHeight}px`;
+    }
+  }, [v]);
+  return (
+    <textarea
+      ref={ref}
+      value={v}
+      placeholder={placeholder}
+      rows={1}
+      onChange={(e) => setV(e.target.value)}
+      onBlur={() => {
+        if (v !== value) {
+          startTransition(() => {
+            onSave(v);
+          });
+        }
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          (e.currentTarget as HTMLTextAreaElement).blur();
+        }
+        if (e.key === "Escape") {
+          setV(value);
+          (e.currentTarget as HTMLTextAreaElement).blur();
+        }
+      }}
+      style={{
+        background: "transparent",
+        color: "inherit",
+        border: 0,
+        padding: 0,
+        font: "inherit",
+        width: "100%",
+        outline: "none",
+        resize: "none",
+        opacity: isPending ? 0.6 : 1,
+        overflow: "hidden",
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word",
+        lineHeight: "1.4",
+        display: "block",
       }}
     />
   );
