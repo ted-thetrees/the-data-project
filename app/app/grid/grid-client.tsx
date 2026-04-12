@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -17,6 +17,7 @@ import {
   type ExpandedState,
   type Table as TanTable,
 } from "@tanstack/react-table";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   Box,
   Button,
@@ -272,81 +273,139 @@ function GridView<T extends object>({
   });
 
   const visibleLeafCount = table.getVisibleLeafColumns().length;
+  const rows = table.getRowModel().rows;
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 40,
+    overscan: 12,
+  });
+
+  const virtualRows = virtualizer.getVirtualItems();
+  const totalSize = virtualizer.getTotalSize();
+  const paddingTop = virtualRows.length > 0 ? virtualRows[0].start : 0;
+  const paddingBottom =
+    virtualRows.length > 0
+      ? totalSize - virtualRows[virtualRows.length - 1].end
+      : 0;
 
   return (
     <Box>
       <Toolbar table={table} />
-      <Table.Root variant="surface" size="1">
-        <Table.Header>
-          {table.getHeaderGroups().map((hg) => (
-            <Table.Row key={hg.id}>
-              {hg.headers.map((h) => {
-                const canSort = h.column.getCanSort();
-                const sortDir = h.column.getIsSorted();
+      <Box
+        ref={scrollRef}
+        style={{
+          height: "calc(100vh - 200px)",
+          overflow: "auto",
+          border: "1px solid var(--gray-a5)",
+          borderRadius: "var(--radius-2)",
+        }}
+      >
+        <Table.Root variant="surface" size="1">
+          <Table.Header
+            style={{
+              position: "sticky",
+              top: 0,
+              zIndex: 1,
+              background: "var(--gray-1)",
+            }}
+          >
+            {table.getHeaderGroups().map((hg) => (
+              <Table.Row key={hg.id}>
+                {hg.headers.map((h) => {
+                  const canSort = h.column.getCanSort();
+                  const sortDir = h.column.getIsSorted();
+                  return (
+                    <Table.ColumnHeaderCell
+                      key={h.id}
+                      style={{
+                        cursor: canSort ? "pointer" : "default",
+                        userSelect: "none",
+                      }}
+                      onClick={
+                        canSort ? h.column.getToggleSortingHandler() : undefined
+                      }
+                    >
+                      <Flex align="center" gap="1">
+                        {flexRender(h.column.columnDef.header, h.getContext())}
+                        {sortDir === "asc" && <span>▲</span>}
+                        {sortDir === "desc" && <span>▼</span>}
+                      </Flex>
+                    </Table.ColumnHeaderCell>
+                  );
+                })}
+              </Table.Row>
+            ))}
+          </Table.Header>
+          <Table.Body>
+            {paddingTop > 0 && (
+              <Table.Row>
+                <Table.Cell
+                  colSpan={visibleLeafCount}
+                  style={{ height: paddingTop, padding: 0, border: 0 }}
+                />
+              </Table.Row>
+            )}
+            {virtualRows.map((vr) => {
+              const row = rows[vr.index];
+              if (row.getIsGrouped()) {
+                const groupCol = row.groupingColumnId;
+                const groupVal = groupCol ? row.getValue(groupCol) : null;
                 return (
-                  <Table.ColumnHeaderCell
-                    key={h.id}
-                    style={{
-                      cursor: canSort ? "pointer" : "default",
-                      userSelect: "none",
-                    }}
-                    onClick={canSort ? h.column.getToggleSortingHandler() : undefined}
+                  <Table.Row
+                    key={row.id}
+                    style={{ background: "var(--gray-a2)" }}
                   >
-                    <Flex align="center" gap="1">
-                      {flexRender(h.column.columnDef.header, h.getContext())}
-                      {sortDir === "asc" && <span>▲</span>}
-                      {sortDir === "desc" && <span>▼</span>}
-                    </Flex>
-                  </Table.ColumnHeaderCell>
+                    <Table.Cell colSpan={visibleLeafCount}>
+                      <Flex align="center" gap="2">
+                        <IconButton
+                          size="1"
+                          variant="ghost"
+                          onClick={row.getToggleExpandedHandler()}
+                        >
+                          {row.getIsExpanded() ? "▼" : "▶"}
+                        </IconButton>
+                        <Text weight="medium" size="2">
+                          {groupVal != null && groupVal !== ""
+                            ? String(groupVal)
+                            : "—"}
+                        </Text>
+                        <Text size="1" color="gray">
+                          ({row.subRows.length})
+                        </Text>
+                      </Flex>
+                    </Table.Cell>
+                  </Table.Row>
                 );
-              })}
-            </Table.Row>
-          ))}
-        </Table.Header>
-        <Table.Body>
-          {table.getRowModel().rows.map((row) => {
-            if (row.getIsGrouped()) {
-              const groupCol = row.groupingColumnId;
-              const groupVal = groupCol ? row.getValue(groupCol) : null;
+              }
               return (
-                <Table.Row key={row.id} style={{ background: "var(--gray-a2)" }}>
-                  <Table.Cell colSpan={visibleLeafCount}>
-                    <Flex align="center" gap="2">
-                      <IconButton
-                        size="1"
-                        variant="ghost"
-                        onClick={row.getToggleExpandedHandler()}
-                      >
-                        {row.getIsExpanded() ? "▼" : "▶"}
-                      </IconButton>
-                      <Text weight="medium" size="2">
-                        {groupVal != null && groupVal !== "" ? String(groupVal) : "—"}
-                      </Text>
-                      <Text size="1" color="gray">
-                        ({row.subRows.length})
-                      </Text>
-                    </Flex>
-                  </Table.Cell>
+                <Table.Row key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <Table.Cell key={cell.id}>
+                      {cell.getIsPlaceholder()
+                        ? null
+                        : flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </Table.Cell>
+                  ))}
                 </Table.Row>
               );
-            }
-            return (
-              <Table.Row key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <Table.Cell key={cell.id}>
-                    {cell.getIsPlaceholder()
-                      ? null
-                      : flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </Table.Cell>
-                ))}
+            })}
+            {paddingBottom > 0 && (
+              <Table.Row>
+                <Table.Cell
+                  colSpan={visibleLeafCount}
+                  style={{ height: paddingBottom, padding: 0, border: 0 }}
+                />
               </Table.Row>
-            );
-          })}
-        </Table.Body>
-      </Table.Root>
+            )}
+          </Table.Body>
+        </Table.Root>
+      </Box>
       <Box mt="2">
         <Text size="1" color="gray">
-          {table.getRowModel().rows.filter((r) => !r.getIsGrouped()).length} rows
+          {rows.filter((r) => !r.getIsGrouped()).length} rows
         </Text>
       </Box>
     </Box>
