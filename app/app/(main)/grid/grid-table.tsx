@@ -8,7 +8,14 @@ import {
   useState,
   useTransition,
 } from "react";
+import { format, parse } from "date-fns";
 import { PageShell } from "@/components/page-shell";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import type { TaskRow, StatusOption } from "./page";
 import {
   updateTaskField,
@@ -391,14 +398,13 @@ export function GridTable({
                       rowSpan={span.rowSpan}
                       className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
                     >
-                      <EditableText
+                      <EditableDate
                         value={(span.extra?.tickle as string) ?? ""}
-                        placeholder="YYYY-MM-DD"
                         onSave={(v) =>
                           updateProjectField(
                             row.project_id,
                             "tickle_date",
-                            v || null
+                            v
                           )
                         }
                       />
@@ -619,6 +625,59 @@ function EditableText({
         opacity: isPending ? 0.6 : 1,
       }}
     />
+  );
+}
+
+function EditableDate({
+  value,
+  onSave,
+}: {
+  value: string;
+  onSave: (v: string | null) => void | Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const dateValue = value
+    ? parse(value, "yyyy-MM-dd", new Date())
+    : undefined;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            style={{
+              background: "transparent",
+              color: "inherit",
+              border: 0,
+              padding: 0,
+              font: "inherit",
+              width: "100%",
+              textAlign: "left",
+              cursor: "pointer",
+              opacity: isPending ? 0.6 : 1,
+            }}
+          />
+        }
+      >
+        {value || <span style={{ opacity: 0.4 }}>—</span>}
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0">
+        <Calendar
+          mode="single"
+          selected={dateValue}
+          onSelect={(d) => {
+            const newValue = d ? format(d, "yyyy-MM-dd") : null;
+            startTransition(() => {
+              onSave(newValue);
+            });
+            setOpen(false);
+          }}
+          autoFocus
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
 
