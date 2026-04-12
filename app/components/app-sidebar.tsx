@@ -38,6 +38,7 @@ const navItems: NavItem[] = [
   { title: "DAG", href: "/dag-v002", icon: HierarchyIcon },
   { title: "New Project", href: "/new-project", icon: FolderAddIcon },
   { title: "Pick Lists", href: "/pick-lists", icon: SwatchIcon },
+  { title: "Color Palettes", href: "/color-palettes", icon: SwatchIcon },
   { title: "Series", href: "/crime-series", icon: Tv01Icon },
   { title: "Series | Sort", href: "/crime-series/sort", icon: Tv01Icon },
 ];
