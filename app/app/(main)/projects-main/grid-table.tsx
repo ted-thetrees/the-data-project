@@ -324,7 +324,7 @@ export function GridTable({
 
       <div className="overflow-x-auto">
         <table
-          className="text-[length:var(--cell-font-size)]"
+          className="text-[length:var(--cell-font-size)] [&_td]:align-top"
           style={{
             tableLayout: "fixed",
             width: Object.values(params.columnWidths).reduce(

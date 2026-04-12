@@ -30,7 +30,7 @@ export function SortTable({ data }: { data: SortRow[] }) {
       </p>
       <div className="overflow-x-auto">
         <table
-          className="text-[length:var(--cell-font-size)]"
+          className="text-[length:var(--cell-font-size)] [&_td]:align-top"
           style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: "var(--row-gap)" }}
         >
           <colgroup>

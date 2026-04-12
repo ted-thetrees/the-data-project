@@ -174,7 +174,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
   return (
     <PageShell title="Talent" count={sorted.length} maxWidth=""  className="talent-page">
       <div className="overflow-x-auto">
-        <table className="text-[length:var(--cell-font-size)]" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: "var(--row-gap)" }}>
+        <table className="text-[length:var(--cell-font-size)] [&_td]:align-top" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: "var(--row-gap)" }}>
           <colgroup>
             <col style={{ width: 120 }} /> {/* Category */}
             <col style={{ width: 130 }} /> {/* Primary Talent */}
