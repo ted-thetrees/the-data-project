@@ -1,12 +1,16 @@
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { DataTable, type Column } from "@/components/data-table";
-import { Swatch } from "@/components/swatch";
+import {
+  EditableColorCell,
+  type PaletteForPicker,
+} from "@/components/editable-color-cell";
 
 export const metadata = { title: "Pick Lists" };
 export const dynamic = "force-dynamic";
 
 type PicklistColor = {
+  id: string;
   table: string;
   field: string;
   option: string;
@@ -14,81 +18,121 @@ type PicklistColor = {
 };
 
 type Status = {
+  id: string;
   name: string;
   color: string;
   visible?: boolean;
 };
 
+const COLOR_COLUMNS = Array.from({ length: 15 }, (_, i) => `color_${i + 1}`);
+
 async function getPicklistColors(): Promise<PicklistColor[]> {
   const result = await poolV002.query(
-    `SELECT "table", field, option, color FROM picklist_colors ORDER BY "table", field, option`
+    `SELECT id::text, "table", field, option, color FROM picklist_colors ORDER BY "table", field, option`
   );
   return result.rows;
 }
 
 async function getProjectStatuses(): Promise<Status[]> {
   const result = await poolV002.query(
-    `SELECT name, color, visible FROM project_statuses ORDER BY name`
+    `SELECT id::text, name, color, visible FROM project_statuses ORDER BY name`
   );
   return result.rows;
 }
 
 async function getTaskStatuses(): Promise<Status[]> {
   const result = await poolV002.query(
-    `SELECT name, color FROM task_statuses ORDER BY name`
+    `SELECT id::text, name, color FROM task_statuses ORDER BY name`
   );
   return result.rows;
 }
 
 async function getCrimeSeriesStatuses(): Promise<Status[]> {
   const result = await poolV002.query(
-    `SELECT name, color FROM crime_series_statuses ORDER BY sort_order`
+    `SELECT id::text, name, color FROM crime_series_statuses ORDER BY sort_order`
   );
   return result.rows;
 }
 
-const statusColumns: Column<Status>[] = [
-  { key: "name", header: "Option" },
-  {
-    key: "color",
-    header: "Color",
-    render: (row) => <Swatch color={row.color} />,
-  },
-  {
-    key: "hex",
-    header: "Hex",
-    render: (row) => (
-      <span className="font-mono text-xs text-muted-foreground">{row.color}</span>
-    ),
-  },
-];
+async function getPalettes(): Promise<PaletteForPicker[]> {
+  const result = await poolV002.query(
+    `SELECT id::text, name, ${COLOR_COLUMNS.join(", ")} FROM color_palettes ORDER BY created_at DESC`
+  );
+  return result.rows.map((row: Record<string, string | null>) => ({
+    id: row.id as string,
+    name: row.name as string,
+    colors: COLOR_COLUMNS.map((col) => row[col]),
+  }));
+}
 
-const statusColumnsWithVisible: Column<Status>[] = [
-  ...statusColumns,
-  {
-    key: "visible",
-    header: "Visible",
-    render: (row) => (
-      <span className="text-muted-foreground">{row.visible ? "Yes" : "No"}</span>
-    ),
-  },
-];
+function statusColumns(
+  source: string,
+  palettes: PaletteForPicker[]
+): Column<Status>[] {
+  return [
+    { key: "name", header: "Option" },
+    {
+      key: "color",
+      header: "Color",
+      render: (row) => (
+        <EditableColorCell
+          source={source}
+          recordId={row.id}
+          color={row.color}
+          palettes={palettes}
+        />
+      ),
+    },
+    {
+      key: "hex",
+      header: "Hex",
+      render: (row) => (
+        <span className="font-mono text-xs text-muted-foreground">{row.color}</span>
+      ),
+    },
+  ];
+}
 
-const picklistColumns: Column<PicklistColor>[] = [
-  { key: "option", header: "Option" },
-  {
-    key: "color",
-    header: "Color",
-    render: (row) => <Swatch color={row.color} />,
-  },
-  {
-    key: "hex",
-    header: "Hex",
-    render: (row) => (
-      <span className="font-mono text-xs text-muted-foreground">{row.color}</span>
-    ),
-  },
-];
+function statusColumnsWithVisible(
+  source: string,
+  palettes: PaletteForPicker[]
+): Column<Status>[] {
+  return [
+    ...statusColumns(source, palettes),
+    {
+      key: "visible",
+      header: "Visible",
+      render: (row) => (
+        <span className="text-muted-foreground">{row.visible ? "Yes" : "No"}</span>
+      ),
+    },
+  ];
+}
+
+function picklistColumns(palettes: PaletteForPicker[]): Column<PicklistColor>[] {
+  return [
+    { key: "option", header: "Option" },
+    {
+      key: "color",
+      header: "Color",
+      render: (row) => (
+        <EditableColorCell
+          source="picklist_colors"
+          recordId={row.id}
+          color={row.color}
+          palettes={palettes}
+        />
+      ),
+    },
+    {
+      key: "hex",
+      header: "Hex",
+      render: (row) => (
+        <span className="font-mono text-xs text-muted-foreground">{row.color}</span>
+      ),
+    },
+  ];
+}
 
 function PickListSection({
   title,
@@ -109,12 +153,14 @@ function PickListSection({
 }
 
 export default async function PickListsPage() {
-  const [colors, projectStatuses, taskStatuses, crimeSeriesStatuses] = await Promise.all([
-    getPicklistColors(),
-    getProjectStatuses(),
-    getTaskStatuses(),
-    getCrimeSeriesStatuses(),
-  ]);
+  const [colors, projectStatuses, taskStatuses, crimeSeriesStatuses, palettes] =
+    await Promise.all([
+      getPicklistColors(),
+      getProjectStatuses(),
+      getTaskStatuses(),
+      getCrimeSeriesStatuses(),
+      getPalettes(),
+    ]);
 
   const grouped = new Map<string, PicklistColor[]>();
   for (const row of colors) {
@@ -129,34 +175,34 @@ export default async function PickListsPage() {
       <div className="space-y-10">
         <PickListSection title="Project Statuses" usedBy="Projects">
           <DataTable
-            columns={statusColumnsWithVisible}
+            columns={statusColumnsWithVisible("project_statuses", palettes)}
             rows={projectStatuses}
-            rowKey={(r) => r.name}
+            rowKey={(r) => r.id}
           />
         </PickListSection>
 
         <PickListSection title="Task Statuses" usedBy="Tasks">
           <DataTable
-            columns={statusColumns}
+            columns={statusColumns("task_statuses", palettes)}
             rows={taskStatuses}
-            rowKey={(r) => r.name}
+            rowKey={(r) => r.id}
           />
         </PickListSection>
 
         <PickListSection title="Crime Series Statuses" usedBy="Crime Series">
           <DataTable
-            columns={statusColumns}
+            columns={statusColumns("crime_series_statuses", palettes)}
             rows={crimeSeriesStatuses}
-            rowKey={(r) => r.name}
+            rowKey={(r) => r.id}
           />
         </PickListSection>
 
         {Array.from(grouped.entries()).map(([key, rows]) => (
           <PickListSection key={key} title={key} usedBy={rows[0].table}>
             <DataTable
-              columns={picklistColumns}
+              columns={picklistColumns(palettes)}
               rows={rows}
-              rowKey={(r) => r.option}
+              rowKey={(r) => r.id}
             />
           </PickListSection>
         ))}
