@@ -31,16 +31,16 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { title: "Projects | Main", href: "/grid", icon: GridTableIcon },
+  { title: "Projects | Main", href: "/projects-main", icon: GridTableIcon },
   { title: "Inbox", href: "/inbox", icon: InboxIcon },
   { title: "Talent", href: "/talent", icon: DiamondIcon },
-  { title: "Architecture", href: "/talent/architecture", icon: Building06Icon },
-  { title: "DAG", href: "/dag-v002", icon: HierarchyIcon },
+  { title: "Architecture", href: "/architecture", icon: Building06Icon },
+  { title: "DAG", href: "/dag", icon: HierarchyIcon },
   { title: "New Project", href: "/new-project", icon: FolderAddIcon },
   { title: "Pick Lists", href: "/pick-lists", icon: SwatchIcon },
   { title: "Color Palettes", href: "/color-palettes", icon: SwatchIcon },
-  { title: "Series", href: "/crime-series", icon: Tv01Icon },
-  { title: "Series | Sort", href: "/crime-series/sort", icon: Tv01Icon },
+  { title: "Series", href: "/series", icon: Tv01Icon },
+  { title: "Series | Sort", href: "/series-sort", icon: Tv01Icon },
 ];
 
 export function AppSidebar() {

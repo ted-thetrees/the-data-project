@@ -274,7 +274,7 @@ export function GridTable({
   };
 
   return (
-    <PageShell title="Grid" count={data.length} maxWidth="">
+    <PageShell title="Projects | Main" count={data.length} maxWidth="">
       <div className="flex items-center gap-2 -mt-4 mb-6 text-sm">
         <span className="text-muted-foreground">View:</span>
         <select

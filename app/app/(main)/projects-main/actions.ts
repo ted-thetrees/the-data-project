@@ -17,7 +17,7 @@ export async function updateTaskField(
     value,
     id,
   ]);
-  revalidatePath("/grid");
+  revalidatePath("/projects-main");
 }
 
 export async function updateProjectField(
@@ -31,7 +31,7 @@ export async function updateProjectField(
     value,
     id,
   ]);
-  revalidatePath("/grid");
+  revalidatePath("/projects-main");
 }
 
 export async function updateUberField(
@@ -44,5 +44,5 @@ export async function updateUberField(
     `UPDATE uber_projects SET ${field} = $1 WHERE id = $2`,
     [value, id]
   );
-  revalidatePath("/grid");
+  revalidatePath("/projects-main");
 }

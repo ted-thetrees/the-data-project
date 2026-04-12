@@ -1,7 +1,7 @@
 import { poolV002 } from "@/lib/db";
 import { SortTable } from "./sort-table";
 
-export const metadata = { title: "Sort – Crime Series" };
+export const metadata = { title: "Series | Sort" };
 export const dynamic = "force-dynamic";
 
 export interface SortRow {

@@ -1,7 +1,7 @@
 import { poolV002 } from "@/lib/db";
 import { CrimeSeriesTable } from "./crime-series-table";
 
-export const metadata = { title: "Crime Series" };
+export const metadata = { title: "Series" };
 export const dynamic = "force-dynamic";
 
 export interface SeriesRow {

@@ -1,7 +1,7 @@
 import { poolV002 } from "@/lib/db";
 import { GridTable } from "./grid-table";
 
-export const metadata = { title: "Grid" };
+export const metadata = { title: "Projects | Main" };
 export const dynamic = "force-dynamic";
 
 export interface TaskRow {
