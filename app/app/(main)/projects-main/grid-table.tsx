@@ -357,15 +357,13 @@ export function GridTable({
                   />
                 </td>
 
-                {/* Icicle: Project (colored by status) */}
+                {/* Icicle: Project (rowspan-merged) */}
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
-                  const bg = span.color || "hsl(0, 0%, 45%)";
                   return (
                     <td
                       rowSpan={span.rowSpan}
-                      className="align-top px-3 py-2"
-                      style={{ backgroundColor: bg, color: "#ffffff" }}
+                      className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
                     >
                       <EditableTextWrap
                         value={span.value}
