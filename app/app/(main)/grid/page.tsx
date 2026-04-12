@@ -48,7 +48,7 @@ async function getData(): Promise<TaskRow[]> {
     JOIN task_statuses ts ON t.status_id = ts.id
     WHERE ps.name = 'Active'
     ORDER BY up."order" NULLS LAST, up.name,
-             p."order" NULLS LAST, p.name,
+             p.tickle_date DESC NULLS LAST, p.name,
              t."order" NULLS LAST, t.name
   `);
   return result.rows;
