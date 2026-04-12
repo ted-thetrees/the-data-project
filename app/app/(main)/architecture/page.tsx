@@ -1,6 +1,7 @@
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { DataTable, type Column } from "@/components/data-table";
+import { Realtime } from "@/components/realtime";
 
 export const metadata = { title: "Architecture" };
 export const dynamic = "force-dynamic";
@@ -127,6 +128,14 @@ export default async function ArchitecturePage() {
 
   return (
     <PageShell title="Architecture" count={data.length} maxWidth="">
+      <Realtime
+        tables={[
+          "talent",
+          "talent_area_links",
+          "talent_areas",
+          "talent_rating_levels",
+        ]}
+      />
       <p className="text-sm text-muted-foreground -mt-4 mb-6">
         Places &middot; Architecture &middot; sorted by Rating
       </p>

@@ -1,5 +1,6 @@
 import { poolV002 } from "@/lib/db";
 import { SortTable } from "./sort-table";
+import { Realtime } from "@/components/realtime";
 
 export const metadata = { title: "Series | Sort" };
 export const dynamic = "force-dynamic";
@@ -26,5 +27,10 @@ async function getData(): Promise<SortRow[]> {
 
 export default async function SortPage() {
   const data = await getData();
-  return <SortTable data={data} />;
+  return (
+    <>
+      <Realtime tables={["crime_series"]} />
+      <SortTable data={data} />
+    </>
+  );
 }

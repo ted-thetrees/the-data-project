@@ -1,5 +1,6 @@
 import { poolV002 } from "@/lib/db";
 import { GridTable } from "./grid-table";
+import { Realtime } from "@/components/realtime";
 
 export const metadata = { title: "Projects | Main" };
 export const dynamic = "force-dynamic";
@@ -96,11 +97,22 @@ export default async function GridPage() {
     getUberProjects(),
   ]);
   return (
-    <GridTable
-      data={data}
-      taskStatuses={taskStatuses}
-      projectStatuses={projectStatuses}
-      uberProjects={uberProjects}
-    />
+    <>
+      <Realtime
+        tables={[
+          "tasks",
+          "projects",
+          "uber_projects",
+          "task_statuses",
+          "project_statuses",
+        ]}
+      />
+      <GridTable
+        data={data}
+        taskStatuses={taskStatuses}
+        projectStatuses={projectStatuses}
+        uberProjects={uberProjects}
+      />
+    </>
   );
 }

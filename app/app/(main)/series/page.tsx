@@ -1,5 +1,6 @@
 import { poolV002 } from "@/lib/db";
 import { CrimeSeriesTable } from "./crime-series-table";
+import { Realtime } from "@/components/realtime";
 
 export const metadata = { title: "Series" };
 export const dynamic = "force-dynamic";
@@ -29,5 +30,10 @@ async function getData(): Promise<SeriesRow[]> {
 
 export default async function CrimeSeriesPage() {
   const data = await getData();
-  return <CrimeSeriesTable data={data} />;
+  return (
+    <>
+      <Realtime tables={["crime_series", "crime_series_statuses"]} />
+      <CrimeSeriesTable data={data} />
+    </>
+  );
 }

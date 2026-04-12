@@ -1,5 +1,6 @@
 import { poolV002 } from "@/lib/db";
 import { AllisonEvalList } from "./allison-eval-list";
+import { Realtime } from "@/components/realtime";
 
 export const metadata = { title: "Allison to Eval" };
 export const dynamic = "force-dynamic";
@@ -23,5 +24,10 @@ async function getData(): Promise<AllisonRow[]> {
 
 export default async function AllisonEvalPage() {
   const data = await getData();
-  return <AllisonEvalList data={data} />;
+  return (
+    <>
+      <Realtime tables={["crime_series", "crime_series_statuses"]} />
+      <AllisonEvalList data={data} />
+    </>
+  );
 }

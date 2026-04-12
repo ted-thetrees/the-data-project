@@ -1,5 +1,6 @@
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
+import { Realtime } from "@/components/realtime";
 
 export const metadata = { title: "Color Palettes" };
 export const dynamic = "force-dynamic";
@@ -72,6 +73,7 @@ export default async function ColorPalettesPage() {
 
   return (
     <PageShell title="Color Palettes" maxWidth="" className="!px-[70px]">
+      <Realtime tables={["color_palettes"]} />
       <div className="space-y-8">
         {palettes.length === 0 ? (
           <p className="text-sm text-muted-foreground">No palettes yet.</p>

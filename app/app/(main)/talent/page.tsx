@@ -1,5 +1,6 @@
 import { pool } from "@/lib/db";
 import { TalentTable } from "./talent-table";
+import { Realtime } from "@/components/realtime";
 
 export const metadata = { title: "Talent" };
 export const dynamic = "force-dynamic";
@@ -42,5 +43,19 @@ async function getTalent(): Promise<TalentRow[]> {
 
 export default async function TalentPage() {
   const talent = await getTalent();
-  return <TalentTable data={talent} />;
+  return (
+    <>
+      <Realtime
+        tables={[
+          "talent",
+          "talent_area_links",
+          "talent_areas",
+          "talent_categories",
+          "talent_types",
+          "talent_rating_levels",
+        ]}
+      />
+      <TalentTable data={talent} />
+    </>
+  );
 }

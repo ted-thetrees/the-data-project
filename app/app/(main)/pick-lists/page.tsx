@@ -1,6 +1,7 @@
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { DataTable, type Column } from "@/components/data-table";
+import { Realtime } from "@/components/realtime";
 import {
   EditableColorCell,
   type PaletteForPicker,
@@ -186,6 +187,16 @@ export default async function PickListsPage() {
 
   return (
     <PageShell title="Pick Lists">
+      <Realtime
+        tables={[
+          "picklist_colors",
+          "project_statuses",
+          "task_statuses",
+          "crime_series_statuses",
+          "uber_projects",
+          "color_palettes",
+        ]}
+      />
       <div className="space-y-10">
         <PickListSection title="Project Statuses" usedBy="Projects">
           <DataTable
