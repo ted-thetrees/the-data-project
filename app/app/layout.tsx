@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Outfit, Source_Sans_3, Nunito } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { NavShortcuts } from "@/components/nav-shortcuts";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -45,12 +45,7 @@ export default function RootLayout({
           <SidebarProvider defaultOpen={false}>
             <AppSidebar />
             <NavShortcuts />
-            <SidebarInset>
-              <header className="flex h-12 items-center px-4">
-                <SidebarTrigger />
-              </header>
-              {children}
-            </SidebarInset>
+            <SidebarInset>{children}</SidebarInset>
           </SidebarProvider>
         </TooltipProvider>
       </body>

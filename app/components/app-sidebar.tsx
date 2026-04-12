@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useLayoutEffect, useRef } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   InboxIcon,
@@ -23,7 +22,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
-  SidebarRail,
 } from "@/components/ui/sidebar";
 
 interface NavItem {
@@ -46,43 +44,23 @@ const navItems: NavItem[] = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const menuRef = useRef<HTMLUListElement>(null);
-
-  // Size the sidebar to the widest menu item by measuring the rendered menu
-  // at its natural (max-content) width and writing it to --sidebar-width on
-  // the sidebar-wrapper ancestor. Runs before paint to avoid a flash.
-  useLayoutEffect(() => {
-    const el = menuRef.current;
-    if (!el) return;
-    const prev = el.style.width;
-    el.style.width = "max-content";
-    const natural = el.offsetWidth;
-    el.style.width = prev;
-    const wrapper = el.closest(
-      '[data-slot="sidebar-wrapper"]'
-    ) as HTMLElement | null;
-    if (wrapper) {
-      wrapper.style.setProperty("--sidebar-width", `${natural}px`);
-    }
-  }, []);
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="none">
       <SidebarHeader className="p-4">
-        <span className="text-sm font-semibold tracking-tight truncate group-data-[collapsible=icon]:hidden">
+        <span className="text-sm font-semibold tracking-tight truncate">
           The Data Project
         </span>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu ref={menuRef}>
+            <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     render={<Link href={item.href} />}
                     isActive={pathname === item.href}
-                    tooltip={item.title}
                   >
                     <HugeiconsIcon icon={item.icon} size={18} />
                     <span>{item.title}</span>
@@ -93,7 +71,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarRail />
     </Sidebar>
   );
 }
