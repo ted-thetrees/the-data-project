@@ -26,9 +26,9 @@ import {
 } from "./actions";
 
 const COLUMN_KEYS = [
-  "uber_project",
   "project",
   "tickle",
+  "uber_project",
   "project_status",
   "task",
   "task_status",
@@ -38,9 +38,9 @@ const COLUMN_KEYS = [
 type ColumnKey = (typeof COLUMN_KEYS)[number];
 
 const COLUMN_HEADERS: { key: ColumnKey; label: string }[] = [
-  { key: "uber_project", label: "Uber Project" },
   { key: "project", label: "Project" },
   { key: "tickle", label: "Tickle" },
+  { key: "uber_project", label: "Uber Project" },
   { key: "project_status", label: "Project Status" },
   { key: "task", label: "Task" },
   { key: "task_status", label: "Task Status" },
@@ -373,24 +373,6 @@ export function GridTable({
                 </tr>
               )}
               <tr>
-                {/* Uber Project (single-select from pick list, colored) */}
-                <td
-                  className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] text-sm"
-                  style={
-                    row.uber_color
-                      ? { backgroundColor: row.uber_color, color: "#ffffff" }
-                      : undefined
-                  }
-                >
-                  <EditableSelect
-                    value={row.uber_project_id}
-                    options={uberProjects}
-                    onSave={(v) =>
-                      updateProjectField(row.project_id, "uber_project_id", v)
-                    }
-                  />
-                </td>
-
                 {/* Icicle: Project (rowspan-merged) */}
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
@@ -441,6 +423,24 @@ export function GridTable({
                     </td>
                   );
                 })()}
+
+                {/* Uber Project (single-select from pick list, colored) */}
+                <td
+                  className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] text-sm"
+                  style={
+                    row.uber_color
+                      ? { backgroundColor: row.uber_color, color: "#ffffff" }
+                      : undefined
+                  }
+                >
+                  <EditableSelect
+                    value={row.uber_project_id}
+                    options={uberProjects}
+                    onSave={(v) =>
+                      updateProjectField(row.project_id, "uber_project_id", v)
+                    }
+                  />
+                </td>
 
                 {/* Icicle: Project Status (rowspan-merged, colored by project status) */}
                 {projectStartSet.has(i) && (() => {
