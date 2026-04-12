@@ -4,31 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
+  flexRender,
   type ColumnDef,
-  type SortingState,
-  type ColumnFiltersState,
-  type VisibilityState,
 } from "@tanstack/react-table";
-import {
-  DataGrid,
-  DataGridContainer,
-} from "@/components/reui/data-grid/data-grid";
-import { DataGridTableVirtual } from "@/components/reui/data-grid/data-grid-table-virtual";
-import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 
 type TableKind = "tasks" | "projects" | "uber_projects";
@@ -72,7 +50,6 @@ type JoinedTask = Task & {
   status_name: string | null;
   project_name: string | null;
   uber_project_name: string | null;
-  uber_project_id: string | null;
 };
 
 type JoinedProject = Project & {
@@ -151,7 +128,6 @@ export default function GridClient() {
         status_name: s?.name ?? null,
         project_name: p?.name ?? null,
         uber_project_name: u?.name ?? null,
-        uber_project_id: p?.uber_project_id ?? null,
       };
     });
   }, [tasks, projects, ubers, taskStatuses]);
@@ -205,113 +181,93 @@ export default function GridClient() {
   );
 
   return (
-    <div className="p-4">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Grid</h1>
-        <div className="flex items-center gap-3">
-          <TablePicker value={tableKind} onChange={setTableKind} />
-          {loading && (
-            <span className="text-muted-foreground text-xs">loading…</span>
-          )}
-        </div>
+    <div style={{ padding: 16 }}>
+      <div
+        style={{
+          marginBottom: 12,
+          display: "flex",
+          alignItems: "baseline",
+          gap: 16,
+        }}
+      >
+        <h1 style={{ fontSize: 18, fontWeight: 600, margin: 0 }}>Grid</h1>
+        <span>
+          <button
+            onClick={() => setTableKind("tasks")}
+            disabled={tableKind === "tasks"}
+          >
+            Tasks
+          </button>{" "}
+          <button
+            onClick={() => setTableKind("projects")}
+            disabled={tableKind === "projects"}
+          >
+            Projects
+          </button>{" "}
+          <button
+            onClick={() => setTableKind("uber_projects")}
+            disabled={tableKind === "uber_projects"}
+          >
+            Uber
+          </button>
+        </span>
+        {loading && <span style={{ color: "#999" }}>loading…</span>}
       </div>
 
       {tableKind === "tasks" && (
-        <GridView key="tasks" data={joinedTasks} columns={taskColumns} />
+        <PlainTable key="tasks" data={joinedTasks} columns={taskColumns} />
       )}
       {tableKind === "projects" && (
-        <GridView key="projects" data={joinedProjects} columns={projectColumns} />
+        <PlainTable key="projects" data={joinedProjects} columns={projectColumns} />
       )}
       {tableKind === "uber_projects" && (
-        <GridView key="uber_projects" data={ubers} columns={uberColumns} />
+        <PlainTable key="uber_projects" data={ubers} columns={uberColumns} />
       )}
     </div>
   );
 }
 
-function TablePicker({
-  value,
-  onChange,
-}: {
-  value: TableKind;
-  onChange: (v: TableKind) => void;
-}) {
-  const items: { k: TableKind; label: string }[] = [
-    { k: "tasks", label: "Tasks" },
-    { k: "projects", label: "Projects" },
-    { k: "uber_projects", label: "Uber" },
-  ];
-  return (
-    <div className="bg-muted inline-flex rounded-md p-0.5">
-      {items.map((it) => (
-        <Button
-          key={it.k}
-          size="sm"
-          variant={value === it.k ? "default" : "ghost"}
-          className={cn("h-7 px-3 text-xs", value !== it.k && "text-muted-foreground")}
-          onClick={() => onChange(it.k)}
-        >
-          {it.label}
-        </Button>
-      ))}
-    </div>
-  );
-}
-
-function GridView<T extends object>({
+function PlainTable<T extends object>({
   data,
   columns,
 }: {
   data: T[];
   columns: ColumnDef<T>[];
 }) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, columnFilters, columnVisibility },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
   });
 
   return (
-    <DataGrid
-      table={table}
-      recordCount={table.getFilteredRowModel().rows.length}
-      tableLayout={{
-        headerSticky: true,
-        headerBorder: true,
-        headerBackground: true,
-        cellBorder: false,
-        rowBorder: true,
-        columnsVisibility: true,
-        columnsResizable: true,
-        columnsPinnable: true,
-        width: "fixed",
-      }}
-    >
-      <DataGridContainer>
-        <DataGridTableVirtual height={"calc(100vh - 180px)"} estimateSize={44} />
-      </DataGridContainer>
-      <div className="text-muted-foreground mt-2 text-xs">
-        {table.getFilteredRowModel().rows.length} rows
-      </div>
-    </DataGrid>
-  );
-}
-
-function sortedHeader<T, V>(label: string) {
-  return ({ column }: { column: import("@tanstack/react-table").Column<T, V> }) => (
-    <DataGridColumnHeader column={column} title={label} visibility />
+    <div>
+      <table>
+        <thead>
+          {table.getHeaderGroups().map((hg) => (
+            <tr key={hg.id}>
+              {hg.headers.map((h) => (
+                <th key={h.id}>
+                  {flexRender(h.column.columnDef.header, h.getContext())}
+                </th>
+              ))}
+            </tr>
+          ))}
+        </thead>
+        <tbody>
+          {table.getRowModel().rows.map((row) => (
+            <tr key={row.id}>
+              {row.getVisibleCells().map((cell) => (
+                <td key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div style={{ marginTop: 8, color: "#666" }}>{data.length} rows</div>
+    </div>
   );
 }
 
@@ -329,10 +285,9 @@ function buildTaskColumns({
     {
       id: "name",
       accessorKey: "name",
-      header: sortedHeader<JoinedTask, unknown>("Name"),
-      size: 260,
+      header: "Name",
       cell: ({ row, getValue }) => (
-        <CellText
+        <PlainText
           value={(getValue() as string) ?? ""}
           onCommit={(v) => updateTask(row.original.id, "name", v)}
         />
@@ -341,10 +296,9 @@ function buildTaskColumns({
     {
       id: "status",
       accessorKey: "status_name",
-      header: sortedHeader<JoinedTask, unknown>("Status"),
-      size: 140,
+      header: "Status",
       cell: ({ row }) => (
-        <CellStatus
+        <PlainSelect
           value={row.original.status_id}
           options={taskStatuses}
           onChange={(v) => updateTask(row.original.id, "status_id", v)}
@@ -354,10 +308,9 @@ function buildTaskColumns({
     {
       id: "project",
       accessorKey: "project_name",
-      header: sortedHeader<JoinedTask, unknown>("Project"),
-      size: 180,
+      header: "Project",
       cell: ({ row }) => (
-        <CellRelation
+        <PlainSelect
           value={row.original.project_id}
           options={projectOptions}
           onChange={(v) => updateTask(row.original.id, "project_id", v)}
@@ -367,21 +320,15 @@ function buildTaskColumns({
     {
       id: "uber_project",
       accessorKey: "uber_project_name",
-      header: sortedHeader<JoinedTask, unknown>("Uber Project"),
-      size: 160,
-      cell: ({ row }) => (
-        <span className="text-muted-foreground text-xs">
-          {row.original.uber_project_name ?? "—"}
-        </span>
-      ),
+      header: "Uber Project",
+      cell: ({ row }) => <span>{row.original.uber_project_name ?? "—"}</span>,
     },
     {
       id: "order",
       accessorKey: "order",
-      header: sortedHeader<JoinedTask, unknown>("Order"),
-      size: 80,
+      header: "Order",
       cell: ({ row, getValue }) => (
-        <CellNumber
+        <PlainNumber
           value={(getValue() as number | null) ?? null}
           onCommit={(v) => updateTask(row.original.id, "order", v)}
         />
@@ -390,10 +337,9 @@ function buildTaskColumns({
     {
       id: "result",
       accessorKey: "result",
-      header: sortedHeader<JoinedTask, unknown>("Result"),
-      size: 220,
+      header: "Result",
       cell: ({ row, getValue }) => (
-        <CellText
+        <PlainText
           value={(getValue() as string) ?? ""}
           onCommit={(v) => updateTask(row.original.id, "result", v || null)}
         />
@@ -402,10 +348,9 @@ function buildTaskColumns({
     {
       id: "notes",
       accessorKey: "notes",
-      header: sortedHeader<JoinedTask, unknown>("Notes"),
-      size: 260,
+      header: "Notes",
       cell: ({ row, getValue }) => (
-        <CellText
+        <PlainText
           value={(getValue() as string) ?? ""}
           onCommit={(v) => updateTask(row.original.id, "notes", v || null)}
         />
@@ -428,10 +373,9 @@ function buildProjectColumns({
     {
       id: "name",
       accessorKey: "name",
-      header: sortedHeader<JoinedProject, unknown>("Name"),
-      size: 260,
+      header: "Name",
       cell: ({ row, getValue }) => (
-        <CellText
+        <PlainText
           value={(getValue() as string) ?? ""}
           onCommit={(v) => updateProject(row.original.id, "name", v)}
         />
@@ -440,10 +384,9 @@ function buildProjectColumns({
     {
       id: "status",
       accessorKey: "status_name",
-      header: sortedHeader<JoinedProject, unknown>("Status"),
-      size: 140,
+      header: "Status",
       cell: ({ row }) => (
-        <CellStatus
+        <PlainSelect
           value={row.original.status_id}
           options={projectStatuses}
           onChange={(v) => updateProject(row.original.id, "status_id", v)}
@@ -453,10 +396,9 @@ function buildProjectColumns({
     {
       id: "uber_project",
       accessorKey: "uber_project_name",
-      header: sortedHeader<JoinedProject, unknown>("Uber Project"),
-      size: 180,
+      header: "Uber Project",
       cell: ({ row }) => (
-        <CellRelation
+        <PlainSelect
           value={row.original.uber_project_id}
           options={uberOptions}
           onChange={(v) => updateProject(row.original.id, "uber_project_id", v)}
@@ -466,10 +408,9 @@ function buildProjectColumns({
     {
       id: "tickle_date",
       accessorKey: "tickle_date",
-      header: sortedHeader<JoinedProject, unknown>("Tickle"),
-      size: 130,
+      header: "Tickle",
       cell: ({ row, getValue }) => (
-        <CellText
+        <PlainText
           value={(getValue() as string) ?? ""}
           placeholder="YYYY-MM-DD"
           onCommit={(v) =>
@@ -481,10 +422,9 @@ function buildProjectColumns({
     {
       id: "order",
       accessorKey: "order",
-      header: sortedHeader<JoinedProject, unknown>("Order"),
-      size: 80,
+      header: "Order",
       cell: ({ row, getValue }) => (
-        <CellNumber
+        <PlainNumber
           value={(getValue() as number | null) ?? null}
           onCommit={(v) => updateProject(row.original.id, "order", v)}
         />
@@ -493,10 +433,9 @@ function buildProjectColumns({
     {
       id: "notes",
       accessorKey: "notes",
-      header: sortedHeader<JoinedProject, unknown>("Notes"),
-      size: 260,
+      header: "Notes",
       cell: ({ row, getValue }) => (
-        <CellText
+        <PlainText
           value={(getValue() as string) ?? ""}
           onCommit={(v) => updateProject(row.original.id, "notes", v || null)}
         />
@@ -514,10 +453,9 @@ function buildUberColumns({
     {
       id: "name",
       accessorKey: "name",
-      header: sortedHeader<UberProject, unknown>("Name"),
-      size: 320,
+      header: "Name",
       cell: ({ row, getValue }) => (
-        <CellText
+        <PlainText
           value={(getValue() as string) ?? ""}
           onCommit={(v) => updateUber(row.original.id, "name", v)}
         />
@@ -526,10 +464,9 @@ function buildUberColumns({
     {
       id: "order",
       accessorKey: "order",
-      header: sortedHeader<UberProject, unknown>("Order"),
-      size: 80,
+      header: "Order",
       cell: ({ row, getValue }) => (
-        <CellNumber
+        <PlainNumber
           value={(getValue() as number | null) ?? null}
           onCommit={(v) => updateUber(row.original.id, "order", v)}
         />
@@ -538,7 +475,7 @@ function buildUberColumns({
   ];
 }
 
-function CellText({
+function PlainText({
   value,
   onCommit,
   placeholder,
@@ -550,7 +487,8 @@ function CellText({
   const [v, setV] = useState(value);
   useEffect(() => setV(value), [value]);
   return (
-    <Input
+    <input
+      type="text"
       value={v}
       placeholder={placeholder}
       onChange={(e) => setV(e.target.value)}
@@ -564,12 +502,11 @@ function CellText({
           (e.currentTarget as HTMLInputElement).blur();
         }
       }}
-      className="h-7 border-transparent bg-transparent px-1.5 text-xs shadow-none focus-visible:bg-background"
     />
   );
 }
 
-function CellNumber({
+function PlainNumber({
   value,
   onCommit,
 }: {
@@ -579,7 +516,7 @@ function CellNumber({
   const [v, setV] = useState(value?.toString() ?? "");
   useEffect(() => setV(value?.toString() ?? ""), [value]);
   return (
-    <Input
+    <input
       type="number"
       value={v}
       onChange={(e) => setV(e.target.value)}
@@ -587,41 +524,11 @@ function CellNumber({
         const next = v === "" ? null : Number(v);
         if (next !== value) onCommit(next);
       }}
-      className="h-7 border-transparent bg-transparent px-1.5 text-xs shadow-none focus-visible:bg-background"
     />
   );
 }
 
-function CellStatus({
-  value,
-  options,
-  onChange,
-}: {
-  value: string | null;
-  options: Status[];
-  onChange: (v: string | null) => void;
-}) {
-  return (
-    <Select
-      value={value ?? "__none__"}
-      onValueChange={(v) => onChange(v === "__none__" ? null : v)}
-    >
-      <SelectTrigger className="h-7 border-transparent bg-transparent px-1.5 text-xs shadow-none">
-        <SelectValue placeholder="—" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="__none__">—</SelectItem>
-        {options.map((o) => (
-          <SelectItem key={o.id} value={o.id}>
-            {o.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
-
-function CellRelation({
+function PlainSelect({
   value,
   options,
   onChange,
@@ -631,21 +538,16 @@ function CellRelation({
   onChange: (v: string | null) => void;
 }) {
   return (
-    <Select
-      value={value ?? "__none__"}
-      onValueChange={(v) => onChange(v === "__none__" ? null : v)}
+    <select
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
     >
-      <SelectTrigger className="h-7 border-transparent bg-transparent px-1.5 text-xs shadow-none">
-        <SelectValue placeholder="—" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="__none__">—</SelectItem>
-        {options.map((o) => (
-          <SelectItem key={o.id} value={o.id}>
-            {o.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      <option value="">—</option>
+      {options.map((o) => (
+        <option key={o.id} value={o.id}>
+          {o.name}
+        </option>
+      ))}
+    </select>
   );
 }
