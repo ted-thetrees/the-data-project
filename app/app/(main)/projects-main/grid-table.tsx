@@ -22,6 +22,7 @@ import {
   updateProjectField,
   updateUberField,
   finalizeProject,
+  createTask,
 } from "./actions";
 
 const COLUMN_KEYS = [
@@ -381,9 +382,12 @@ export function GridTable({
                             }
                           />
                         </div>
-                        {isDraft && (
-                          <FinalizeButton projectId={row.project_id} />
-                        )}
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <AddTaskButton projectId={row.project_id} />
+                          {isDraft && (
+                            <FinalizeButton projectId={row.project_id} />
+                          )}
+                        </div>
                       </div>
                     </td>
                   );
@@ -493,6 +497,26 @@ function FinalizeButton({ projectId }: { projectId: string }) {
       className="shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50"
     >
       {pending ? "…" : "Finalize"}
+    </button>
+  );
+}
+
+function AddTaskButton({ projectId }: { projectId: string }) {
+  const [pending, startTransition] = useTransition();
+  const onClick = () => {
+    const name = window.prompt("New task name?");
+    if (!name || !name.trim()) return;
+    startTransition(() => createTask(projectId, name));
+  };
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={pending}
+      title="Add task to this project"
+      className="shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-zinc-300 text-zinc-600 bg-white hover:bg-zinc-50 disabled:opacity-50"
+    >
+      {pending ? "…" : "+ Task"}
     </button>
   );
 }
