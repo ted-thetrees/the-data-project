@@ -77,7 +77,7 @@ export function CrimeSeriesTable({ data }: { data: SeriesRow[] }) {
       </p>
       <div className="overflow-x-auto">
         <table
-          className="w-full text-[length:var(--cell-font-size)]"
+          className="text-[length:var(--cell-font-size)]"
           style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: "var(--row-gap)" }}
         >
           <colgroup>

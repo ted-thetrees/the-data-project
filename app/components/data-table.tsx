@@ -31,7 +31,7 @@ export function DataTable<T>({
   return (
     <div className={cn("overflow-x-auto", className)}>
       <table
-        className="w-full text-[length:var(--cell-font-size)]"
+        className="text-[length:var(--cell-font-size)]"
         style={{
           tableLayout: fixedLayout ? "fixed" : undefined,
           borderCollapse: "separate",

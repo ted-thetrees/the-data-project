@@ -322,9 +322,13 @@ export function GridTable({
 
       <div className="overflow-x-auto">
         <table
-          className="w-full text-[length:var(--cell-font-size)]"
+          className="text-[length:var(--cell-font-size)]"
           style={{
             tableLayout: "fixed",
+            width: Object.values(params.columnWidths).reduce(
+              (a, b) => a + b,
+              0
+            ),
             borderCollapse: "separate",
             borderSpacing: "var(--row-gap)",
           }}
