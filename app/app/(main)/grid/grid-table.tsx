@@ -19,9 +19,9 @@ import {
 const COLUMN_KEYS = [
   "uber_project",
   "project",
+  "tickle",
   "task",
   "task_status",
-  "tickle",
   "result",
   "notes",
 ] as const;
@@ -30,9 +30,9 @@ type ColumnKey = (typeof COLUMN_KEYS)[number];
 const COLUMN_HEADERS: { key: ColumnKey; label: string }[] = [
   { key: "uber_project", label: "Uber Project" },
   { key: "project", label: "Project" },
+  { key: "tickle", label: "Tickle" },
   { key: "task", label: "Task" },
   { key: "task_status", label: "Task Status" },
-  { key: "tickle", label: "Tickle" },
   { key: "result", label: "Result" },
   { key: "notes", label: "Notes" },
 ];
@@ -40,9 +40,9 @@ const COLUMN_HEADERS: { key: ColumnKey; label: string }[] = [
 const DEFAULT_COLUMN_WIDTHS: Record<ColumnKey, number> = {
   uber_project: 140,
   project: 220,
+  tickle: 110,
   task: 280,
   task_status: 100,
-  tickle: 90,
   result: 220,
   notes: 220,
 };
@@ -379,19 +379,29 @@ export function GridTable({
                           updateProjectField(row.project_id, "name", v)
                         }
                       />
-                      <div className="text-xs mt-1 opacity-75">
-                        <EditableText
-                          value={(span.extra?.tickle as string) ?? ""}
-                          placeholder="YYYY-MM-DD"
-                          onSave={(v) =>
-                            updateProjectField(
-                              row.project_id,
-                              "tickle_date",
-                              v || null
-                            )
-                          }
-                        />
-                      </div>
+                    </td>
+                  );
+                })()}
+
+                {/* Icicle: Tickle (project-level, rowspan-merged) */}
+                {projectStartSet.has(i) && (() => {
+                  const span = projectByIndex[i];
+                  return (
+                    <td
+                      rowSpan={span.rowSpan}
+                      className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
+                    >
+                      <EditableText
+                        value={(span.extra?.tickle as string) ?? ""}
+                        placeholder="YYYY-MM-DD"
+                        onSave={(v) =>
+                          updateProjectField(
+                            row.project_id,
+                            "tickle_date",
+                            v || null
+                          )
+                        }
+                      />
                     </td>
                   );
                 })()}
@@ -414,21 +424,6 @@ export function GridTable({
                     options={taskStatuses}
                     onSave={(v) =>
                       updateTaskField(row.id, "status_id", v)
-                    }
-                  />
-                </td>
-
-                {/* Tickle Date (project-level) */}
-                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm">
-                  <EditableText
-                    value={row.tickle_date ?? ""}
-                    placeholder="YYYY-MM-DD"
-                    onSave={(v) =>
-                      updateProjectField(
-                        row.project_id,
-                        "tickle_date",
-                        v || null
-                      )
                     }
                   />
                 </td>
