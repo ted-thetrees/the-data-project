@@ -1,4 +1,4 @@
-[data-grid-theme] {
+html[data-grid-theme] {
   --background: #ffffff;
   --foreground: #0a0a0a;
   --card: #ffffff;
@@ -21,6 +21,9 @@
   --radius: 0.5rem;
   --font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html[data-grid-theme] body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-family);
