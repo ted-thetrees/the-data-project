@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       if (tableName === "Inbox") {
         try {
           const recordRes = await pool.query(
-            `SELECT title as content FROM inbox WHERE teable_id = $1 OR id::text = $1 LIMIT 1`,
+            `SELECT title as content FROM inbox WHERE id::text = $1 LIMIT 1`,
             [recordId]
           );
           if (recordRes.rows.length > 0) {
@@ -36,8 +36,7 @@ export async function POST(req: NextRequest) {
               const tidied = tidyText(content);
               if (tidied !== content) {
                 await pool.query(
-                  `UPDATE inbox SET title = $1
-                   WHERE teable_id = $2 OR id::text = $2`,
+                  `UPDATE inbox SET title = $1 WHERE id::text = $2`,
                   [tidied, recordId]
                 );
               }
@@ -45,8 +44,7 @@ export async function POST(req: NextRequest) {
               const cleaned = cleanUrl(content);
               if (cleaned !== content) {
                 await pool.query(
-                  `UPDATE inbox SET title = $1
-                   WHERE teable_id = $2 OR id::text = $2`,
+                  `UPDATE inbox SET title = $1 WHERE id::text = $2`,
                   [cleaned, recordId]
                 );
               }
