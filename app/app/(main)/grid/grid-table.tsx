@@ -158,13 +158,7 @@ export function GridTable({
   data: TaskRow[];
   taskStatuses: StatusOption[];
 }) {
-  const uberAccessor = (r: TaskRow) => r.uber_project;
   const projectAccessor = (r: TaskRow) => r.project;
-
-  const uberSpans = useMemo(
-    () => computeGroupSpans(data, uberAccessor),
-    [data]
-  );
 
   const projectSpans = useMemo(
     () =>
@@ -172,15 +166,12 @@ export function GridTable({
         data,
         projectAccessor,
         (r) => r.project_color,
-        (r) => ({ tickle: r.tickle_date, notes: r.project_notes }),
-        [uberAccessor]
+        (r) => ({ tickle: r.tickle_date, notes: r.project_notes })
       ),
     [data]
   );
 
-  const uberStartSet = new Set(uberSpans.map((s) => s.startIndex));
   const projectStartSet = new Set(projectSpans.map((s) => s.startIndex));
-  const uberByIndex = Object.fromEntries(uberSpans.map((s) => [s.startIndex, s]));
   const projectByIndex = Object.fromEntries(projectSpans.map((s) => [s.startIndex, s]));
 
   // ── View state ──
@@ -351,24 +342,15 @@ export function GridTable({
           <tbody>
             {data.map((row, i) => (
               <tr key={row.id}>
-                {/* Icicle: Uber Project */}
-                {uberStartSet.has(i) && (() => {
-                  const span = uberByIndex[i];
-                  return (
-                    <td
-                      rowSpan={span.rowSpan}
-                      className="align-top px-3 py-2"
-                      style={{ backgroundColor: "hsl(30, 20%, 45%)", color: "#ffffff" }}
-                    >
-                      <EditableText
-                        value={span.value}
-                        onSave={(v) =>
-                          updateUberField(row.uber_project_id, "name", v)
-                        }
-                      />
-                    </td>
-                  );
-                })()}
+                {/* Uber Project (regular cell) */}
+                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm">
+                  <EditableTextWrap
+                    value={row.uber_project}
+                    onSave={(v) =>
+                      updateUberField(row.uber_project_id, "name", v)
+                    }
+                  />
+                </td>
 
                 {/* Icicle: Project (colored by status) */}
                 {projectStartSet.has(i) && (() => {
