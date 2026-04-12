@@ -14,7 +14,7 @@ export async function deleteRecord(recordId: string) {
   revalidatePath("/inbox");
 }
 
-async function ensureMigratedBucket(): Promise<string> {
+async function ensureMigratedUber(): Promise<string> {
   const uberRes = await pool.query(
     `WITH ins AS (
        INSERT INTO uber_projects (name)
@@ -27,28 +27,7 @@ async function ensureMigratedBucket(): Promise<string> {
      SELECT id FROM uber_projects WHERE name = 'Migrated'
      LIMIT 1`
   );
-  const uberId = uberRes.rows[0].id as string;
-
-  const existing = await pool.query(
-    `SELECT id FROM projects
-     WHERE name = 'Migrated' AND uber_project_id = $1
-     LIMIT 1`,
-    [uberId]
-  );
-  if (existing.rows[0]) return existing.rows[0].id as string;
-
-  const statusRes = await pool.query(
-    `SELECT id FROM project_statuses WHERE name = 'Active' LIMIT 1`
-  );
-  if (!statusRes.rows[0]) throw new Error("Active project status missing");
-
-  const projectRes = await pool.query(
-    `INSERT INTO projects (name, uber_project_id, status_id)
-     VALUES ('Migrated', $1, $2)
-     RETURNING id`,
-    [uberId, statusRes.rows[0].id]
-  );
-  return projectRes.rows[0].id as string;
+  return uberRes.rows[0].id as string;
 }
 
 export async function migrateRecord(recordId: string) {
@@ -60,16 +39,31 @@ export async function migrateRecord(recordId: string) {
   const inbox = inboxRes.rows[0];
   if (!inbox) return;
 
-  const projectId = await ensureMigratedBucket();
+  const uberId = await ensureMigratedUber();
+
+  const projectStatusRes = await pool.query(
+    `SELECT id FROM project_statuses WHERE name = 'Active' LIMIT 1`
+  );
+  if (!projectStatusRes.rows[0]) throw new Error("Active project status missing");
 
   const taskStatusRes = await pool.query(
     `SELECT id FROM task_statuses WHERE name = 'Tickled' LIMIT 1`
   );
   if (!taskStatusRes.rows[0]) throw new Error("Tickled task status missing");
 
+  const title = inbox.title || "(untitled)";
+
+  const projectRes = await pool.query(
+    `INSERT INTO projects (name, uber_project_id, status_id, is_draft)
+     VALUES ($1, $2, $3, true)
+     RETURNING id`,
+    [title, uberId, projectStatusRes.rows[0].id]
+  );
+  const projectId = projectRes.rows[0].id as string;
+
   await pool.query(
     `INSERT INTO tasks (name, project_id, status_id) VALUES ($1, $2, $3)`,
-    [inbox.title || "(untitled)", projectId, taskStatusRes.rows[0].id]
+    [title, projectId, taskStatusRes.rows[0].id]
   );
 
   await pool.query(
@@ -80,3 +74,4 @@ export async function migrateRecord(recordId: string) {
   revalidatePath("/inbox");
   revalidatePath("/projects-main");
 }
+

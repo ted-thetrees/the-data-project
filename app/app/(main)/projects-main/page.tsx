@@ -19,6 +19,7 @@ export interface TaskRow {
   project_status_id: string;
   project_color: string;
   project_order: number | null;
+  project_is_draft: boolean;
   tickle_date: string | null;
   project_notes: string | null;
   uber_project: string;
@@ -40,6 +41,7 @@ async function getData(): Promise<TaskRow[]> {
            p.id as project_id,
            p.status_id as project_status_id,
            p.name as project, p.tickle_date::text, p.notes as project_notes, p."order" as project_order,
+           p.is_draft as project_is_draft,
            ps.name as project_status, ps.color as project_color,
            up.id as uber_project_id,
            up.name as uber_project, up."order" as uber_order
@@ -50,7 +52,7 @@ async function getData(): Promise<TaskRow[]> {
     JOIN task_statuses ts ON t.status_id = ts.id
     WHERE ps.name = 'Active'
     ORDER BY
-      CASE WHEN p.name = 'Migrated' THEN 0 ELSE 1 END,
+      CASE WHEN p.is_draft THEN 0 ELSE 1 END,
       p.tickle_date ASC NULLS LAST, p.name,
              CASE ts.name
                WHEN 'Tickled' THEN 1

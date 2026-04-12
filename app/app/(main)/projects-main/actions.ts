@@ -46,3 +46,11 @@ export async function updateUberField(
   );
   revalidatePath("/projects-main");
 }
+
+export async function finalizeProject(id: string) {
+  await poolV002.query(
+    `UPDATE projects SET is_draft = false WHERE id = $1`,
+    [id]
+  );
+  revalidatePath("/projects-main");
+}

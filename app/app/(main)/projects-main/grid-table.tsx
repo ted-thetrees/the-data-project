@@ -21,6 +21,7 @@ import {
   updateTaskField,
   updateProjectField,
   updateUberField,
+  finalizeProject,
 } from "./actions";
 
 const COLUMN_KEYS = [
@@ -171,7 +172,12 @@ export function GridTable({
         data,
         projectAccessor,
         (r) => r.project_color,
-        (r) => ({ tickle: r.tickle_date, notes: r.project_notes })
+        (r) => ({
+          tickle: r.tickle_date,
+          notes: r.project_notes,
+          is_draft: r.project_is_draft,
+          project_id: r.project_id,
+        })
       ),
     [data]
   );
@@ -360,17 +366,25 @@ export function GridTable({
                 {/* Icicle: Project (rowspan-merged) */}
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
+                  const isDraft = Boolean(span.extra?.is_draft);
                   return (
                     <td
                       rowSpan={span.rowSpan}
                       className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
                     >
-                      <EditableTextWrap
-                        value={span.value}
-                        onSave={(v) =>
-                          updateProjectField(row.project_id, "name", v)
-                        }
-                      />
+                      <div className="flex items-start gap-2">
+                        <div className="flex-1 min-w-0">
+                          <EditableTextWrap
+                            value={span.value}
+                            onSave={(v) =>
+                              updateProjectField(row.project_id, "name", v)
+                            }
+                          />
+                        </div>
+                        {isDraft && (
+                          <FinalizeButton projectId={row.project_id} />
+                        )}
+                      </div>
                     </td>
                   );
                 })()}
@@ -465,6 +479,21 @@ export function GridTable({
         </table>
       </div>
     </PageShell>
+  );
+}
+
+function FinalizeButton({ projectId }: { projectId: string }) {
+  const [pending, startTransition] = useTransition();
+  return (
+    <button
+      type="button"
+      onClick={() => startTransition(() => finalizeProject(projectId))}
+      disabled={pending}
+      title="Finalize draft — let this project sort into the corpus"
+      className="shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50"
+    >
+      {pending ? "…" : "Finalize"}
+    </button>
   );
 }
 
