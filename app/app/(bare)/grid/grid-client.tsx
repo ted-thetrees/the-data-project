@@ -219,19 +219,60 @@ const commonTableProps = {
   paginator: true,
   rows: 50,
   rowsPerPageOptions: [25, 50, 100, 200],
-  sortMode: "multiple" as const,
   removableSort: true,
   filterDisplay: "menu" as const,
   resizableColumns: true,
   columnResizeMode: "expand" as const,
   reorderableColumns: true,
   scrollable: true,
-  scrollHeight: "calc(100vh - 220px)",
+  scrollHeight: "calc(100vh - 260px)",
   stripedRows: true,
   showGridlines: false,
   size: "small" as const,
   dataKey: "id",
 };
+
+function groupingProps(groupBy: string | null) {
+  if (!groupBy) return { sortMode: "multiple" as const };
+  return {
+    rowGroupMode: "rowspan" as const,
+    groupRowsBy: groupBy,
+    sortMode: "single" as const,
+    sortField: groupBy,
+    sortOrder: 1 as 1,
+  };
+}
+
+function GroupByControl({
+  value,
+  onChange,
+  options,
+}: {
+  value: string | null;
+  onChange: (v: string | null) => void;
+  options: { label: string; value: string }[];
+}) {
+  return (
+    <div
+      style={{
+        marginBottom: "0.75rem",
+        display: "flex",
+        alignItems: "center",
+        gap: "0.5rem",
+      }}
+    >
+      <span style={{ fontSize: "0.875rem", color: "#6b7280" }}>Group by:</span>
+      <Dropdown
+        value={value}
+        options={options}
+        onChange={(e) => onChange(e.value ?? null)}
+        placeholder="(none)"
+        showClear
+        style={{ width: "14rem" }}
+      />
+    </div>
+  );
+}
 
 function TasksTable({
   data,
@@ -246,6 +287,8 @@ function TasksTable({
   updateTask: (id: string, field: keyof Task, value: unknown) => Promise<void>;
   loading: boolean;
 }) {
+  const [groupBy, setGroupBy] = useState<string | null>(null);
+
   const onCellEditComplete = (e: {
     rowData: JoinedTask;
     newValue: unknown;
@@ -257,13 +300,24 @@ function TasksTable({
   };
 
   return (
-    <DataTable
-      {...commonTableProps}
-      value={data}
-      loading={loading}
-      editMode="cell"
-      emptyMessage="No tasks"
-    >
+    <>
+      <GroupByControl
+        value={groupBy}
+        onChange={setGroupBy}
+        options={[
+          { label: "Status", value: "status_name" },
+          { label: "Project", value: "project_name" },
+          { label: "Uber Project", value: "uber_project_name" },
+        ]}
+      />
+      <DataTable
+        {...commonTableProps}
+        {...groupingProps(groupBy)}
+        value={data}
+        loading={loading}
+        editMode="cell"
+        emptyMessage="No tasks"
+      >
       <Column
         field="name"
         header="Name"
@@ -339,7 +393,8 @@ function TasksTable({
         onCellEditComplete={onCellEditComplete}
         style={{ minWidth: "16rem" }}
       />
-    </DataTable>
+      </DataTable>
+    </>
   );
 }
 
@@ -356,6 +411,8 @@ function ProjectsTable({
   updateProject: (id: string, field: keyof Project, value: unknown) => Promise<void>;
   loading: boolean;
 }) {
+  const [groupBy, setGroupBy] = useState<string | null>(null);
+
   const onCellEditComplete = (e: {
     rowData: JoinedProject;
     newValue: unknown;
@@ -367,13 +424,23 @@ function ProjectsTable({
   };
 
   return (
-    <DataTable
-      {...commonTableProps}
-      value={data}
-      loading={loading}
-      editMode="cell"
-      emptyMessage="No projects"
-    >
+    <>
+      <GroupByControl
+        value={groupBy}
+        onChange={setGroupBy}
+        options={[
+          { label: "Status", value: "status_name" },
+          { label: "Uber Project", value: "uber_project_name" },
+        ]}
+      />
+      <DataTable
+        {...commonTableProps}
+        {...groupingProps(groupBy)}
+        value={data}
+        loading={loading}
+        editMode="cell"
+        emptyMessage="No projects"
+      >
       <Column
         field="name"
         header="Name"
@@ -441,7 +508,8 @@ function ProjectsTable({
         onCellEditComplete={onCellEditComplete}
         style={{ minWidth: "16rem" }}
       />
-    </DataTable>
+      </DataTable>
+    </>
   );
 }
 
