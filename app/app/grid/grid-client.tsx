@@ -1,37 +1,34 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
   getFilteredRowModel,
-  getGroupedRowModel,
-  getExpandedRowModel,
-  flexRender,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
   type ColumnDef,
   type SortingState,
   type ColumnFiltersState,
-  type GroupingState,
   type VisibilityState,
-  type ExpandedState,
-  type Table as TanTable,
 } from "@tanstack/react-table";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import {
-  Box,
-  Button,
-  DropdownMenu,
-  Flex,
-  Heading,
-  IconButton,
-  Popover,
-  SegmentedControl,
+  DataGrid,
+  DataGridContainer,
+} from "@/components/reui/data-grid/data-grid";
+import { DataGridTableVirtual } from "@/components/reui/data-grid/data-grid-table-virtual";
+import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
   Select,
-  Table,
-  Text,
-  TextField,
-} from "@radix-ui/themes";
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 
 type TableKind = "tasks" | "projects" | "uber_projects";
@@ -208,26 +205,16 @@ export default function GridClient() {
   );
 
   return (
-    <Box p="4">
-      <Flex justify="between" align="center" mb="3">
-        <Heading size="5">Grid</Heading>
-        <Flex gap="3" align="center">
-          <SegmentedControl.Root
-            value={tableKind}
-            onValueChange={(v) => setTableKind(v as TableKind)}
-            size="1"
-          >
-            <SegmentedControl.Item value="tasks">Tasks</SegmentedControl.Item>
-            <SegmentedControl.Item value="projects">Projects</SegmentedControl.Item>
-            <SegmentedControl.Item value="uber_projects">Uber</SegmentedControl.Item>
-          </SegmentedControl.Root>
+    <div className="p-4">
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Grid</h1>
+        <div className="flex items-center gap-3">
+          <TablePicker value={tableKind} onChange={setTableKind} />
           {loading && (
-            <Text size="1" color="gray">
-              loading…
-            </Text>
+            <span className="text-muted-foreground text-xs">loading…</span>
           )}
-        </Flex>
-      </Flex>
+        </div>
+      </div>
 
       {tableKind === "tasks" && (
         <GridView key="tasks" data={joinedTasks} columns={taskColumns} />
@@ -238,7 +225,36 @@ export default function GridClient() {
       {tableKind === "uber_projects" && (
         <GridView key="uber_projects" data={ubers} columns={uberColumns} />
       )}
-    </Box>
+    </div>
+  );
+}
+
+function TablePicker({
+  value,
+  onChange,
+}: {
+  value: TableKind;
+  onChange: (v: TableKind) => void;
+}) {
+  const items: { k: TableKind; label: string }[] = [
+    { k: "tasks", label: "Tasks" },
+    { k: "projects", label: "Projects" },
+    { k: "uber_projects", label: "Uber" },
+  ];
+  return (
+    <div className="bg-muted inline-flex rounded-md p-0.5">
+      {items.map((it) => (
+        <Button
+          key={it.k}
+          size="sm"
+          variant={value === it.k ? "default" : "ghost"}
+          className={cn("h-7 px-3 text-xs", value !== it.k && "text-muted-foreground")}
+          onClick={() => onChange(it.k)}
+        >
+          {it.label}
+        </Button>
+      ))}
+    </div>
   );
 }
 
@@ -251,313 +267,52 @@ function GridView<T extends object>({
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [grouping, setGrouping] = useState<GroupingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [expanded, setExpanded] = useState<ExpandedState>({});
 
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, columnFilters, grouping, columnVisibility, expanded },
+    state: { sorting, columnFilters, columnVisibility },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onGroupingChange: setGrouping,
     onColumnVisibilityChange: setColumnVisibility,
-    onExpandedChange: setExpanded,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getGroupedRowModel: getGroupedRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
-    autoResetExpanded: false,
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
   });
-
-  const visibleLeafCount = table.getVisibleLeafColumns().length;
-  const rows = table.getRowModel().rows;
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const virtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: () => 40,
-    overscan: 12,
-  });
-
-  const virtualRows = virtualizer.getVirtualItems();
-  const totalSize = virtualizer.getTotalSize();
-  const paddingTop = virtualRows.length > 0 ? virtualRows[0].start : 0;
-  const paddingBottom =
-    virtualRows.length > 0
-      ? totalSize - virtualRows[virtualRows.length - 1].end
-      : 0;
 
   return (
-    <Box>
-      <Toolbar table={table} />
-      <Box
-        ref={scrollRef}
-        style={{
-          height: "calc(100vh - 200px)",
-          overflow: "auto",
-          border: "1px solid var(--gray-a5)",
-          borderRadius: "var(--radius-2)",
-        }}
-      >
-        <Table.Root variant="surface" size="1">
-          <Table.Header
-            style={{
-              position: "sticky",
-              top: 0,
-              zIndex: 1,
-              background: "var(--gray-1)",
-            }}
-          >
-            {table.getHeaderGroups().map((hg) => (
-              <Table.Row key={hg.id}>
-                {hg.headers.map((h) => {
-                  const canSort = h.column.getCanSort();
-                  const sortDir = h.column.getIsSorted();
-                  return (
-                    <Table.ColumnHeaderCell
-                      key={h.id}
-                      style={{
-                        cursor: canSort ? "pointer" : "default",
-                        userSelect: "none",
-                      }}
-                      onClick={
-                        canSort ? h.column.getToggleSortingHandler() : undefined
-                      }
-                    >
-                      <Flex align="center" gap="1">
-                        {flexRender(h.column.columnDef.header, h.getContext())}
-                        {sortDir === "asc" && <span>▲</span>}
-                        {sortDir === "desc" && <span>▼</span>}
-                      </Flex>
-                    </Table.ColumnHeaderCell>
-                  );
-                })}
-              </Table.Row>
-            ))}
-          </Table.Header>
-          <Table.Body>
-            {paddingTop > 0 && (
-              <Table.Row>
-                <Table.Cell
-                  colSpan={visibleLeafCount}
-                  style={{ height: paddingTop, padding: 0, border: 0 }}
-                />
-              </Table.Row>
-            )}
-            {virtualRows.map((vr) => {
-              const row = rows[vr.index];
-              if (row.getIsGrouped()) {
-                const groupCol = row.groupingColumnId;
-                const groupVal = groupCol ? row.getValue(groupCol) : null;
-                return (
-                  <Table.Row
-                    key={row.id}
-                    style={{ background: "var(--gray-a2)" }}
-                  >
-                    <Table.Cell colSpan={visibleLeafCount}>
-                      <Flex align="center" gap="2">
-                        <IconButton
-                          size="1"
-                          variant="ghost"
-                          onClick={row.getToggleExpandedHandler()}
-                        >
-                          {row.getIsExpanded() ? "▼" : "▶"}
-                        </IconButton>
-                        <Text weight="medium" size="2">
-                          {groupVal != null && groupVal !== ""
-                            ? String(groupVal)
-                            : "—"}
-                        </Text>
-                        <Text size="1" color="gray">
-                          ({row.subRows.length})
-                        </Text>
-                      </Flex>
-                    </Table.Cell>
-                  </Table.Row>
-                );
-              }
-              return (
-                <Table.Row key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <Table.Cell key={cell.id}>
-                      {cell.getIsPlaceholder()
-                        ? null
-                        : flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </Table.Cell>
-                  ))}
-                </Table.Row>
-              );
-            })}
-            {paddingBottom > 0 && (
-              <Table.Row>
-                <Table.Cell
-                  colSpan={visibleLeafCount}
-                  style={{ height: paddingBottom, padding: 0, border: 0 }}
-                />
-              </Table.Row>
-            )}
-          </Table.Body>
-        </Table.Root>
-      </Box>
-      <Box mt="2">
-        <Text size="1" color="gray">
-          {rows.filter((r) => !r.getIsGrouped()).length} rows
-        </Text>
-      </Box>
-    </Box>
+    <DataGrid
+      table={table}
+      recordCount={table.getFilteredRowModel().rows.length}
+      tableLayout={{
+        headerSticky: true,
+        headerBorder: true,
+        headerBackground: true,
+        cellBorder: false,
+        rowBorder: true,
+        columnsVisibility: true,
+        columnsResizable: true,
+        columnsPinnable: true,
+        width: "fixed",
+      }}
+    >
+      <DataGridContainer>
+        <DataGridTableVirtual height={"calc(100vh - 180px)"} estimateSize={44} />
+      </DataGridContainer>
+      <div className="text-muted-foreground mt-2 text-xs">
+        {table.getFilteredRowModel().rows.length} rows
+      </div>
+    </DataGrid>
   );
 }
 
-function Toolbar<T>({ table }: { table: TanTable<T> }) {
-  const groupedCol = table.getState().grouping[0] ?? null;
-  const sorting = table.getState().sorting;
-  const filters = table.getState().columnFilters;
-
-  const groupableCols = table.getAllLeafColumns().filter((c) => c.getCanGroup());
-  const filterableCols = table.getAllLeafColumns().filter((c) => c.getCanFilter());
-  const sortableCols = table.getAllLeafColumns().filter((c) => c.getCanSort());
-  const allCols = table.getAllLeafColumns();
-
-  return (
-    <Flex gap="2" align="center" mb="3" wrap="wrap">
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          <Button variant="soft" size="1">
-            {groupedCol ? `Group: ${labelFor(table, groupedCol)}` : "Group by"}
-          </Button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content>
-          <DropdownMenu.Item onClick={() => table.setGrouping([])}>
-            (none)
-          </DropdownMenu.Item>
-          <DropdownMenu.Separator />
-          {groupableCols.map((c) => (
-            <DropdownMenu.Item
-              key={c.id}
-              onClick={() => table.setGrouping([c.id])}
-            >
-              {labelFor(table, c.id)}
-            </DropdownMenu.Item>
-          ))}
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
-
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          <Button variant="soft" size="1">
-            Sort{sorting.length > 0 ? ` (${sorting.length})` : ""}
-          </Button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content>
-          {sorting.length > 0 && (
-            <>
-              {sorting.map((s) => (
-                <DropdownMenu.Item
-                  key={s.id}
-                  onClick={() =>
-                    table.setSorting(sorting.filter((o) => o.id !== s.id))
-                  }
-                >
-                  ✕ {labelFor(table, s.id)} {s.desc ? "▼" : "▲"}
-                </DropdownMenu.Item>
-              ))}
-              <DropdownMenu.Separator />
-            </>
-          )}
-          {sortableCols.map((c) => {
-            const existing = sorting.find((s) => s.id === c.id);
-            return (
-              <DropdownMenu.Item
-                key={c.id}
-                onClick={() => {
-                  if (!existing) {
-                    table.setSorting([...sorting, { id: c.id, desc: false }]);
-                  } else if (!existing.desc) {
-                    table.setSorting(
-                      sorting.map((s) => (s.id === c.id ? { ...s, desc: true } : s))
-                    );
-                  } else {
-                    table.setSorting(sorting.filter((s) => s.id !== c.id));
-                  }
-                }}
-              >
-                {existing
-                  ? `↻ ${labelFor(table, c.id)} ${existing.desc ? "▼→off" : "▲→▼"}`
-                  : `+ ${labelFor(table, c.id)}`}
-              </DropdownMenu.Item>
-            );
-          })}
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
-
-      <Popover.Root>
-        <Popover.Trigger>
-          <Button variant="soft" size="1">
-            Filter{filters.length > 0 ? ` (${filters.length})` : ""}
-          </Button>
-        </Popover.Trigger>
-        <Popover.Content style={{ width: 320 }}>
-          <Flex direction="column" gap="2">
-            {filterableCols.map((c) => {
-              const current =
-                (filters.find((f) => f.id === c.id)?.value as string) ?? "";
-              return (
-                <Flex key={c.id} align="center" gap="2">
-                  <Text size="1" style={{ width: 110 }}>
-                    {labelFor(table, c.id)}
-                  </Text>
-                  <TextField.Root
-                    size="1"
-                    value={current}
-                    placeholder="contains…"
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      const rest = filters.filter((o) => o.id !== c.id);
-                      table.setColumnFilters(
-                        v ? [...rest, { id: c.id, value: v }] : rest
-                      );
-                    }}
-                    style={{ flex: 1 }}
-                  />
-                </Flex>
-              );
-            })}
-          </Flex>
-        </Popover.Content>
-      </Popover.Root>
-
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          <Button variant="soft" size="1">
-            Columns
-          </Button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content>
-          {allCols.map((c) => (
-            <DropdownMenu.CheckboxItem
-              key={c.id}
-              checked={c.getIsVisible()}
-              onCheckedChange={(v) => c.toggleVisibility(!!v)}
-              onSelect={(e) => e.preventDefault()}
-            >
-              {labelFor(table, c.id)}
-            </DropdownMenu.CheckboxItem>
-          ))}
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
-    </Flex>
+function sortedHeader<T, V>(label: string) {
+  return ({ column }: { column: import("@tanstack/react-table").Column<T, V> }) => (
+    <DataGridColumnHeader column={column} title={label} visibility />
   );
-}
-
-function labelFor<T>(table: TanTable<T>, colId: string): string {
-  const c = table.getColumn(colId);
-  if (!c) return colId;
-  const h = c.columnDef.header;
-  return typeof h === "string" ? h : colId;
 }
 
 function buildTaskColumns({
@@ -574,10 +329,10 @@ function buildTaskColumns({
     {
       id: "name",
       accessorKey: "name",
-      header: "Name",
-      enableGrouping: false,
+      header: sortedHeader<JoinedTask, unknown>("Name"),
+      size: 260,
       cell: ({ row, getValue }) => (
-        <EditableText
+        <CellText
           value={(getValue() as string) ?? ""}
           onCommit={(v) => updateTask(row.original.id, "name", v)}
         />
@@ -586,9 +341,10 @@ function buildTaskColumns({
     {
       id: "status",
       accessorKey: "status_name",
-      header: "Status",
+      header: sortedHeader<JoinedTask, unknown>("Status"),
+      size: 140,
       cell: ({ row }) => (
-        <StatusSelect
+        <CellStatus
           value={row.original.status_id}
           options={taskStatuses}
           onChange={(v) => updateTask(row.original.id, "status_id", v)}
@@ -598,9 +354,10 @@ function buildTaskColumns({
     {
       id: "project",
       accessorKey: "project_name",
-      header: "Project",
+      header: sortedHeader<JoinedTask, unknown>("Project"),
+      size: 180,
       cell: ({ row }) => (
-        <RelationSelect
+        <CellRelation
           value={row.original.project_id}
           options={projectOptions}
           onChange={(v) => updateTask(row.original.id, "project_id", v)}
@@ -610,20 +367,21 @@ function buildTaskColumns({
     {
       id: "uber_project",
       accessorKey: "uber_project_name",
-      header: "Uber Project",
+      header: sortedHeader<JoinedTask, unknown>("Uber Project"),
+      size: 160,
       cell: ({ row }) => (
-        <Text size="1" color="gray">
+        <span className="text-muted-foreground text-xs">
           {row.original.uber_project_name ?? "—"}
-        </Text>
+        </span>
       ),
     },
     {
       id: "order",
       accessorKey: "order",
-      header: "Order",
-      enableGrouping: false,
+      header: sortedHeader<JoinedTask, unknown>("Order"),
+      size: 80,
       cell: ({ row, getValue }) => (
-        <EditableNumber
+        <CellNumber
           value={(getValue() as number | null) ?? null}
           onCommit={(v) => updateTask(row.original.id, "order", v)}
         />
@@ -632,10 +390,10 @@ function buildTaskColumns({
     {
       id: "result",
       accessorKey: "result",
-      header: "Result",
-      enableGrouping: false,
+      header: sortedHeader<JoinedTask, unknown>("Result"),
+      size: 220,
       cell: ({ row, getValue }) => (
-        <EditableText
+        <CellText
           value={(getValue() as string) ?? ""}
           onCommit={(v) => updateTask(row.original.id, "result", v || null)}
         />
@@ -644,10 +402,10 @@ function buildTaskColumns({
     {
       id: "notes",
       accessorKey: "notes",
-      header: "Notes",
-      enableGrouping: false,
+      header: sortedHeader<JoinedTask, unknown>("Notes"),
+      size: 260,
       cell: ({ row, getValue }) => (
-        <EditableText
+        <CellText
           value={(getValue() as string) ?? ""}
           onCommit={(v) => updateTask(row.original.id, "notes", v || null)}
         />
@@ -670,10 +428,10 @@ function buildProjectColumns({
     {
       id: "name",
       accessorKey: "name",
-      header: "Name",
-      enableGrouping: false,
+      header: sortedHeader<JoinedProject, unknown>("Name"),
+      size: 260,
       cell: ({ row, getValue }) => (
-        <EditableText
+        <CellText
           value={(getValue() as string) ?? ""}
           onCommit={(v) => updateProject(row.original.id, "name", v)}
         />
@@ -682,9 +440,10 @@ function buildProjectColumns({
     {
       id: "status",
       accessorKey: "status_name",
-      header: "Status",
+      header: sortedHeader<JoinedProject, unknown>("Status"),
+      size: 140,
       cell: ({ row }) => (
-        <StatusSelect
+        <CellStatus
           value={row.original.status_id}
           options={projectStatuses}
           onChange={(v) => updateProject(row.original.id, "status_id", v)}
@@ -694,9 +453,10 @@ function buildProjectColumns({
     {
       id: "uber_project",
       accessorKey: "uber_project_name",
-      header: "Uber Project",
+      header: sortedHeader<JoinedProject, unknown>("Uber Project"),
+      size: 180,
       cell: ({ row }) => (
-        <RelationSelect
+        <CellRelation
           value={row.original.uber_project_id}
           options={uberOptions}
           onChange={(v) => updateProject(row.original.id, "uber_project_id", v)}
@@ -706,10 +466,10 @@ function buildProjectColumns({
     {
       id: "tickle_date",
       accessorKey: "tickle_date",
-      header: "Tickle",
-      enableGrouping: false,
+      header: sortedHeader<JoinedProject, unknown>("Tickle"),
+      size: 130,
       cell: ({ row, getValue }) => (
-        <EditableText
+        <CellText
           value={(getValue() as string) ?? ""}
           placeholder="YYYY-MM-DD"
           onCommit={(v) =>
@@ -721,10 +481,10 @@ function buildProjectColumns({
     {
       id: "order",
       accessorKey: "order",
-      header: "Order",
-      enableGrouping: false,
+      header: sortedHeader<JoinedProject, unknown>("Order"),
+      size: 80,
       cell: ({ row, getValue }) => (
-        <EditableNumber
+        <CellNumber
           value={(getValue() as number | null) ?? null}
           onCommit={(v) => updateProject(row.original.id, "order", v)}
         />
@@ -733,10 +493,10 @@ function buildProjectColumns({
     {
       id: "notes",
       accessorKey: "notes",
-      header: "Notes",
-      enableGrouping: false,
+      header: sortedHeader<JoinedProject, unknown>("Notes"),
+      size: 260,
       cell: ({ row, getValue }) => (
-        <EditableText
+        <CellText
           value={(getValue() as string) ?? ""}
           onCommit={(v) => updateProject(row.original.id, "notes", v || null)}
         />
@@ -754,10 +514,10 @@ function buildUberColumns({
     {
       id: "name",
       accessorKey: "name",
-      header: "Name",
-      enableGrouping: false,
+      header: sortedHeader<UberProject, unknown>("Name"),
+      size: 320,
       cell: ({ row, getValue }) => (
-        <EditableText
+        <CellText
           value={(getValue() as string) ?? ""}
           onCommit={(v) => updateUber(row.original.id, "name", v)}
         />
@@ -766,10 +526,10 @@ function buildUberColumns({
     {
       id: "order",
       accessorKey: "order",
-      header: "Order",
-      enableGrouping: false,
+      header: sortedHeader<UberProject, unknown>("Order"),
+      size: 80,
       cell: ({ row, getValue }) => (
-        <EditableNumber
+        <CellNumber
           value={(getValue() as number | null) ?? null}
           onCommit={(v) => updateUber(row.original.id, "order", v)}
         />
@@ -778,7 +538,7 @@ function buildUberColumns({
   ];
 }
 
-function EditableText({
+function CellText({
   value,
   onCommit,
   placeholder,
@@ -790,9 +550,7 @@ function EditableText({
   const [v, setV] = useState(value);
   useEffect(() => setV(value), [value]);
   return (
-    <TextField.Root
-      size="1"
-      variant="soft"
+    <Input
       value={v}
       placeholder={placeholder}
       onChange={(e) => setV(e.target.value)}
@@ -800,17 +558,18 @@ function EditableText({
         if (v !== value) onCommit(v);
       }}
       onKeyDown={(e) => {
-        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
         if (e.key === "Escape") {
           setV(value);
-          (e.target as HTMLInputElement).blur();
+          (e.currentTarget as HTMLInputElement).blur();
         }
       }}
+      className="h-7 border-transparent bg-transparent px-1.5 text-xs shadow-none focus-visible:bg-background"
     />
   );
 }
 
-function EditableNumber({
+function CellNumber({
   value,
   onCommit,
 }: {
@@ -820,9 +579,7 @@ function EditableNumber({
   const [v, setV] = useState(value?.toString() ?? "");
   useEffect(() => setV(value?.toString() ?? ""), [value]);
   return (
-    <TextField.Root
-      size="1"
-      variant="soft"
+    <Input
       type="number"
       value={v}
       onChange={(e) => setV(e.target.value)}
@@ -830,11 +587,12 @@ function EditableNumber({
         const next = v === "" ? null : Number(v);
         if (next !== value) onCommit(next);
       }}
+      className="h-7 border-transparent bg-transparent px-1.5 text-xs shadow-none focus-visible:bg-background"
     />
   );
 }
 
-function StatusSelect({
+function CellStatus({
   value,
   options,
   onChange,
@@ -844,25 +602,26 @@ function StatusSelect({
   onChange: (v: string | null) => void;
 }) {
   return (
-    <Select.Root
-      size="1"
+    <Select
       value={value ?? "__none__"}
       onValueChange={(v) => onChange(v === "__none__" ? null : v)}
     >
-      <Select.Trigger variant="soft" />
-      <Select.Content>
-        <Select.Item value="__none__">—</Select.Item>
+      <SelectTrigger className="h-7 border-transparent bg-transparent px-1.5 text-xs shadow-none">
+        <SelectValue placeholder="—" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="__none__">—</SelectItem>
         {options.map((o) => (
-          <Select.Item key={o.id} value={o.id}>
+          <SelectItem key={o.id} value={o.id}>
             {o.name}
-          </Select.Item>
+          </SelectItem>
         ))}
-      </Select.Content>
-    </Select.Root>
+      </SelectContent>
+    </Select>
   );
 }
 
-function RelationSelect({
+function CellRelation({
   value,
   options,
   onChange,
@@ -872,20 +631,21 @@ function RelationSelect({
   onChange: (v: string | null) => void;
 }) {
   return (
-    <Select.Root
-      size="1"
+    <Select
       value={value ?? "__none__"}
       onValueChange={(v) => onChange(v === "__none__" ? null : v)}
     >
-      <Select.Trigger variant="soft" />
-      <Select.Content>
-        <Select.Item value="__none__">—</Select.Item>
+      <SelectTrigger className="h-7 border-transparent bg-transparent px-1.5 text-xs shadow-none">
+        <SelectValue placeholder="—" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="__none__">—</SelectItem>
         {options.map((o) => (
-          <Select.Item key={o.id} value={o.id}>
+          <SelectItem key={o.id} value={o.id}>
             {o.name}
-          </Select.Item>
+          </SelectItem>
         ))}
-      </Select.Content>
-    </Select.Root>
+      </SelectContent>
+    </Select>
   );
 }
