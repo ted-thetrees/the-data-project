@@ -1,8 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { PageShell } from "@/components/page-shell";
-import type { TaskRow } from "./page";
+import type { TaskRow, StatusOption } from "./page";
+import {
+  updateTaskField,
+  updateProjectField,
+  updateUberField,
+} from "./actions";
 
 interface GroupSpan {
   value: string;
@@ -47,11 +52,13 @@ function computeGroupSpans(
   return spans;
 }
 
-function Empty() {
-  return <span className="text-zinc-300">—</span>;
-}
-
-export function GridTable({ data }: { data: TaskRow[] }) {
+export function GridTable({
+  data,
+  taskStatuses,
+}: {
+  data: TaskRow[];
+  taskStatuses: StatusOption[];
+}) {
   const uberAccessor = (r: TaskRow) => r.uber_project;
   const projectAccessor = (r: TaskRow) => r.project;
 
@@ -80,7 +87,8 @@ export function GridTable({ data }: { data: TaskRow[] }) {
   return (
     <PageShell title="Grid" count={data.length} maxWidth="">
       <p className="text-sm text-muted-foreground -mt-4 mb-6">
-        Active projects &middot; grouped by Uber Project &rarr; Project
+        Active projects &middot; grouped by Uber Project &rarr; Project &middot;{" "}
+        <span className="opacity-70">click any field to edit</span>
       </p>
       <div className="overflow-x-auto">
         <table
@@ -120,7 +128,12 @@ export function GridTable({ data }: { data: TaskRow[] }) {
                       className="align-top px-3 py-2"
                       style={{ backgroundColor: "hsl(30, 20%, 45%)", color: "#ffffff" }}
                     >
-                      <span className="text-sm leading-snug whitespace-nowrap">{span.value}</span>
+                      <EditableText
+                        value={span.value}
+                        onSave={(v) =>
+                          updateUberField(row.uber_project_id, "name", v)
+                        }
+                      />
                     </td>
                   );
                 })()}
@@ -135,50 +148,84 @@ export function GridTable({ data }: { data: TaskRow[] }) {
                       className="align-top px-3 py-2"
                       style={{ backgroundColor: bg, color: "#ffffff" }}
                     >
-                      <span className="text-sm leading-snug">{span.value}</span>
-                      {span.extra?.tickle ? (
-                        <div className="text-xs mt-1 opacity-75">
-                          {String(span.extra.tickle)}
-                        </div>
-                      ) : null}
+                      <EditableText
+                        value={span.value}
+                        onSave={(v) =>
+                          updateProjectField(row.project_id, "name", v)
+                        }
+                      />
+                      <div className="text-xs mt-1 opacity-75">
+                        <EditableText
+                          value={(span.extra?.tickle as string) ?? ""}
+                          placeholder="YYYY-MM-DD"
+                          onSave={(v) =>
+                            updateProjectField(
+                              row.project_id,
+                              "tickle_date",
+                              v || null
+                            )
+                          }
+                        />
+                      </div>
                     </td>
                   );
                 })()}
 
                 {/* Task */}
                 <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]">
-                  {row.task}
+                  <EditableText
+                    value={row.task}
+                    onSave={(v) => updateTaskField(row.id, "name", v)}
+                  />
                 </td>
 
-                {/* Task Status (colored cell) */}
+                {/* Task Status (colored cell with select) */}
                 <td
                   className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)]"
                   style={{ backgroundColor: row.task_color, color: "#ffffff" }}
                 >
-                  <span className="text-sm leading-snug whitespace-nowrap">{row.task_status}</span>
+                  <EditableSelect
+                    value={row.task_status_id}
+                    options={taskStatuses}
+                    onSave={(v) =>
+                      updateTaskField(row.id, "status_id", v)
+                    }
+                  />
                 </td>
 
-                {/* Tickle Date */}
+                {/* Tickle Date (project-level, edits all rows of this project) */}
                 <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm">
-                  {row.tickle_date || <Empty />}
+                  <EditableText
+                    value={row.tickle_date ?? ""}
+                    placeholder="YYYY-MM-DD"
+                    onSave={(v) =>
+                      updateProjectField(
+                        row.project_id,
+                        "tickle_date",
+                        v || null
+                      )
+                    }
+                  />
                 </td>
 
                 {/* Result */}
                 <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]">
-                  {row.result ? (
-                    <span className="text-zinc-500 truncate block" title={row.result}>{row.result}</span>
-                  ) : (
-                    <Empty />
-                  )}
+                  <EditableText
+                    value={row.result ?? ""}
+                    onSave={(v) =>
+                      updateTaskField(row.id, "result", v || null)
+                    }
+                  />
                 </td>
 
                 {/* Notes */}
                 <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]">
-                  {row.task_notes ? (
-                    <span className="text-zinc-500 truncate block" title={row.task_notes}>{row.task_notes}</span>
-                  ) : (
-                    <Empty />
-                  )}
+                  <EditableText
+                    value={row.task_notes ?? ""}
+                    onSave={(v) =>
+                      updateTaskField(row.id, "notes", v || null)
+                    }
+                  />
                 </td>
               </tr>
             ))}
@@ -186,5 +233,95 @@ export function GridTable({ data }: { data: TaskRow[] }) {
         </table>
       </div>
     </PageShell>
+  );
+}
+
+function EditableText({
+  value,
+  onSave,
+  placeholder,
+}: {
+  value: string;
+  onSave: (v: string) => void | Promise<void>;
+  placeholder?: string;
+}) {
+  const [v, setV] = useState(value);
+  const [isPending, startTransition] = useTransition();
+  useEffect(() => setV(value), [value]);
+  return (
+    <input
+      type="text"
+      value={v}
+      placeholder={placeholder}
+      onChange={(e) => setV(e.target.value)}
+      onBlur={() => {
+        if (v !== value) {
+          startTransition(() => {
+            onSave(v);
+          });
+        }
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
+        if (e.key === "Escape") {
+          setV(value);
+          (e.currentTarget as HTMLInputElement).blur();
+        }
+      }}
+      style={{
+        background: "transparent",
+        color: "inherit",
+        border: 0,
+        padding: 0,
+        font: "inherit",
+        width: "100%",
+        outline: "none",
+        opacity: isPending ? 0.6 : 1,
+      }}
+    />
+  );
+}
+
+function EditableSelect({
+  value,
+  options,
+  onSave,
+}: {
+  value: string;
+  options: StatusOption[];
+  onSave: (v: string) => void | Promise<void>;
+}) {
+  const [isPending, startTransition] = useTransition();
+  return (
+    <select
+      value={value}
+      onChange={(e) => {
+        startTransition(() => {
+          onSave(e.target.value);
+        });
+      }}
+      style={{
+        background: "transparent",
+        color: "inherit",
+        border: 0,
+        padding: 0,
+        font: "inherit",
+        width: "100%",
+        outline: "none",
+        cursor: "pointer",
+        appearance: "none",
+        opacity: isPending ? 0.6 : 1,
+      }}
+    >
+      {options.map((o) => (
+        <option
+          key={o.id}
+          value={o.id}
+          style={{ color: "#000", background: "#fff" }}
+        >
+          {o.name}
+        </option>
+      ))}
+    </select>
   );
 }

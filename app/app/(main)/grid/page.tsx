@@ -8,26 +8,38 @@ export interface TaskRow {
   id: string;
   task: string;
   task_status: string;
+  task_status_id: string;
   task_color: string;
   task_order: number | null;
   result: string | null;
   task_notes: string | null;
   project: string;
+  project_id: string;
   project_status: string;
   project_color: string;
   project_order: number | null;
   tickle_date: string | null;
   project_notes: string | null;
   uber_project: string;
+  uber_project_id: string;
   uber_order: number | null;
+}
+
+export interface StatusOption {
+  id: string;
+  name: string;
+  color: string | null;
 }
 
 async function getData(): Promise<TaskRow[]> {
   const result = await poolV002.query(`
     SELECT t.id, t.name as task, t.result, t.notes as task_notes, t."order" as task_order,
+           t.status_id as task_status_id,
            ts.name as task_status, ts.color as task_color,
+           p.id as project_id,
            p.name as project, p.tickle_date::text, p.notes as project_notes, p."order" as project_order,
            ps.name as project_status, ps.color as project_color,
+           up.id as uber_project_id,
            up.name as uber_project, up."order" as uber_order
     FROM tasks t
     JOIN projects p ON t.project_id = p.id
@@ -42,7 +54,17 @@ async function getData(): Promise<TaskRow[]> {
   return result.rows;
 }
 
+async function getTaskStatuses(): Promise<StatusOption[]> {
+  const result = await poolV002.query(
+    `SELECT id, name, color FROM task_statuses ORDER BY name`
+  );
+  return result.rows;
+}
+
 export default async function GridPage() {
-  const data = await getData();
-  return <GridTable data={data} />;
+  const [data, taskStatuses] = await Promise.all([
+    getData(),
+    getTaskStatuses(),
+  ]);
+  return <GridTable data={data} taskStatuses={taskStatuses} />;
 }
