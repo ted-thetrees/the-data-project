@@ -31,7 +31,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { title: "Projects", href: "/projects", icon: GridTableIcon },
+  { title: "Projects | Main", href: "/grid", icon: GridTableIcon },
   { title: "Inbox", href: "/inbox", icon: InboxIcon },
   { title: "Talent", href: "/talent", icon: DiamondIcon },
   { title: "Architecture", href: "/talent/architecture", icon: Building06Icon },
