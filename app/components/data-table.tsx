@@ -67,6 +67,12 @@ export function DataTable<T>({
           </tr>
         </thead>
         <tbody>
+          <tr aria-hidden="true">
+            <td
+              colSpan={columns.length}
+              style={{ height: 14, padding: 0, background: "transparent" }}
+            />
+          </tr>
           {rows.map((row) => {
             const record = row as Record<string, unknown>;
             return (

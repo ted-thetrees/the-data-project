@@ -101,6 +101,9 @@ export function CrimeSeriesTable({ data }: { data: SeriesRow[] }) {
             </tr>
           </thead>
           <tbody>
+            <tr aria-hidden="true">
+              <td colSpan={5} style={{ height: 14, padding: 0, background: "transparent" }} />
+            </tr>
             {data.map((row, i) => {
               const embedUrl = row.youtube_trailer ? youtubeEmbedUrl(row.youtube_trailer) : null;
               return (

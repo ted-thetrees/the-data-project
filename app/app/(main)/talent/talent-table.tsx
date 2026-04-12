@@ -238,6 +238,9 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
             </tr>
           </thead>
           <tbody>
+            <tr aria-hidden="true">
+              <td colSpan={14} style={{ height: 14, padding: 0, background: "transparent" }} />
+            </tr>
             {sorted.map((row, i) => (
               <tr key={row.id}>
                 {/* Icicle Column 1: Category */}

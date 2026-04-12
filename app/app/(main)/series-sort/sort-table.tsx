@@ -52,6 +52,9 @@ export function SortTable({ data }: { data: SortRow[] }) {
             </tr>
           </thead>
           <tbody>
+            <tr aria-hidden="true">
+              <td colSpan={4} style={{ height: 14, padding: 0, background: "transparent" }} />
+            </tr>
             {data.map((row) => {
               const embedUrl = row.youtube_trailer ? youtubeEmbedUrl(row.youtube_trailer) : null;
               return (
