@@ -6,6 +6,7 @@ const SOURCE_TABLES: Record<string, string> = {
   project_statuses: "project_statuses",
   task_statuses: "task_statuses",
   crime_series_statuses: "crime_series_statuses",
+  uber_projects: "uber_projects",
 };
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;

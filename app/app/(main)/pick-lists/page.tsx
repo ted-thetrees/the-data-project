@@ -54,6 +54,13 @@ async function getCrimeSeriesStatuses(): Promise<Status[]> {
   return result.rows;
 }
 
+async function getUberProjectsForPickList(): Promise<Status[]> {
+  const result = await poolV002.query(
+    `SELECT id::text, name, COALESCE(color, '') as color FROM uber_projects ORDER BY name`
+  );
+  return result.rows;
+}
+
 async function getPalettes(): Promise<PaletteForPicker[]> {
   const result = await poolV002.query(
     `SELECT id::text, name, ${COLOR_COLUMNS.join(", ")} FROM color_palettes ORDER BY created_at DESC`
@@ -153,14 +160,21 @@ function PickListSection({
 }
 
 export default async function PickListsPage() {
-  const [colors, projectStatuses, taskStatuses, crimeSeriesStatuses, palettes] =
-    await Promise.all([
-      getPicklistColors(),
-      getProjectStatuses(),
-      getTaskStatuses(),
-      getCrimeSeriesStatuses(),
-      getPalettes(),
-    ]);
+  const [
+    colors,
+    projectStatuses,
+    taskStatuses,
+    crimeSeriesStatuses,
+    uberProjects,
+    palettes,
+  ] = await Promise.all([
+    getPicklistColors(),
+    getProjectStatuses(),
+    getTaskStatuses(),
+    getCrimeSeriesStatuses(),
+    getUberProjectsForPickList(),
+    getPalettes(),
+  ]);
 
   const grouped = new Map<string, PicklistColor[]>();
   for (const row of colors) {
@@ -193,6 +207,14 @@ export default async function PickListsPage() {
           <DataTable
             columns={statusColumns("crime_series_statuses", palettes)}
             rows={crimeSeriesStatuses}
+            rowKey={(r) => r.id}
+          />
+        </PickListSection>
+
+        <PickListSection title="Uber Projects" usedBy="Projects | Main">
+          <DataTable
+            columns={statusColumns("uber_projects", palettes)}
+            rows={uberProjects}
             rowKey={(r) => r.id}
           />
         </PickListSection>

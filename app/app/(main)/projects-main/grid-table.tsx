@@ -355,8 +355,15 @@ export function GridTable({
           <tbody>
             {data.map((row, i) => (
               <tr key={row.id}>
-                {/* Uber Project (single-select from pick list) */}
-                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm">
+                {/* Uber Project (single-select from pick list, colored) */}
+                <td
+                  className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] text-sm"
+                  style={
+                    row.uber_color
+                      ? { backgroundColor: row.uber_color, color: "#ffffff" }
+                      : undefined
+                  }
+                >
                   <EditableSelect
                     value={row.uber_project_id}
                     options={uberProjects}

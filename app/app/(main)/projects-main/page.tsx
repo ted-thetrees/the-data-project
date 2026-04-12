@@ -25,6 +25,7 @@ export interface TaskRow {
   uber_project: string;
   uber_project_id: string;
   uber_order: number | null;
+  uber_color: string | null;
 }
 
 export interface StatusOption {
@@ -44,7 +45,8 @@ async function getData(): Promise<TaskRow[]> {
            p.is_draft as project_is_draft,
            ps.name as project_status, ps.color as project_color,
            up.id as uber_project_id,
-           up.name as uber_project, up."order" as uber_order
+           up.name as uber_project, up."order" as uber_order,
+           up.color as uber_color
     FROM tasks t
     JOIN projects p ON t.project_id = p.id
     JOIN project_statuses ps ON p.status_id = ps.id
@@ -81,7 +83,7 @@ async function getProjectStatuses(): Promise<StatusOption[]> {
 
 async function getUberProjects(): Promise<StatusOption[]> {
   const result = await poolV002.query(
-    `SELECT id, name, NULL::text as color FROM uber_projects ORDER BY name`
+    `SELECT id, name, color FROM uber_projects ORDER BY name`
   );
   return result.rows;
 }
