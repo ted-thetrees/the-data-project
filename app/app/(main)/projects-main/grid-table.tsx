@@ -554,7 +554,10 @@ function PillSelect({
       >
         {current?.name ?? "—"}
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-auto min-w-[160px] gap-1 p-2">
+      <PopoverContent
+        align="start"
+        className="w-auto min-w-[160px] gap-1 p-2 !rounded-none"
+      >
         <div className="flex flex-col items-start gap-1.5">
           {options.map((opt) => {
             const isSelected = opt.id === value;
