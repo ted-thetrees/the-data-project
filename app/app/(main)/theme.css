@@ -85,7 +85,7 @@
 
   /* ── Cells ── */
   --cell-padding-x: 12px;
-  --cell-padding-y: 6px;
+  --cell-padding-y: 8px;
   --cell-font-size: var(--font-size-base);
   --cell-min-height: 36px;
 
