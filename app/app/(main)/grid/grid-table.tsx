@@ -622,6 +622,7 @@ function EditableDate({
   const dateValue = value
     ? parse(value, "yyyy-MM-dd", new Date())
     : undefined;
+  const displayLabel = dateValue ? format(dateValue, "EEE, MMM d") : null;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -643,7 +644,7 @@ function EditableDate({
           />
         }
       >
-        {value || <span style={{ opacity: 0.4 }}>—</span>}
+        {displayLabel ?? <span style={{ opacity: 0.4 }}>—</span>}
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">
         <Calendar
