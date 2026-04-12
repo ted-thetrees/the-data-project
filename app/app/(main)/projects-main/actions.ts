@@ -55,16 +55,14 @@ export async function finalizeProject(id: string) {
   revalidatePath("/projects-main");
 }
 
-export async function createTask(projectId: string, name: string) {
-  const trimmed = name.trim();
-  if (!trimmed) return;
+export async function createTask(projectId: string) {
   const status = await poolV002.query(
     `SELECT id FROM task_statuses WHERE name = 'Tickled' LIMIT 1`
   );
   if (!status.rows[0]) throw new Error("Tickled task status missing");
   await poolV002.query(
     `INSERT INTO tasks (name, project_id, status_id) VALUES ($1, $2, $3)`,
-    [trimmed, projectId, status.rows[0].id]
+    ["", projectId, status.rows[0].id]
   );
   revalidatePath("/projects-main");
 }

@@ -503,17 +503,12 @@ function FinalizeButton({ projectId }: { projectId: string }) {
 
 function AddTaskButton({ projectId }: { projectId: string }) {
   const [pending, startTransition] = useTransition();
-  const onClick = () => {
-    const name = window.prompt("New task name?");
-    if (!name || !name.trim()) return;
-    startTransition(() => createTask(projectId, name));
-  };
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={() => startTransition(() => createTask(projectId))}
       disabled={pending}
-      title="Add task to this project"
+      title="Add a blank task to this project"
       className="shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-zinc-300 text-zinc-600 bg-white hover:bg-zinc-50 disabled:opacity-50"
     >
       {pending ? "…" : "+ Task"}
