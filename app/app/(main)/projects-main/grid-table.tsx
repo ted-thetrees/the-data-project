@@ -505,7 +505,7 @@ export function GridTable({
 }
 
 const PILL_CLASS =
-  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap";
+  "inline-flex items-center rounded-full px-2.5 py-0 text-[length:var(--cell-font-size)] font-medium whitespace-nowrap";
 
 function Pill({
   color,

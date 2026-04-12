@@ -115,7 +115,7 @@ export function CrimeSeriesTable({ data }: { data: SeriesRow[] }) {
                         className="align-top px-3 py-3 bg-[color:var(--cell-bg)]"
                       >
                         <span
-                          className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap"
+                          className="inline-flex items-center rounded-full px-2.5 py-0 text-[length:var(--cell-font-size)] font-medium whitespace-nowrap"
                           style={{ backgroundColor: bg, color: fg }}
                         >
                           {span.value}
