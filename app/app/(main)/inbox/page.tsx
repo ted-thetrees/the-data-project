@@ -10,6 +10,7 @@ import { DeleteButton } from "./delete-button";
 import { ExternalLink } from "./external-link";
 import { format as timeago } from "timeago.js";
 import { LinkifiedText } from "./linkified-text";
+import { InboxRealtime } from "./inbox-realtime";
 
 async function InboxCard({ row }: { row: Record<string, unknown> }) {
   const rawContent = (row.content as string) || "";
@@ -107,6 +108,7 @@ export default async function Home() {
 
   return (
     <PageShell title="Inbox" count={count} maxWidth="max-w-2xl">
+      <InboxRealtime />
       <div className="flex flex-col gap-3">
         {records.map((row) => (
           <InboxCard key={row.id} row={row} />
