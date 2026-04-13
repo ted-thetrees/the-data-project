@@ -43,6 +43,17 @@
   --contrast-light: #faf9f6;
   --contrast-dark: #4a4639;
 
+  /* ── Links ── */
+  --link-color: #2563eb;
+  --link-hover-color: #1d4ed8;
+
+  /* ── Default status color (used when a status has no DB color) ── */
+  --status-default: #727272;
+
+  /* ── Neutral tags (for non-status pill-like labels) ── */
+  --tag-bg: #ede9de;
+  --tag-text: #535146;
+
   /* ── Typography ── */
   --font-family: var(--font-nunito), 'Nunito', sans-serif;
   --font-size-xs: 11px;
