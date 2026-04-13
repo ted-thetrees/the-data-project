@@ -1,23 +1,18 @@
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { DataTable, type Column } from "@/components/data-table";
+import { Empty } from "@/components/empty";
+import { WebLink } from "@/components/web-link";
 import { Realtime } from "@/components/realtime";
 
 export const metadata = { title: "Architecture" };
 export const dynamic = "force-dynamic";
 
-const RATING_BG: Record<string, string> = {
-  "Absolute Top": "hsl(140, 35%, 38%)",
-  "Probably Absolute Top": "hsl(170, 30%, 38%)",
-  "Contenders to (Re)Mull": "hsl(270, 25%, 42%)",
-  "Other": "hsl(0, 0%, 45%)",
-  "Rejects": "hsl(0, 35%, 40%)",
-};
-
 interface Row {
   id: string;
   name: string;
   overall_rating: string | null;
+  rating_color: string | null;
   website: string | null;
   instagram: string | null;
   areas: string | null;
@@ -27,6 +22,7 @@ interface Row {
 async function getData(): Promise<Row[]> {
   const result = await poolV002.query(`
     SELECT t.id, t.name, t.overall_rating, t.website, t.instagram, t.notes,
+           trl.color as rating_color,
            string_agg(DISTINCT ta.name, ', ') as areas
     FROM talent t
     LEFT JOIN talent_area_links tal ON t.id = tal.talent_id
@@ -34,29 +30,10 @@ async function getData(): Promise<Row[]> {
     LEFT JOIN talent_rating_levels trl ON t.overall_rating = trl.name
     WHERE t.primary_talent_category = 'Places'
       AND t.primary_talent = 'Architecture'
-    GROUP BY t.id, trl.sort_order
+    GROUP BY t.id, trl.sort_order, trl.color
     ORDER BY trl.sort_order ASC NULLS LAST, t.name
   `);
   return result.rows;
-}
-
-function Empty() {
-  return <span className="text-zinc-300">—</span>;
-}
-
-function WebLink({ url }: { url: string | null }) {
-  if (!url) return <Empty />;
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-blue-600 hover:text-blue-800 hover:underline text-sm truncate block"
-      title={url}
-    >
-      {url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
-    </a>
-  );
 }
 
 function AreaTags({ areas }: { areas: string | null }) {
@@ -66,7 +43,12 @@ function AreaTags({ areas }: { areas: string | null }) {
       {areas.split(", ").map((area) => (
         <span
           key={area}
-          className="inline-block px-1.5 py-0.5 rounded text-xs bg-zinc-100 text-zinc-600"
+          className="inline-block px-1.5 py-0.5 rounded"
+          style={{
+            fontSize: "var(--font-size-xs)",
+            backgroundColor: "var(--tag-bg)",
+            color: "var(--tag-text)",
+          }}
         >
           {area}
         </span>
@@ -84,7 +66,7 @@ const columns: Column<Row>[] = [
     render: (row) => {
       if (!row.overall_rating) return <Empty />;
       return (
-        <span className="text-sm text-white leading-snug whitespace-nowrap">
+        <span className="leading-snug whitespace-nowrap" style={{ color: "var(--contrast-light)" }}>
           {row.overall_rating}
         </span>
       );
@@ -114,7 +96,7 @@ const columns: Column<Row>[] = [
     width: 200,
     render: (row) =>
       row.notes ? (
-        <span className="text-zinc-500 truncate block" title={row.notes}>
+        <span className="truncate block text-muted-foreground" title={row.notes}>
           {row.notes}
         </span>
       ) : (
@@ -125,6 +107,13 @@ const columns: Column<Row>[] = [
 
 export default async function ArchitecturePage() {
   const data = await getData();
+
+  const ratingColors: Record<string, string> = {};
+  for (const row of data) {
+    if (row.overall_rating && row.rating_color && !ratingColors[row.overall_rating]) {
+      ratingColors[row.overall_rating] = row.rating_color;
+    }
+  }
 
   return (
     <PageShell title="Architecture" count={data.length} maxWidth="">
@@ -145,7 +134,7 @@ export default async function ArchitecturePage() {
         rowKey={(r) => r.id}
         fixedLayout
         ratingColumn="overall_rating"
-        ratingColors={RATING_BG}
+        ratingColors={ratingColors}
       />
     </PageShell>
   );
