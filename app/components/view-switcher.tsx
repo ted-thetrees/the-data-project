@@ -21,7 +21,7 @@ export function ViewSwitcher({
 }) {
   return (
     <div
-      className="flex items-center gap-2 -mt-4 mb-6"
+      className="flex items-center gap-2 mb-4"
       style={{ fontSize: "var(--font-size-sm)" }}
     >
       <span className="text-muted-foreground">View:</span>
