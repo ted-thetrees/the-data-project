@@ -43,7 +43,7 @@ export function AllisonEvalList({ data }: { data: AllisonRow[] }) {
                   />
                 </div>
               ) : (
-                <p className="text-sm text-zinc-400">No trailer available</p>
+                <p className="text-muted-foreground" style={{ fontSize: "var(--font-size-sm)" }}>No trailer available</p>
               )}
             </div>
           );
