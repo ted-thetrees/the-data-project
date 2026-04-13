@@ -5,7 +5,44 @@ import { PageShell } from "@/components/page-shell";
 import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
 import { Pill } from "@/components/pill";
+import { useTableViews } from "@/components/table-views";
+import { ColumnResizer } from "@/components/column-resizer";
+import { ViewSwitcher } from "@/components/view-switcher";
 import "./talent.css";
+
+const TALENT_COLUMN_KEYS = [
+  "category",
+  "primary_talent",
+  "overall_rating",
+  "resource",
+  "website",
+  "instagram",
+  "arch",
+  "int",
+  "land",
+  "light",
+  "kit",
+  "aviz",
+  "areas",
+  "notes",
+] as const;
+
+const TALENT_DEFAULT_WIDTHS: Record<string, number> = {
+  category: 120,
+  primary_talent: 130,
+  overall_rating: 175,
+  resource: 220,
+  website: 180,
+  instagram: 100,
+  arch: 55,
+  int: 55,
+  land: 55,
+  light: 55,
+  kit: 55,
+  aviz: 55,
+  areas: 140,
+  notes: 180,
+};
 
 interface TalentRow {
   id: string;
@@ -146,10 +183,21 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
     ratingSpans.map((s) => [s.startIndex, s])
   );
 
+  const {
+    views,
+    activeViewId,
+    params,
+    switchView,
+    createView,
+    renameView,
+    deleteView,
+    setColumnWidth,
+  } = useTableViews("talent", TALENT_DEFAULT_WIDTHS);
+
   const headerClass =
-    "text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
+    "relative text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
   const headerCenterClass =
-    "text-center text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-1 py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
+    "relative text-center text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-1 py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
   const cellClass =
     "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]";
   const cellCenterClass =
@@ -157,43 +205,51 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
 
   return (
     <PageShell title="Talent" count={sorted.length} maxWidth="" className="talent-page">
+      <ViewSwitcher
+        views={views}
+        activeViewId={activeViewId}
+        onSwitch={switchView}
+        onCreate={createView}
+        onRename={renameView}
+        onDelete={deleteView}
+      />
       <div className="overflow-x-auto">
         <table
           className="text-[length:var(--cell-font-size)] [&_td]:align-top"
           style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: "var(--row-gap)" }}
         >
           <colgroup>
-            <col style={{ width: 120 }} />
-            <col style={{ width: 130 }} />
-            <col style={{ width: 175 }} />
-            <col style={{ width: 220 }} />
-            <col style={{ width: 180 }} />
-            <col style={{ width: 100 }} />
-            <col style={{ width: 55 }} />
-            <col style={{ width: 55 }} />
-            <col style={{ width: 55 }} />
-            <col style={{ width: 55 }} />
-            <col style={{ width: 55 }} />
-            <col style={{ width: 55 }} />
-            <col style={{ width: 140 }} />
-            <col style={{ width: 180 }} />
+            {TALENT_COLUMN_KEYS.map((key) => (
+              <col key={key} style={{ width: params.columnWidths[key] }} />
+            ))}
           </colgroup>
           <thead>
             <tr>
-              <th className={headerClass}>Category</th>
-              <th className={headerClass}>Primary Talent</th>
-              <th className={headerClass}>Overall Rating</th>
-              <th className={headerClass}>Resource</th>
-              <th className={headerClass}>Website</th>
-              <th className={headerClass}>Instagram</th>
-              <th className={headerCenterClass}>Arch</th>
-              <th className={headerCenterClass}>Int</th>
-              <th className={headerCenterClass}>Land</th>
-              <th className={headerCenterClass}>Light</th>
-              <th className={headerCenterClass}>Kit</th>
-              <th className={headerCenterClass}>AViz</th>
-              <th className={headerClass}>Areas</th>
-              <th className={headerClass}>Notes</th>
+              {[
+                { key: "category", label: "Category", center: false },
+                { key: "primary_talent", label: "Primary Talent", center: false },
+                { key: "overall_rating", label: "Overall Rating", center: false },
+                { key: "resource", label: "Resource", center: false },
+                { key: "website", label: "Website", center: false },
+                { key: "instagram", label: "Instagram", center: false },
+                { key: "arch", label: "Arch", center: true },
+                { key: "int", label: "Int", center: true },
+                { key: "land", label: "Land", center: true },
+                { key: "light", label: "Light", center: true },
+                { key: "kit", label: "Kit", center: true },
+                { key: "aviz", label: "AViz", center: true },
+                { key: "areas", label: "Areas", center: false },
+                { key: "notes", label: "Notes", center: false },
+              ].map((h, i) => (
+                <th key={h.key} className={h.center ? headerCenterClass : headerClass}>
+                  {h.label}
+                  <ColumnResizer
+                    columnIndex={i}
+                    currentWidth={params.columnWidths[h.key]}
+                    onResize={(w) => setColumnWidth(h.key, w)}
+                  />
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
