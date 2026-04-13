@@ -1,6 +1,7 @@
 import { poolV002 } from "@/lib/db";
 import { TalentTable } from "./talent-table";
 import { Realtime } from "@/components/realtime";
+import type { PillOption } from "@/components/pill";
 
 export const metadata = { title: "Talent" };
 export const dynamic = "force-dynamic";
@@ -47,8 +48,20 @@ async function getTalent(): Promise<TalentRow[]> {
   return result.rows;
 }
 
+async function getLookupOptions(table: string): Promise<PillOption[]> {
+  const result = await poolV002.query(
+    `SELECT name as id, name, color FROM ${table} ORDER BY sort_order NULLS LAST, name`,
+  );
+  return result.rows;
+}
+
 export default async function TalentPage() {
-  const talent = await getTalent();
+  const [talent, categoryOptions, typeOptions, ratingOptions] = await Promise.all([
+    getTalent(),
+    getLookupOptions("talent_categories"),
+    getLookupOptions("talent_types"),
+    getLookupOptions("talent_rating_levels"),
+  ]);
   return (
     <>
       <Realtime
@@ -61,7 +74,12 @@ export default async function TalentPage() {
           "talent_rating_levels",
         ]}
       />
-      <TalentTable data={talent} />
+      <TalentTable
+        data={talent}
+        categoryOptions={categoryOptions}
+        typeOptions={typeOptions}
+        ratingOptions={ratingOptions}
+      />
     </>
   );
 }

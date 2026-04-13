@@ -4,16 +4,24 @@ import { useMemo } from "react";
 import { PageShell } from "@/components/page-shell";
 import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
-import { Pill } from "@/components/pill";
+import { Pill, PillSelect, type PillOption } from "@/components/pill";
 import { useTableViews } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
+import {
+  updateTalentCategory,
+  updateTalentPrimaryTalent,
+  updateTalentOverallRating,
+} from "./actions";
 import "./talent.css";
 
 const TALENT_COLUMN_KEYS = [
   "category",
   "primary_talent",
   "overall_rating",
+  "category_edit",
+  "primary_talent_edit",
+  "overall_rating_edit",
   "resource",
   "website",
   "instagram",
@@ -31,6 +39,9 @@ const TALENT_DEFAULT_WIDTHS: Record<string, number> = {
   category: 120,
   primary_talent: 130,
   overall_rating: 175,
+  category_edit: 140,
+  primary_talent_edit: 150,
+  overall_rating_edit: 180,
   resource: 220,
   website: 180,
   instagram: 100,
@@ -133,7 +144,17 @@ function YesBadge({ value }: { value: string | null }) {
   );
 }
 
-export function TalentTable({ data }: { data: TalentRow[] }) {
+export function TalentTable({
+  data,
+  categoryOptions,
+  typeOptions,
+  ratingOptions,
+}: {
+  data: TalentRow[];
+  categoryOptions: PillOption[];
+  typeOptions: PillOption[];
+  ratingOptions: PillOption[];
+}) {
   const sorted = data;
 
   const categoryAccessor = (r: TalentRow) => r.primary_talent_category || "(none)";
@@ -234,6 +255,9 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                 { key: "category", label: "Category", center: false },
                 { key: "primary_talent", label: "Primary Talent", center: false },
                 { key: "overall_rating", label: "Overall Rating", center: false },
+                { key: "category_edit", label: "Category (edit)", center: false },
+                { key: "primary_talent_edit", label: "Primary Talent (edit)", center: false },
+                { key: "overall_rating_edit", label: "Rating (edit)", center: false },
                 { key: "resource", label: "Resource", center: false },
                 { key: "website", label: "Website", center: false },
                 { key: "instagram", label: "Instagram", center: false },
@@ -259,7 +283,7 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
           </thead>
           <tbody>
             <tr aria-hidden="true">
-              <td colSpan={14} style={{ height: 14, padding: 0, background: "transparent" }} />
+              <td colSpan={TALENT_COLUMN_KEYS.length} style={{ height: 14, padding: 0, background: "transparent" }} />
             </tr>
             {sorted.map((row, i) => (
               <tr key={row.id}>
@@ -272,6 +296,28 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
                 {ratingStartSet.has(i) && (
                   <IcicleCell span={ratingByIndex[i]} />
                 )}
+
+                <td className={cellClass}>
+                  <PillSelect
+                    value={row.primary_talent_category ?? ""}
+                    options={categoryOptions}
+                    onSave={(v) => updateTalentCategory(row.id, v)}
+                  />
+                </td>
+                <td className={cellClass}>
+                  <PillSelect
+                    value={row.primary_talent ?? ""}
+                    options={typeOptions}
+                    onSave={(v) => updateTalentPrimaryTalent(row.id, v)}
+                  />
+                </td>
+                <td className={cellClass}>
+                  <PillSelect
+                    value={row.overall_rating ?? ""}
+                    options={ratingOptions}
+                    onSave={(v) => updateTalentOverallRating(row.id, v)}
+                  />
+                </td>
 
                 <td className={`${cellClass} text-foreground`}>{row.name}</td>
                 <td className={cellClass}>

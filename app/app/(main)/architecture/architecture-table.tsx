@@ -4,7 +4,7 @@ import { DataTable, type Column } from "@/components/data-table";
 import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
 import { PillSelect, type PillOption } from "@/components/pill";
-import { updateTalentOverallRating } from "./actions";
+import { updateTalentOverallRating } from "../talent/actions";
 
 export interface ArchitectureRow {
   id: string;
