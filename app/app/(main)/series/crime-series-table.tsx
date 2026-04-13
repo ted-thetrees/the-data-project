@@ -6,6 +6,25 @@ import type { SeriesRow } from "./page";
 import { Pill } from "@/components/pill";
 import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
+import { useTableViews } from "@/components/table-views";
+import { ColumnResizer } from "@/components/column-resizer";
+import { ViewSwitcher } from "@/components/view-switcher";
+
+const CRIME_COLUMN_KEYS = [
+  "status",
+  "title",
+  "network",
+  "trailer",
+  "release_date",
+] as const;
+
+const CRIME_DEFAULT_WIDTHS: Record<string, number> = {
+  status: 180,
+  title: 220,
+  network: 130,
+  trailer: 480,
+  release_date: 110,
+};
 
 interface GroupSpan {
   value: string;
@@ -69,31 +88,61 @@ export function CrimeSeriesTable({ data }: { data: SeriesRow[] }) {
   const statusStartSet = new Set(statusSpans.map((s) => s.startIndex));
   const statusByIndex = Object.fromEntries(statusSpans.map((s) => [s.startIndex, s]));
 
+  const {
+    views,
+    activeViewId,
+    params,
+    switchView,
+    createView,
+    renameView,
+    deleteView,
+    setColumnWidth,
+  } = useTableViews("crime-series", CRIME_DEFAULT_WIDTHS);
+
+  const headers: { key: string; label: string }[] = [
+    { key: "status", label: "Status" },
+    { key: "title", label: "Series Title" },
+    { key: "network", label: "Network" },
+    { key: "trailer", label: "Trailer" },
+    { key: "release_date", label: "Release Date" },
+  ];
+
   return (
     <PageShell title="Series" count={data.length} maxWidth="">
       <p className="text-sm text-muted-foreground -mt-4 mb-6">
         British crime &amp; murder TV &middot; grouped by status
       </p>
+      <ViewSwitcher
+        views={views}
+        activeViewId={activeViewId}
+        onSwitch={switchView}
+        onCreate={createView}
+        onRename={renameView}
+        onDelete={deleteView}
+      />
       <div className="overflow-x-auto">
         <table
           className="text-[length:var(--cell-font-size)] [&_td]:align-top"
           style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: "var(--row-gap)" }}
         >
           <colgroup>
-            <col style={{ width: 180 }} />
-            <col style={{ width: 220 }} />
-            <col style={{ width: 130 }} />
-            <col style={{ width: 480 }} />
-            <col style={{ width: 110 }} />
+            {CRIME_COLUMN_KEYS.map((key) => (
+              <col key={key} style={{ width: params.columnWidths[key] }} />
+            ))}
           </colgroup>
           <thead>
             <tr>
-              {["Status", "Series Title", "Network", "Trailer", "Release Date"].map((h) => (
+              {headers.map((h, i) => (
                 <th
-                  key={h}
-                  className="text-left text-[length:var(--header-font-size)] font-[number:var(--header-font-weight)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]"
+                  key={h.key}
+                  className="relative text-left text-[length:var(--header-font-size)] font-[number:var(--header-font-weight)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]"
                 >
-                  {h}
+                  {h.label}
+                  <ColumnResizer
+                    columnIndex={i}
+                    currentWidth={params.columnWidths[h.key]}
+                    onResize={(w) => setColumnWidth(h.key, w)}
+                  />
                 </th>
               ))}
             </tr>
