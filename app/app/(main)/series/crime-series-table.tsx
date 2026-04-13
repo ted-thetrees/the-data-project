@@ -3,15 +3,17 @@
 import { useMemo } from "react";
 import { PageShell } from "@/components/page-shell";
 import type { SeriesRow } from "./page";
-import { Pill } from "@/components/pill";
+import { Pill, PillSelect, type PillOption } from "@/components/pill";
 import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
 import { useTableViews } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
+import { updateCrimeSeriesStatus } from "./actions";
 
 const CRIME_COLUMN_KEYS = [
   "status",
+  "status_edit",
   "title",
   "network",
   "trailer",
@@ -20,6 +22,7 @@ const CRIME_COLUMN_KEYS = [
 
 const CRIME_DEFAULT_WIDTHS: Record<string, number> = {
   status: 180,
+  status_edit: 180,
   title: 220,
   network: 130,
   trailer: 480,
@@ -36,7 +39,7 @@ interface GroupSpan {
 function computeGroupSpans(
   data: SeriesRow[],
   accessor: (row: SeriesRow) => string,
-  colorAccessor?: (row: SeriesRow) => string
+  colorAccessor?: (row: SeriesRow) => string,
 ): GroupSpan[] {
   const spans: GroupSpan[] = [];
   let current: GroupSpan | null = null;
@@ -74,19 +77,27 @@ function youtubeEmbedUrl(url: string): string | null {
   }
 }
 
-export function CrimeSeriesTable({ data }: { data: SeriesRow[] }) {
+export function CrimeSeriesTable({
+  data,
+  statusOptions,
+}: {
+  data: SeriesRow[];
+  statusOptions: PillOption[];
+}) {
   const statusSpans = useMemo(
     () =>
       computeGroupSpans(
         data,
         (r) => r.status || "(none)",
-        (r) => r.status_color || ""
+        (r) => r.status_color || "",
       ),
-    [data]
+    [data],
   );
 
   const statusStartSet = new Set(statusSpans.map((s) => s.startIndex));
-  const statusByIndex = Object.fromEntries(statusSpans.map((s) => [s.startIndex, s]));
+  const statusByIndex = Object.fromEntries(
+    statusSpans.map((s) => [s.startIndex, s]),
+  );
 
   const {
     views,
@@ -101,6 +112,7 @@ export function CrimeSeriesTable({ data }: { data: SeriesRow[] }) {
 
   const headers: { key: string; label: string }[] = [
     { key: "status", label: "Status" },
+    { key: "status_edit", label: "Status (edit)" },
     { key: "title", label: "Series Title" },
     { key: "network", label: "Network" },
     { key: "trailer", label: "Trailer" },
@@ -154,23 +166,38 @@ export function CrimeSeriesTable({ data }: { data: SeriesRow[] }) {
           </thead>
           <tbody>
             <tr aria-hidden="true">
-              <td colSpan={5} style={{ height: 14, padding: 0, background: "transparent" }} />
+              <td
+                colSpan={CRIME_COLUMN_KEYS.length}
+                style={{ height: 14, padding: 0, background: "transparent" }}
+              />
             </tr>
             {data.map((row, i) => {
-              const embedUrl = row.youtube_trailer ? youtubeEmbedUrl(row.youtube_trailer) : null;
+              const embedUrl = row.youtube_trailer
+                ? youtubeEmbedUrl(row.youtube_trailer)
+                : null;
               return (
                 <tr key={row.id}>
-                  {statusStartSet.has(i) && (() => {
-                    const span = statusByIndex[i];
-                    return (
-                      <td
-                        rowSpan={span.rowSpan}
-                        className="align-top px-3 py-3 bg-[color:var(--cell-bg)]"
-                      >
-                        <Pill color={span.color}>{span.value}</Pill>
-                      </td>
-                    );
-                  })()}
+                  {statusStartSet.has(i) &&
+                    (() => {
+                      const span = statusByIndex[i];
+                      return (
+                        <td
+                          rowSpan={span.rowSpan}
+                          className="align-top px-3 py-3 bg-[color:var(--cell-bg)]"
+                        >
+                          <Pill color={span.color}>{span.value}</Pill>
+                        </td>
+                      );
+                    })()}
+                  <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] align-top">
+                    <PillSelect
+                      value={row.status_id ?? ""}
+                      options={statusOptions}
+                      onSave={(statusId) =>
+                        updateCrimeSeriesStatus(row.id, statusId)
+                      }
+                    />
+                  </td>
                   <td className="px-[var(--cell-padding-x)] py-4 bg-[color:var(--cell-bg)] font-medium align-top">
                     {row.title}
                   </td>
