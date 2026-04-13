@@ -233,6 +233,7 @@ export default async function PickListsPage() {
             columns={statusColumnsWithVisible("project_statuses", palettes)}
             rows={projectStatuses}
             rowKey={(r) => r.id}
+            storageKey="pick-lists:project_statuses"
           />
         </PickListSection>
 
@@ -241,6 +242,7 @@ export default async function PickListsPage() {
             columns={statusColumns("task_statuses", palettes)}
             rows={taskStatuses}
             rowKey={(r) => r.id}
+            storageKey="pick-lists:task_statuses"
           />
         </PickListSection>
 
@@ -249,6 +251,7 @@ export default async function PickListsPage() {
             columns={statusColumns("crime_series_statuses", palettes)}
             rows={crimeSeriesStatuses}
             rowKey={(r) => r.id}
+            storageKey="pick-lists:crime_series_statuses"
           />
         </PickListSection>
 
@@ -257,6 +260,7 @@ export default async function PickListsPage() {
             columns={statusColumns("uber_projects", palettes)}
             rows={uberProjects}
             rowKey={(r) => r.id}
+            storageKey="pick-lists:uber_projects"
           />
         </PickListSection>
 
@@ -265,6 +269,7 @@ export default async function PickListsPage() {
             columns={statusColumns("talent_categories", palettes)}
             rows={talentCategories}
             rowKey={(r) => r.id}
+            storageKey="pick-lists:talent_categories"
           />
         </PickListSection>
 
@@ -273,6 +278,7 @@ export default async function PickListsPage() {
             columns={statusColumns("talent_types", palettes)}
             rows={talentTypes}
             rowKey={(r) => r.id}
+            storageKey="pick-lists:talent_types"
           />
         </PickListSection>
 
@@ -281,6 +287,7 @@ export default async function PickListsPage() {
             columns={statusColumns("talent_rating_levels", palettes)}
             rows={talentRatingLevels}
             rowKey={(r) => r.id}
+            storageKey="pick-lists:talent_rating_levels"
           />
         </PickListSection>
 
@@ -290,6 +297,7 @@ export default async function PickListsPage() {
               columns={picklistColumns(palettes)}
               rows={rows}
               rowKey={(r) => r.id}
+              storageKey={`pick-lists:${rows[0].table}:${rows[0].field}`}
             />
           </PickListSection>
         ))}
