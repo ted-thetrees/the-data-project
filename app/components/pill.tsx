@@ -9,7 +9,14 @@ import {
 import { contrastTextColor } from "@/lib/contrast";
 
 export const PILL_CLASS =
-  "inline-flex items-center rounded-full px-2.5 py-0 text-[length:var(--cell-font-size)] font-medium whitespace-nowrap";
+  "inline-flex items-center whitespace-nowrap";
+
+const PILL_STYLE: React.CSSProperties = {
+  borderRadius: "var(--pill-radius)",
+  padding: "var(--pill-padding-y) var(--pill-padding-x)",
+  fontSize: "var(--pill-font-size)",
+  fontWeight: "var(--pill-font-weight)" as React.CSSProperties["fontWeight"],
+};
 
 const DEFAULT_COLOR = "var(--status-default)";
 
@@ -25,7 +32,12 @@ export function Pill({
   return (
     <span
       className={PILL_CLASS}
-      style={{ backgroundColor: bg, color: fg, width: "fit-content" }}
+      style={{
+        ...PILL_STYLE,
+        backgroundColor: bg,
+        color: fg,
+        width: "fit-content",
+      }}
     >
       {children}
     </span>
@@ -58,6 +70,7 @@ export function PillSelect({
       <PopoverTrigger
         className={`${PILL_CLASS} cursor-pointer`}
         style={{
+          ...PILL_STYLE,
           backgroundColor: bg,
           color: fg,
           width: "fit-content",
@@ -88,7 +101,11 @@ export function PillSelect({
                 className={`${PILL_CLASS} cursor-pointer ring-offset-1 ${
                   isSelected ? "ring-2 ring-foreground/40" : ""
                 }`}
-                style={{ backgroundColor: obg, color: ofg }}
+                style={{
+                  ...PILL_STYLE,
+                  backgroundColor: obg,
+                  color: ofg,
+                }}
               >
                 {opt.name}
               </button>
