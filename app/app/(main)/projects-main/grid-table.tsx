@@ -302,22 +302,16 @@ export function GridTable({
             </option>
           ))}
         </select>
-        <button
-          onClick={createView}
-          className="px-2 py-1 border rounded text-sm bg-white hover:bg-gray-50"
-        >
+        <button onClick={createView} className="themed-button">
           + New
         </button>
-        <button
-          onClick={renameView}
-          className="px-2 py-1 border rounded text-sm bg-white hover:bg-gray-50"
-        >
+        <button onClick={renameView} className="themed-button">
           Rename
         </button>
         <button
           onClick={deleteView}
           disabled={views.length <= 1}
-          className="px-2 py-1 border rounded text-sm bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="themed-button"
         >
           Delete
         </button>
@@ -541,7 +535,7 @@ function FinalizeButton({ projectId }: { projectId: string }) {
       onClick={() => startTransition(() => finalizeProject(projectId))}
       disabled={pending}
       title="Finalize draft — let this project sort into the corpus"
-      className="shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50"
+      className="themed-button-sm themed-button-success shrink-0"
     >
       {pending ? "…" : "Finalize"}
     </button>
@@ -556,7 +550,7 @@ function AddTaskButton({ projectId }: { projectId: string }) {
       onClick={() => startTransition(() => createTask(projectId))}
       disabled={pending}
       title="Add a blank task to this project"
-      className="shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-zinc-300 text-zinc-600 bg-white hover:bg-zinc-50 disabled:opacity-50"
+      className="themed-button-sm shrink-0"
     >
       {pending ? "…" : "+ Task"}
     </button>
