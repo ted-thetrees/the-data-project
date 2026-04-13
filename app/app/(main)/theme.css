@@ -23,12 +23,10 @@
   --muted-foreground: #6e6d68;
   --accent: #e9e6dc;
   --accent-foreground: #28261b;
-  --destructive: #141413;
+  --destructive: #894242;
   --destructive-foreground: #ffffff;
   --success: #3e8255;
   --success-foreground: #ffffff;
-  --danger: #894242;
-  --danger-foreground: #ffffff;
   --border: #dad9d4;
   --input: #b4b2a7;
   --ring: #c96442;
@@ -114,19 +112,19 @@
 }
 
 .themed-button-danger {
-  color: var(--danger-foreground);
-  background-color: var(--danger);
-  border-color: var(--danger);
+  color: var(--destructive-foreground);
+  background-color: var(--destructive);
+  border-color: var(--destructive);
 }
 .themed-button-danger:hover:not(:disabled) {
-  background-color: color-mix(in srgb, var(--danger) 85%, black);
+  background-color: color-mix(in srgb, var(--destructive) 85%, black);
 }
 
 /* Ghost buttons — neutral at rest, tint on hover */
 .themed-button-sm.ghost-danger:hover:not(:disabled) {
-  color: var(--danger);
-  background-color: color-mix(in srgb, var(--danger) 10%, transparent);
-  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  color: var(--destructive);
+  background-color: color-mix(in srgb, var(--destructive) 10%, transparent);
+  border-color: color-mix(in srgb, var(--destructive) 40%, transparent);
 }
 .themed-button-sm.ghost-success:hover:not(:disabled) {
   color: var(--success);
@@ -142,6 +140,17 @@
   /* ── Neutral tags (for non-status pill-like labels) ── */
   --tag-bg: #ede9de;
   --tag-text: #535146;
+  --tag-padding-x: 6px;
+  --tag-padding-y: 2px;
+  --tag-radius: var(--radius-sm);
+  --tag-font-size: var(--font-size-xs);
+
+  /* ── Pills (status-colored chips) ── */
+  --pill-radius: 9999px;
+  --pill-padding-x: 10px;
+  --pill-padding-y: 0px;
+  --pill-font-weight: var(--font-weight-medium);
+  --pill-font-size: var(--cell-font-size);
 
   /* ── Typography ── */
   --font-family: var(--font-nunito), 'Nunito', sans-serif;
@@ -181,7 +190,9 @@
   --header-bg: #ffffff;
   --header-color: #a1a1aa;
   --header-padding-x: 12px;
+  --header-padding-x-narrow: 4px;
   --header-padding-y: 8px;
+  --header-body-gap: 14px;
 
   /* ── Cells ── */
   --cell-padding-x: 12px;
@@ -257,7 +268,7 @@
   --group-count-padding: 1px 8px;
 
   /* ── Resize handle ── */
-  --resize-handle-width: 5px;
+  --resize-handle-width: 6px;
   --resize-handle-hover-color: var(--ring);
 
   /* ── Toolbar divider ── */
