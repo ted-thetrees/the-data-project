@@ -4,6 +4,8 @@ import { useMemo } from "react";
 import { PageShell } from "@/components/page-shell";
 import type { SeriesRow } from "./page";
 import { Pill } from "@/components/pill";
+import { Empty } from "@/components/empty";
+import { WebLink } from "@/components/web-link";
 
 interface GroupSpan {
   value: string;
@@ -36,10 +38,6 @@ function computeGroupSpans(
   });
   if (current) spans.push(current);
   return spans;
-}
-
-function Empty() {
-  return <span className="text-zinc-300">—</span>;
 }
 
 function youtubeEmbedUrl(url: string): string | null {
@@ -120,7 +118,7 @@ export function CrimeSeriesTable({ data }: { data: SeriesRow[] }) {
                     );
                   })()}
                   <td className="px-[var(--cell-padding-x)] py-4 bg-[color:var(--cell-bg)] font-medium align-top">
-                    <span className="text-base">{row.title}</span>
+                    {row.title}
                   </td>
                   <td className="px-[var(--cell-padding-x)] py-4 bg-[color:var(--cell-bg)] align-top">
                     {row.network || <Empty />}
@@ -136,15 +134,11 @@ export function CrimeSeriesTable({ data }: { data: SeriesRow[] }) {
                         className="rounded-md"
                         style={{ border: "none" }}
                       />
-                    ) : row.youtube_trailer ? (
-                      <a href={row.youtube_trailer} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline truncate block">
-                        {row.youtube_trailer}
-                      </a>
                     ) : (
-                      <Empty />
+                      <WebLink url={row.youtube_trailer} />
                     )}
                   </td>
-                  <td className="px-[var(--cell-padding-x)] py-4 bg-[color:var(--cell-bg)] text-sm align-top">
+                  <td className="px-[var(--cell-padding-x)] py-4 bg-[color:var(--cell-bg)] align-top">
                     {row.release_date || <Empty />}
                   </td>
                 </tr>
