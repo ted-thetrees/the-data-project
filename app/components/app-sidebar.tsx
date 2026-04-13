@@ -12,6 +12,7 @@ import {
   Building06Icon,
   GridTableIcon,
   Tv01Icon,
+  Apple01Icon,
 } from "@hugeicons/core-free-icons";
 import {
   Sidebar,
@@ -42,6 +43,7 @@ const navItems: NavItem[] = [
   { title: "Color Palettes", href: "/color-palettes", icon: SwatchIcon },
   { title: "Series", href: "/series", icon: Tv01Icon },
   { title: "Series | Sort", href: "/series-sort", icon: Tv01Icon },
+  { title: "Calories", href: "/calories", icon: Apple01Icon },
 ];
 
 export function AppSidebar() {
