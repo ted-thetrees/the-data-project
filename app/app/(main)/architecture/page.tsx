@@ -3,6 +3,7 @@ import { PageShell } from "@/components/page-shell";
 import { DataTable, type Column } from "@/components/data-table";
 import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
+import { Pill } from "@/components/pill";
 import { Realtime } from "@/components/realtime";
 
 export const metadata = { title: "Architecture" };
@@ -65,11 +66,7 @@ const columns: Column<Row>[] = [
     width: 175,
     render: (row) => {
       if (!row.overall_rating) return <Empty />;
-      return (
-        <span className="leading-snug whitespace-nowrap" style={{ color: "var(--contrast-light)" }}>
-          {row.overall_rating}
-        </span>
-      );
+      return <Pill color={row.rating_color}>{row.overall_rating}</Pill>;
     },
   },
   {
@@ -108,13 +105,6 @@ const columns: Column<Row>[] = [
 export default async function ArchitecturePage() {
   const data = await getData();
 
-  const ratingColors: Record<string, string> = {};
-  for (const row of data) {
-    if (row.overall_rating && row.rating_color && !ratingColors[row.overall_rating]) {
-      ratingColors[row.overall_rating] = row.rating_color;
-    }
-  }
-
   return (
     <PageShell title="Architecture" count={data.length} maxWidth="">
       <Realtime
@@ -128,14 +118,7 @@ export default async function ArchitecturePage() {
       <p className="text-sm text-muted-foreground -mt-4 mb-6">
         Places &middot; Architecture &middot; sorted by Rating
       </p>
-      <DataTable
-        columns={columns}
-        rows={data}
-        rowKey={(r) => r.id}
-        fixedLayout
-        ratingColumn="overall_rating"
-        ratingColors={ratingColors}
-      />
+      <DataTable columns={columns} rows={data} rowKey={(r) => r.id} fixedLayout />
     </PageShell>
   );
 }
