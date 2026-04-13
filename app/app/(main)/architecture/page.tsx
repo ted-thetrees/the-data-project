@@ -1,6 +1,7 @@
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
+import type { PillOption } from "@/components/pill";
 import {
   ArchitectureTable,
   type ArchitectureRow,
@@ -26,8 +27,22 @@ async function getData(): Promise<ArchitectureRow[]> {
   return result.rows;
 }
 
+async function getRatingOptions(): Promise<PillOption[]> {
+  const result = await poolV002.query(
+    `SELECT name, color FROM talent_rating_levels ORDER BY sort_order NULLS LAST, name`,
+  );
+  return result.rows.map((r: { name: string; color: string | null }) => ({
+    id: r.name,
+    name: r.name,
+    color: r.color,
+  }));
+}
+
 export default async function ArchitecturePage() {
-  const data = await getData();
+  const [data, ratingOptions] = await Promise.all([
+    getData(),
+    getRatingOptions(),
+  ]);
 
   return (
     <PageShell title="Architecture" count={data.length} maxWidth="">
@@ -42,7 +57,7 @@ export default async function ArchitecturePage() {
       <p className="text-sm text-muted-foreground -mt-4 mb-6">
         Places &middot; Architecture &middot; sorted by Rating
       </p>
-      <ArchitectureTable rows={data} />
+      <ArchitectureTable rows={data} ratingOptions={ratingOptions} />
     </PageShell>
   );
 }

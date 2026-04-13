@@ -3,7 +3,8 @@
 import { DataTable, type Column } from "@/components/data-table";
 import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
-import { Pill } from "@/components/pill";
+import { PillSelect, type PillOption } from "@/components/pill";
+import { updateTalentOverallRating } from "./actions";
 
 export interface ArchitectureRow {
   id: string;
@@ -37,51 +38,60 @@ function AreaTags({ areas }: { areas: string | null }) {
   );
 }
 
-const columns: Column<ArchitectureRow>[] = [
-  { key: "name", header: "Resource", width: 220 },
-  {
-    key: "overall_rating",
-    header: "Overall Rating",
-    width: 175,
-    render: (row) => {
-      if (!row.overall_rating) return <Empty />;
-      return <Pill color={row.rating_color}>{row.overall_rating}</Pill>;
-    },
-  },
-  {
-    key: "website",
-    header: "Website",
-    width: 200,
-    render: (row) => <WebLink url={row.website} />,
-  },
-  {
-    key: "instagram",
-    header: "Instagram",
-    width: 180,
-    render: (row) => <WebLink url={row.instagram} />,
-  },
-  {
-    key: "areas",
-    header: "Areas",
-    width: 160,
-    render: (row) => <AreaTags areas={row.areas} />,
-  },
-  {
-    key: "notes",
-    header: "Notes",
-    width: 200,
-    render: (row) =>
-      row.notes ? (
-        <span className="truncate block text-muted-foreground" title={row.notes}>
-          {row.notes}
-        </span>
-      ) : (
-        <Empty />
+export function ArchitectureTable({
+  rows,
+  ratingOptions,
+}: {
+  rows: ArchitectureRow[];
+  ratingOptions: PillOption[];
+}) {
+  const columns: Column<ArchitectureRow>[] = [
+    { key: "name", header: "Resource", width: 220 },
+    {
+      key: "overall_rating",
+      header: "Overall Rating",
+      width: 175,
+      render: (row) => (
+        <PillSelect
+          value={row.overall_rating ?? ""}
+          options={ratingOptions}
+          onSave={(name) => updateTalentOverallRating(row.id, name)}
+        />
       ),
-  },
-];
+    },
+    {
+      key: "website",
+      header: "Website",
+      width: 200,
+      render: (row) => <WebLink url={row.website} />,
+    },
+    {
+      key: "instagram",
+      header: "Instagram",
+      width: 180,
+      render: (row) => <WebLink url={row.instagram} />,
+    },
+    {
+      key: "areas",
+      header: "Areas",
+      width: 160,
+      render: (row) => <AreaTags areas={row.areas} />,
+    },
+    {
+      key: "notes",
+      header: "Notes",
+      width: 200,
+      render: (row) =>
+        row.notes ? (
+          <span className="truncate block text-muted-foreground" title={row.notes}>
+            {row.notes}
+          </span>
+        ) : (
+          <Empty />
+        ),
+    },
+  ];
 
-export function ArchitectureTable({ rows }: { rows: ArchitectureRow[] }) {
   return (
     <DataTable
       columns={columns}
