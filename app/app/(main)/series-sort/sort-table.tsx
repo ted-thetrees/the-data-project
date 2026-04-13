@@ -3,7 +3,19 @@
 import { PageShell } from "@/components/page-shell";
 import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
+import { useTableViews } from "@/components/table-views";
+import { ColumnResizer } from "@/components/column-resizer";
+import { ViewSwitcher } from "@/components/view-switcher";
 import type { SortRow } from "./page";
+
+const SORT_COLUMN_KEYS = ["title", "network", "trailer", "release_date"] as const;
+
+const SORT_DEFAULT_WIDTHS: Record<string, number> = {
+  title: 220,
+  network: 130,
+  trailer: 480,
+  release_date: 110,
+};
 
 function youtubeEmbedUrl(url: string): string | null {
   try {
@@ -21,30 +33,60 @@ function youtubeEmbedUrl(url: string): string | null {
 }
 
 export function SortTable({ data }: { data: SortRow[] }) {
+  const {
+    views,
+    activeViewId,
+    params,
+    switchView,
+    createView,
+    renameView,
+    deleteView,
+    setColumnWidth,
+  } = useTableViews("series-sort", SORT_DEFAULT_WIDTHS);
+
+  const headers: { key: string; label: string }[] = [
+    { key: "title", label: "Series Title" },
+    { key: "network", label: "Network" },
+    { key: "trailer", label: "Trailer" },
+    { key: "release_date", label: "Release Date" },
+  ];
+
   return (
     <PageShell title="Series | Sort" count={data.length} maxWidth="">
       <p className="text-sm text-muted-foreground -mt-4 mb-6">
         Series pending evaluation &middot; sorted by trailer availability then title
       </p>
+      <ViewSwitcher
+        views={views}
+        activeViewId={activeViewId}
+        onSwitch={switchView}
+        onCreate={createView}
+        onRename={renameView}
+        onDelete={deleteView}
+      />
       <div className="overflow-x-auto">
         <table
           className="text-[length:var(--cell-font-size)] [&_td]:align-top"
           style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: "var(--row-gap)" }}
         >
           <colgroup>
-            <col style={{ width: 220 }} />
-            <col style={{ width: 130 }} />
-            <col style={{ width: 480 }} />
-            <col style={{ width: 110 }} />
+            {SORT_COLUMN_KEYS.map((key) => (
+              <col key={key} style={{ width: params.columnWidths[key] }} />
+            ))}
           </colgroup>
           <thead>
             <tr>
-              {["Series Title", "Network", "Trailer", "Release Date"].map((h) => (
+              {headers.map((h, i) => (
                 <th
-                  key={h}
-                  className="text-left text-[length:var(--header-font-size)] font-[number:var(--header-font-weight)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]"
+                  key={h.key}
+                  className="relative text-left text-[length:var(--header-font-size)] font-[number:var(--header-font-weight)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]"
                 >
-                  {h}
+                  {h.label}
+                  <ColumnResizer
+                    columnIndex={i}
+                    currentWidth={params.columnWidths[h.key]}
+                    onResize={(w) => setColumnWidth(h.key, w)}
+                  />
                 </th>
               ))}
             </tr>
