@@ -25,6 +25,9 @@ import {
   createTask,
 } from "./actions";
 import { Pill, PillSelect } from "@/components/pill";
+import { useTableViews } from "@/components/table-views";
+import { ColumnResizer } from "@/components/column-resizer";
+import { ViewSwitcher } from "@/components/view-switcher";
 
 const COLUMN_KEYS = [
   "project",
@@ -59,60 +62,6 @@ const DEFAULT_COLUMN_WIDTHS: Record<ColumnKey, number> = {
   result: 220,
   notes: 220,
 };
-
-interface ViewParams {
-  columnWidths: Record<ColumnKey, number>;
-}
-
-interface View {
-  id: string;
-  name: string;
-  params: ViewParams;
-}
-
-const VIEWS_KEY = "grid-views";
-const ACTIVE_KEY = "grid-active-view";
-
-function defaultParams(): ViewParams {
-  return { columnWidths: { ...DEFAULT_COLUMN_WIDTHS } };
-}
-
-function loadViews(): View[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(VIEWS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as View[];
-    return parsed.map((v) => ({
-      ...v,
-      params: {
-        ...v.params,
-        columnWidths: { ...DEFAULT_COLUMN_WIDTHS, ...v.params.columnWidths },
-      },
-    }));
-  } catch {
-    return [];
-  }
-}
-
-function persistViews(views: View[]) {
-  window.localStorage.setItem(VIEWS_KEY, JSON.stringify(views));
-}
-
-function loadActiveId(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(ACTIVE_KEY);
-}
-
-function persistActiveId(id: string | null) {
-  if (typeof window === "undefined") return;
-  if (id) window.localStorage.setItem(ACTIVE_KEY, id);
-  else window.localStorage.removeItem(ACTIVE_KEY);
-}
-
-function createId() {
-  return Math.random().toString(36).slice(2, 10);
-}
 
 interface GroupSpan {
   value: string;
@@ -193,132 +142,29 @@ export function GridTable({
   const projectStartSet = new Set(projectSpans.map((s) => s.startIndex));
   const projectByIndex = Object.fromEntries(projectSpans.map((s) => [s.startIndex, s]));
 
-  // ── View state ──
-  const [views, setViews] = useState<View[]>([]);
-  const [activeViewId, setActiveViewId] = useState<string | null>(null);
-  const [params, setParams] = useState<ViewParams>(defaultParams());
-  const [hydrated, setHydrated] = useState(false);
-
-  // Hydrate from localStorage
-  useEffect(() => {
-    let loadedViews = loadViews();
-    let loadedActiveId = loadActiveId();
-
-    if (loadedViews.length === 0) {
-      const def: View = {
-        id: createId(),
-        name: "Default",
-        params: defaultParams(),
-      };
-      loadedViews = [def];
-      loadedActiveId = def.id;
-      persistViews(loadedViews);
-      persistActiveId(loadedActiveId);
-    }
-
-    setViews(loadedViews);
-    setActiveViewId(loadedActiveId ?? loadedViews[0].id);
-    const active =
-      loadedViews.find((v) => v.id === loadedActiveId) ?? loadedViews[0];
-    setParams(active.params);
-    setHydrated(true);
-  }, []);
-
-  // Persist params changes back into the active view
-  useEffect(() => {
-    if (!hydrated || !activeViewId) return;
-    setViews((prev) => {
-      const next = prev.map((v) =>
-        v.id === activeViewId ? { ...v, params } : v
-      );
-      persistViews(next);
-      return next;
-    });
-  }, [params, hydrated, activeViewId]);
-
-  const switchView = (id: string) => {
-    const v = views.find((x) => x.id === id);
-    if (!v) return;
-    setActiveViewId(id);
-    setParams(v.params);
-    persistActiveId(id);
-  };
-
-  const createView = () => {
-    const name = window.prompt("New view name?");
-    if (!name) return;
-    const newView: View = { id: createId(), name, params };
-    const next = [...views, newView];
-    setViews(next);
-    setActiveViewId(newView.id);
-    persistViews(next);
-    persistActiveId(newView.id);
-  };
-
-  const renameView = () => {
-    if (!activeViewId) return;
-    const current = views.find((v) => v.id === activeViewId);
-    if (!current) return;
-    const name = window.prompt("Rename view to:", current.name);
-    if (!name) return;
-    const next = views.map((v) =>
-      v.id === activeViewId ? { ...v, name } : v
-    );
-    setViews(next);
-    persistViews(next);
-  };
-
-  const deleteView = () => {
-    if (views.length <= 1 || !activeViewId) return;
-    if (!window.confirm("Delete this view?")) return;
-    const next = views.filter((v) => v.id !== activeViewId);
-    const newActive = next[0];
-    setViews(next);
-    setActiveViewId(newActive.id);
-    setParams(newActive.params);
-    persistViews(next);
-    persistActiveId(newActive.id);
-  };
-
-  const setColumnWidth = (col: ColumnKey, w: number) => {
-    setParams((p) => ({
-      ...p,
-      columnWidths: { ...p.columnWidths, [col]: w },
-    }));
-  };
+  const {
+    views,
+    activeViewId,
+    params,
+    switchView,
+    createView,
+    renameView,
+    deleteView,
+    setColumnWidth,
+  } = useTableViews("projects-main", DEFAULT_COLUMN_WIDTHS);
 
   const body = (
     <>
-      <div className="flex items-center gap-2 -mt-4 mb-6 text-sm">
-        <span className="text-muted-foreground">View:</span>
-        <select
-          value={activeViewId ?? ""}
-          onChange={(e) => switchView(e.target.value)}
-          className="px-2 py-1 border rounded text-sm bg-white"
-        >
-          {views.map((v) => (
-            <option key={v.id} value={v.id}>
-              {v.name}
-            </option>
-          ))}
-        </select>
-        <button onClick={createView} className="themed-button">
-          + New
-        </button>
-        <button onClick={renameView} className="themed-button">
-          Rename
-        </button>
-        <button
-          onClick={deleteView}
-          disabled={views.length <= 1}
-          className="themed-button"
-        >
-          Delete
-        </button>
-        <span className="ml-auto text-muted-foreground">
-          Active projects &middot; click any field to edit &middot; drag column edges to resize
-        </span>
-      </div>
+      <ViewSwitcher
+        views={views}
+        activeViewId={activeViewId}
+        onSwitch={switchView}
+        onCreate={createView}
+        onRename={renameView}
+        onDelete={deleteView}
+      >
+        Active projects &middot; click any field to edit &middot; drag column edges to resize
+      </ViewSwitcher>
 
       <div className="overflow-x-auto">
         <table
@@ -554,62 +400,6 @@ function AddTaskButton({ projectId }: { projectId: string }) {
     >
       {pending ? "…" : "+ Task"}
     </button>
-  );
-}
-
-function ColumnResizer({
-  columnIndex,
-  currentWidth,
-  onResize,
-}: {
-  columnIndex: number;
-  currentWidth: number;
-  onResize: (w: number) => void;
-}) {
-  const startResize = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const startX = e.clientX;
-    let newWidth = currentWidth;
-    const table = (e.currentTarget as HTMLElement).closest("table");
-    const colEl = table?.querySelectorAll("col")[columnIndex] as
-      | HTMLTableColElement
-      | null;
-
-    const onMove = (ev: MouseEvent) => {
-      const delta = ev.clientX - startX;
-      newWidth = Math.max(60, currentWidth + delta);
-      if (colEl) colEl.style.width = `${newWidth}px`;
-    };
-
-    const onUp = () => {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-      onResize(newWidth);
-    };
-
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
-  };
-
-  return (
-    <div
-      onMouseDown={startResize}
-      title="Drag to resize"
-      style={{
-        position: "absolute",
-        right: 0,
-        top: 0,
-        bottom: 0,
-        width: "6px",
-        cursor: "col-resize",
-        userSelect: "none",
-      }}
-    />
   );
 }
 
