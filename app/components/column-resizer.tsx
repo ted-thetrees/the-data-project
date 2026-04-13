@@ -52,7 +52,7 @@ export function ColumnResizer({
         right: 0,
         top: 0,
         bottom: 0,
-        width: "6px",
+        width: "var(--resize-handle-width)",
         cursor: "col-resize",
         userSelect: "none",
       }}
