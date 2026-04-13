@@ -3,6 +3,7 @@
 import { PageShell } from "@/components/page-shell";
 import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
+import { Subtitle } from "@/components/subtitle";
 import { useTableViews } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
@@ -53,9 +54,7 @@ export function SortTable({ data }: { data: SortRow[] }) {
 
   return (
     <PageShell title="Series | Sort" count={data.length} maxWidth="">
-      <p className="text-sm text-muted-foreground -mt-4 mb-6">
-        Series pending evaluation &middot; sorted by trailer availability then title
-      </p>
+      <Subtitle>Series pending evaluation &middot; sorted by trailer availability then title</Subtitle>
       <ViewSwitcher
         views={views}
         activeViewId={activeViewId}
@@ -98,19 +97,19 @@ export function SortTable({ data }: { data: SortRow[] }) {
           </thead>
           <tbody>
             <tr aria-hidden="true">
-              <td colSpan={4} style={{ height: 14, padding: 0, background: "transparent" }} />
+              <td colSpan={SORT_COLUMN_KEYS.length} style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }} />
             </tr>
             {data.map((row) => {
               const embedUrl = row.youtube_trailer ? youtubeEmbedUrl(row.youtube_trailer) : null;
               return (
                 <tr key={row.id}>
-                  <td className="px-[var(--cell-padding-x)] py-4 bg-[color:var(--cell-bg)] font-medium align-top">
+                  <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] font-medium align-top">
                     {row.title}
                   </td>
-                  <td className="px-[var(--cell-padding-x)] py-4 bg-[color:var(--cell-bg)] align-top">
+                  <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] align-top">
                     {row.network || <Empty />}
                   </td>
-                  <td className="px-[var(--cell-padding-x)] py-3 bg-[color:var(--cell-bg)]">
+                  <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]">
                     {embedUrl ? (
                       <iframe
                         src={embedUrl}
@@ -125,7 +124,7 @@ export function SortTable({ data }: { data: SortRow[] }) {
                       <WebLink url={row.youtube_trailer} />
                     )}
                   </td>
-                  <td className="px-[var(--cell-padding-x)] py-4 bg-[color:var(--cell-bg)] align-top">
+                  <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] align-top">
                     {row.release_date || <Empty />}
                   </td>
                 </tr>

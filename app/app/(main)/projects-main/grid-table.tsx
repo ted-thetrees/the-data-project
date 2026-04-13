@@ -206,7 +206,7 @@ export function GridTable({
             <tr aria-hidden="true">
               <td
                 colSpan={COLUMN_KEYS.length}
-                style={{ height: 14, padding: 0, background: "transparent" }}
+                style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
               />
             </tr>
             {data.map((row, i) => {
@@ -219,7 +219,7 @@ export function GridTable({
                 <tr aria-hidden="true">
                   <td
                     colSpan={COLUMN_KEYS.length}
-                    style={{ height: 14, padding: 0, background: "transparent" }}
+                    style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
                   />
                 </tr>
               )}

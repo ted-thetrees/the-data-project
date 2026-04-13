@@ -5,6 +5,7 @@ import { PageShell } from "@/components/page-shell";
 import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
 import { Pill, PillSelect, type PillOption } from "@/components/pill";
+import { Tag } from "@/components/tag";
 import { useTableViews } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
@@ -124,19 +125,7 @@ function IcicleCell({ span }: { span: GroupSpan }) {
 
 function YesBadge({ value }: { value: string | null }) {
   if (!value || value === "----" || value === "-----") return <Empty />;
-  if (value === "Yes")
-    return (
-      <span
-        className="inline-block px-2 py-0.5 rounded"
-        style={{
-          fontSize: "var(--font-size-xs)",
-          backgroundColor: "var(--tag-bg)",
-          color: "var(--tag-text)",
-        }}
-      >
-        Yes
-      </span>
-    );
+  if (value === "Yes") return <Tag>Yes</Tag>;
   return (
     <span className="text-muted-foreground" style={{ fontSize: "var(--font-size-sm)" }}>
       {value}
@@ -218,11 +207,11 @@ export function TalentTable({
   const headerClass =
     "relative text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
   const headerCenterClass =
-    "relative text-center text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-1 py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
+    "relative text-center text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x-narrow)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
   const cellClass =
     "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]";
   const cellCenterClass =
-    "px-1 py-[var(--cell-padding-y)] text-center bg-[color:var(--cell-bg)]";
+    "px-[var(--header-padding-x-narrow)] py-[var(--cell-padding-y)] text-center bg-[color:var(--cell-bg)]";
 
   return (
     <PageShell title="Talent" count={sorted.length} maxWidth="" className="talent-page">
@@ -283,7 +272,10 @@ export function TalentTable({
           </thead>
           <tbody>
             <tr aria-hidden="true">
-              <td colSpan={TALENT_COLUMN_KEYS.length} style={{ height: 14, padding: 0, background: "transparent" }} />
+              <td
+                colSpan={TALENT_COLUMN_KEYS.length}
+                style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
+              />
             </tr>
             {sorted.map((row, i) => (
               <tr key={row.id}>
@@ -348,17 +340,7 @@ export function TalentTable({
                   {row.areas ? (
                     <div className="flex gap-1 flex-wrap">
                       {row.areas.split(", ").map((area) => (
-                        <span
-                          key={area}
-                          className="inline-block px-1.5 py-0.5 rounded"
-                          style={{
-                            fontSize: "var(--font-size-xs)",
-                            backgroundColor: "var(--tag-bg)",
-                            color: "var(--tag-text)",
-                          }}
-                        >
-                          {area}
-                        </span>
+                        <Tag key={area}>{area}</Tag>
                       ))}
                     </div>
                   ) : (
@@ -385,3 +367,4 @@ export function TalentTable({
     </PageShell>
   );
 }
+

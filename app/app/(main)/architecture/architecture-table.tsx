@@ -4,6 +4,7 @@ import { DataTable, type Column } from "@/components/data-table";
 import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
 import { PillSelect, type PillOption } from "@/components/pill";
+import { Tag } from "@/components/tag";
 import { updateTalentOverallRating } from "../talent/actions";
 
 export interface ArchitectureRow {
@@ -22,17 +23,7 @@ function AreaTags({ areas }: { areas: string | null }) {
   return (
     <div className="flex gap-1 flex-wrap">
       {areas.split(", ").map((area) => (
-        <span
-          key={area}
-          className="inline-block px-1.5 py-0.5 rounded"
-          style={{
-            fontSize: "var(--font-size-xs)",
-            backgroundColor: "var(--tag-bg)",
-            color: "var(--tag-text)",
-          }}
-        >
-          {area}
-        </span>
+        <Tag key={area}>{area}</Tag>
       ))}
     </div>
   );

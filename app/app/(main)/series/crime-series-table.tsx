@@ -6,6 +6,7 @@ import type { SeriesRow } from "./page";
 import { Pill, PillSelect, type PillOption } from "@/components/pill";
 import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
+import { Subtitle } from "@/components/subtitle";
 import { useTableViews } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
@@ -121,9 +122,7 @@ export function CrimeSeriesTable({
 
   return (
     <PageShell title="Series" count={data.length} maxWidth="">
-      <p className="text-sm text-muted-foreground -mt-4 mb-6">
-        British crime &amp; murder TV &middot; grouped by status
-      </p>
+      <Subtitle>British crime &amp; murder TV &middot; grouped by status</Subtitle>
       <ViewSwitcher
         views={views}
         activeViewId={activeViewId}
@@ -168,7 +167,7 @@ export function CrimeSeriesTable({
             <tr aria-hidden="true">
               <td
                 colSpan={CRIME_COLUMN_KEYS.length}
-                style={{ height: 14, padding: 0, background: "transparent" }}
+                style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
               />
             </tr>
             {data.map((row, i) => {
@@ -183,7 +182,7 @@ export function CrimeSeriesTable({
                       return (
                         <td
                           rowSpan={span.rowSpan}
-                          className="align-top px-3 py-3 bg-[color:var(--cell-bg)]"
+                          className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]"
                         >
                           <Pill color={span.color}>{span.value}</Pill>
                         </td>
@@ -198,13 +197,13 @@ export function CrimeSeriesTable({
                       }
                     />
                   </td>
-                  <td className="px-[var(--cell-padding-x)] py-4 bg-[color:var(--cell-bg)] font-medium align-top">
+                  <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] font-medium align-top">
                     {row.title}
                   </td>
-                  <td className="px-[var(--cell-padding-x)] py-4 bg-[color:var(--cell-bg)] align-top">
+                  <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] align-top">
                     {row.network || <Empty />}
                   </td>
-                  <td className="px-[var(--cell-padding-x)] py-3 bg-[color:var(--cell-bg)]">
+                  <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]">
                     {embedUrl ? (
                       <iframe
                         src={embedUrl}
@@ -219,7 +218,7 @@ export function CrimeSeriesTable({
                       <WebLink url={row.youtube_trailer} />
                     )}
                   </td>
-                  <td className="px-[var(--cell-padding-x)] py-4 bg-[color:var(--cell-bg)] align-top">
+                  <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] align-top">
                     {row.release_date || <Empty />}
                   </td>
                 </tr>

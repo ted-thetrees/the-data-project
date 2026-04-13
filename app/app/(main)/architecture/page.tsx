@@ -1,6 +1,7 @@
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
+import { Subtitle } from "@/components/subtitle";
 import type { PillOption } from "@/components/pill";
 import {
   ArchitectureTable,
@@ -54,9 +55,7 @@ export default async function ArchitecturePage() {
           "talent_rating_levels",
         ]}
       />
-      <p className="text-sm text-muted-foreground -mt-4 mb-6">
-        Places &middot; Architecture &middot; sorted by Rating
-      </p>
+      <Subtitle>Places &middot; Architecture &middot; sorted by Rating</Subtitle>
       <ArchitectureTable rows={data} ratingOptions={ratingOptions} />
     </PageShell>
   );
