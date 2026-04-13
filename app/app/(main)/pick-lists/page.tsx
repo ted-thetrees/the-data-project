@@ -1,29 +1,16 @@
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
-import { DataTable, type Column } from "@/components/data-table";
 import { Realtime } from "@/components/realtime";
+import type { PaletteForPicker } from "@/components/editable-color-cell";
 import {
-  EditableColorCell,
-  type PaletteForPicker,
-} from "@/components/editable-color-cell";
+  PicklistStatusTable,
+  PicklistColorTable,
+  type Status,
+  type PicklistColor,
+} from "./picklist-tables";
 
 export const metadata = { title: "Pick Lists" };
 export const dynamic = "force-dynamic";
-
-type PicklistColor = {
-  id: string;
-  table: string;
-  field: string;
-  option: string;
-  color: string;
-};
-
-type Status = {
-  id: string;
-  name: string;
-  color: string;
-  visible?: boolean;
-};
 
 const COLOR_COLUMNS = Array.from({ length: 15 }, (_, i) => `color_${i + 1}`);
 
@@ -94,75 +81,6 @@ async function getPalettes(): Promise<PaletteForPicker[]> {
   }));
 }
 
-function statusColumns(
-  source: string,
-  palettes: PaletteForPicker[]
-): Column<Status>[] {
-  return [
-    { key: "name", header: "Option" },
-    {
-      key: "color",
-      header: "Color",
-      render: (row) => (
-        <EditableColorCell
-          source={source}
-          recordId={row.id}
-          color={row.color}
-          palettes={palettes}
-        />
-      ),
-    },
-    {
-      key: "hex",
-      header: "Hex",
-      render: (row) => (
-        <span className="font-mono text-xs text-muted-foreground">{row.color}</span>
-      ),
-    },
-  ];
-}
-
-function statusColumnsWithVisible(
-  source: string,
-  palettes: PaletteForPicker[]
-): Column<Status>[] {
-  return [
-    ...statusColumns(source, palettes),
-    {
-      key: "visible",
-      header: "Visible",
-      render: (row) => (
-        <span className="text-muted-foreground">{row.visible ? "Yes" : "No"}</span>
-      ),
-    },
-  ];
-}
-
-function picklistColumns(palettes: PaletteForPicker[]): Column<PicklistColor>[] {
-  return [
-    { key: "option", header: "Option" },
-    {
-      key: "color",
-      header: "Color",
-      render: (row) => (
-        <EditableColorCell
-          source="picklist_colors"
-          recordId={row.id}
-          color={row.color}
-          palettes={palettes}
-        />
-      ),
-    },
-    {
-      key: "hex",
-      header: "Hex",
-      render: (row) => (
-        <span className="font-mono text-xs text-muted-foreground">{row.color}</span>
-      ),
-    },
-  ];
-}
-
 function PickListSection({
   title,
   usedBy,
@@ -229,74 +147,74 @@ export default async function PickListsPage() {
       />
       <div className="space-y-10">
         <PickListSection title="Project Statuses" usedBy="Projects">
-          <DataTable
-            columns={statusColumnsWithVisible("project_statuses", palettes)}
+          <PicklistStatusTable
+            source="project_statuses"
             rows={projectStatuses}
-            rowKey={(r) => r.id}
+            palettes={palettes}
+            showVisible
             storageKey="pick-lists:project_statuses"
           />
         </PickListSection>
 
         <PickListSection title="Task Statuses" usedBy="Tasks">
-          <DataTable
-            columns={statusColumns("task_statuses", palettes)}
+          <PicklistStatusTable
+            source="task_statuses"
             rows={taskStatuses}
-            rowKey={(r) => r.id}
+            palettes={palettes}
             storageKey="pick-lists:task_statuses"
           />
         </PickListSection>
 
         <PickListSection title="Crime Series Statuses" usedBy="Crime Series">
-          <DataTable
-            columns={statusColumns("crime_series_statuses", palettes)}
+          <PicklistStatusTable
+            source="crime_series_statuses"
             rows={crimeSeriesStatuses}
-            rowKey={(r) => r.id}
+            palettes={palettes}
             storageKey="pick-lists:crime_series_statuses"
           />
         </PickListSection>
 
         <PickListSection title="Uber Projects" usedBy="Projects | Main">
-          <DataTable
-            columns={statusColumns("uber_projects", palettes)}
+          <PicklistStatusTable
+            source="uber_projects"
             rows={uberProjects}
-            rowKey={(r) => r.id}
+            palettes={palettes}
             storageKey="pick-lists:uber_projects"
           />
         </PickListSection>
 
         <PickListSection title="Talent Categories" usedBy="Talent, Architecture">
-          <DataTable
-            columns={statusColumns("talent_categories", palettes)}
+          <PicklistStatusTable
+            source="talent_categories"
             rows={talentCategories}
-            rowKey={(r) => r.id}
+            palettes={palettes}
             storageKey="pick-lists:talent_categories"
           />
         </PickListSection>
 
         <PickListSection title="Talent Types" usedBy="Talent, Architecture">
-          <DataTable
-            columns={statusColumns("talent_types", palettes)}
+          <PicklistStatusTable
+            source="talent_types"
             rows={talentTypes}
-            rowKey={(r) => r.id}
+            palettes={palettes}
             storageKey="pick-lists:talent_types"
           />
         </PickListSection>
 
         <PickListSection title="Talent Rating Levels" usedBy="Talent, Architecture">
-          <DataTable
-            columns={statusColumns("talent_rating_levels", palettes)}
+          <PicklistStatusTable
+            source="talent_rating_levels"
             rows={talentRatingLevels}
-            rowKey={(r) => r.id}
+            palettes={palettes}
             storageKey="pick-lists:talent_rating_levels"
           />
         </PickListSection>
 
         {Array.from(grouped.entries()).map(([key, rows]) => (
           <PickListSection key={key} title={key} usedBy={rows[0].table}>
-            <DataTable
-              columns={picklistColumns(palettes)}
+            <PicklistColorTable
               rows={rows}
-              rowKey={(r) => r.id}
+              palettes={palettes}
               storageKey={`pick-lists:${rows[0].table}:${rows[0].field}`}
             />
           </PickListSection>
