@@ -118,7 +118,13 @@ export default async function ArchitecturePage() {
       <p className="text-sm text-muted-foreground -mt-4 mb-6">
         Places &middot; Architecture &middot; sorted by Rating
       </p>
-      <DataTable columns={columns} rows={data} rowKey={(r) => r.id} fixedLayout />
+      <DataTable
+        columns={columns}
+        rows={data}
+        rowKey={(r) => r.id}
+        fixedLayout
+        storageKey="architecture"
+      />
     </PageShell>
   );
 }
