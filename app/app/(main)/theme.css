@@ -46,6 +46,18 @@
   /* ── Links ── */
   --link-color: #2563eb;
   --link-hover-color: #1d4ed8;
+}
+
+.themed-link {
+  color: var(--link-color);
+  font-size: var(--cell-font-size);
+}
+.themed-link:hover {
+  color: var(--link-hover-color);
+  text-decoration: underline;
+}
+
+:root {
 
   /* ── Default status color (used when a status has no DB color) ── */
   --status-default: #727272;
