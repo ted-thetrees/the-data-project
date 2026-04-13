@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { PageShell } from "@/components/page-shell";
 import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
-import { contrastTextColor } from "@/lib/contrast";
+import { Pill } from "@/components/pill";
 import "./talent.css";
 
 interface TalentRow {
@@ -63,21 +63,13 @@ function computeGroupSpans(
   return spans;
 }
 
-function IcicleCell({ span, rowHeight }: { span: GroupSpan; rowHeight: number }) {
-  const bg = span.color || "var(--status-default)";
-  const fg = contrastTextColor(span.color);
+function IcicleCell({ span }: { span: GroupSpan }) {
   return (
     <td
       rowSpan={span.rowSpan}
-      className="align-top px-3 py-2"
-      style={{ backgroundColor: bg, minHeight: span.rowSpan * rowHeight }}
+      className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]"
     >
-      <span
-        style={{ color: fg, fontSize: "var(--font-size-sm)" }}
-        className="leading-snug whitespace-nowrap"
-      >
-        {span.value}
-      </span>
+      <Pill color={span.color}>{span.value}</Pill>
     </td>
   );
 }
@@ -154,7 +146,6 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
     ratingSpans.map((s) => [s.startIndex, s])
   );
 
-  const ROW_HEIGHT = 36;
   const headerClass =
     "text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
   const headerCenterClass =
@@ -212,13 +203,13 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
             {sorted.map((row, i) => (
               <tr key={row.id}>
                 {categoryStartSet.has(i) && (
-                  <IcicleCell span={categoryByIndex[i]} rowHeight={ROW_HEIGHT} />
+                  <IcicleCell span={categoryByIndex[i]} />
                 )}
                 {talentStartSet.has(i) && (
-                  <IcicleCell span={talentByIndex[i]} rowHeight={ROW_HEIGHT} />
+                  <IcicleCell span={talentByIndex[i]} />
                 )}
                 {ratingStartSet.has(i) && (
-                  <IcicleCell span={ratingByIndex[i]} rowHeight={ROW_HEIGHT} />
+                  <IcicleCell span={ratingByIndex[i]} />
                 )}
 
                 <td className={`${cellClass} text-foreground`}>{row.name}</td>
