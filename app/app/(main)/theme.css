@@ -122,6 +122,18 @@
   background-color: color-mix(in srgb, var(--danger) 85%, black);
 }
 
+/* Ghost buttons — neutral at rest, tint on hover */
+.themed-button-sm.ghost-danger:hover:not(:disabled) {
+  color: var(--danger);
+  background-color: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+}
+.themed-button-sm.ghost-success:hover:not(:disabled) {
+  color: var(--success);
+  background-color: color-mix(in srgb, var(--success) 10%, transparent);
+  border-color: color-mix(in srgb, var(--success) 40%, transparent);
+}
+
 :root {
 
   /* ── Default status color (used when a status has no DB color) ── */

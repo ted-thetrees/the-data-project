@@ -81,7 +81,15 @@ async function InboxCard({ row }: { row: Row }) {
         </div>
         <div className="flex items-center gap-2">
           {row.passphrase != null && (
-            <span className="text-xs font-mono rounded-full px-2.5 py-0.5 bg-amber-100 text-amber-800 border border-amber-300">
+            <span
+              className="font-mono rounded-full px-2.5 py-0.5 border"
+              style={{
+                fontSize: "var(--font-size-xs)",
+                color: "var(--primary)",
+                backgroundColor: "color-mix(in srgb, var(--primary) 12%, transparent)",
+                borderColor: "color-mix(in srgb, var(--primary) 35%, transparent)",
+              }}
+            >
               {row.passphrase as string}
             </span>
           )}
