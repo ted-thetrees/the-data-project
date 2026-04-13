@@ -1,4 +1,4 @@
-import { pool } from "@/lib/db";
+import { poolV002 } from "@/lib/db";
 import { TalentTable } from "./talent-table";
 import { Realtime } from "@/components/realtime";
 
@@ -24,7 +24,7 @@ interface TalentRow {
 }
 
 async function getTalent(): Promise<TalentRow[]> {
-  const result = await pool.query(`
+  const result = await poolV002.query(`
     SELECT t.id, t.name, t.architecture, t.interiors, t.landscape, t.lighting,
            t.kitchens, t.archviz, t.primary_talent, t.primary_talent_category,
            t.overall_rating, t.website, t.instagram, t.notes,
