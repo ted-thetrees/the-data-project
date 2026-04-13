@@ -25,6 +25,10 @@
   --accent-foreground: #28261b;
   --destructive: #141413;
   --destructive-foreground: #ffffff;
+  --success: #3e8255;
+  --success-foreground: #ffffff;
+  --danger: #894242;
+  --danger-foreground: #ffffff;
   --border: #dad9d4;
   --input: #b4b2a7;
   --ring: #c96442;
@@ -55,6 +59,67 @@
 .themed-link:hover {
   color: var(--link-hover-color);
   text-decoration: underline;
+}
+
+/* Buttons — follow the .themed-link pattern */
+.themed-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--secondary-foreground);
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+.themed-button:hover:not(:disabled) {
+  background-color: var(--accent);
+}
+.themed-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.themed-button-sm {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--secondary-foreground);
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+.themed-button-sm:hover:not(:disabled) {
+  background-color: var(--accent);
+}
+.themed-button-sm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.themed-button-success {
+  color: var(--success-foreground);
+  background-color: var(--success);
+  border-color: var(--success);
+}
+.themed-button-success:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--success) 85%, black);
+}
+
+.themed-button-danger {
+  color: var(--danger-foreground);
+  background-color: var(--danger);
+  border-color: var(--danger);
+}
+.themed-button-danger:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--danger) 85%, black);
 }
 
 :root {
