@@ -2,6 +2,9 @@
 
 import { useMemo } from "react";
 import { PageShell } from "@/components/page-shell";
+import { Empty } from "@/components/empty";
+import { WebLink } from "@/components/web-link";
+import { contrastTextColor } from "@/lib/contrast";
 import "./talent.css";
 
 interface TalentRow {
@@ -16,71 +19,26 @@ interface TalentRow {
   primary_talent: string | null;
   primary_talent_category: string | null;
   overall_rating: string | null;
+  category_color: string | null;
+  talent_color: string | null;
+  rating_color: string | null;
   website: string | null;
   instagram: string | null;
   notes: string | null;
   areas: string | null;
 }
 
-// Sort order is now handled by the server query via pick list tables
-
-// Dark background fills for the icicle bands
-const CATEGORY_BG: Record<string, string> = {
-  "Places": "hsl(25, 55%, 45%)",
-  "Objects & Assets": "hsl(200, 50%, 42%)",
-  "Visuals": "hsl(280, 40%, 45%)",
-};
-
-const TALENT_BG: Record<string, string> = {
-  "Architecture": "hsl(215, 50%, 40%)",
-  "Interior Design": "hsl(35, 50%, 42%)",
-  "Landscape Design": "hsl(130, 35%, 38%)",
-  "Lighting Design": "hsl(55, 45%, 40%)",
-  "ArchViz": "hsl(200, 45%, 40%)",
-  "Web Design": "hsl(340, 40%, 42%)",
-};
-
-const RATING_BG: Record<string, string> = {
-  "Absolute Top": "hsl(140, 35%, 38%)",
-  "Probably Absolute Top": "hsl(170, 30%, 38%)",
-  "Contenders to (Re)Mull": "hsl(270, 25%, 42%)",
-  "Other": "hsl(0, 0%, 45%)",
-  "Rejects": "hsl(0, 35%, 40%)",
-};
-
-// White text for all group labels
-const CATEGORY_TEXT: Record<string, string> = {
-  "Places": "#ffffff",
-  "Objects & Assets": "#ffffff",
-  "Visuals": "#ffffff",
-};
-
-const TALENT_TEXT: Record<string, string> = {
-  "Architecture": "#ffffff",
-  "Interior Design": "#ffffff",
-  "Landscape Design": "#ffffff",
-  "Lighting Design": "#ffffff",
-  "ArchViz": "#ffffff",
-  "Web Design": "#ffffff",
-};
-
-const RATING_TEXT: Record<string, string> = {
-  "Absolute Top": "#ffffff",
-  "Probably Absolute Top": "#ffffff",
-  "Contenders to (Re)Mull": "#ffffff",
-  "Other": "#ffffff",
-  "Rejects": "#ffffff",
-};
-
 interface GroupSpan {
   value: string;
   rowSpan: number;
   startIndex: number;
+  color: string | null;
 }
 
 function computeGroupSpans(
   data: TalentRow[],
   accessor: (row: TalentRow) => string,
+  colorAccessor: (row: TalentRow) => string | null,
   parentAccessors?: ((row: TalentRow) => string)[]
 ): GroupSpan[] {
   const spans: GroupSpan[] = [];
@@ -88,7 +46,6 @@ function computeGroupSpans(
 
   data.forEach((row, i) => {
     const val = accessor(row) || "(none)";
-    // Break when own value changes OR any parent value changes
     let parentChanged = false;
     if (parentAccessors && i > 0) {
       parentChanged = parentAccessors.some(
@@ -97,7 +54,7 @@ function computeGroupSpans(
     }
     if (!current || current.value !== val || parentChanged) {
       if (current) spans.push(current);
-      current = { value: val, rowSpan: 1, startIndex: i };
+      current = { value: val, rowSpan: 1, startIndex: i, color: colorAccessor(row) };
     } else {
       current.rowSpan++;
     }
@@ -106,55 +63,83 @@ function computeGroupSpans(
   return spans;
 }
 
+function IcicleCell({ span, rowHeight }: { span: GroupSpan; rowHeight: number }) {
+  const bg = span.color || "var(--status-default)";
+  const fg = contrastTextColor(span.color);
+  return (
+    <td
+      rowSpan={span.rowSpan}
+      className="align-top px-3 py-2"
+      style={{ backgroundColor: bg, minHeight: span.rowSpan * rowHeight }}
+    >
+      <span
+        style={{ color: fg, fontSize: "var(--font-size-sm)" }}
+        className="leading-snug whitespace-nowrap"
+      >
+        {span.value}
+      </span>
+    </td>
+  );
+}
+
 function YesBadge({ value }: { value: string | null }) {
-  if (!value || value === "----" || value === "-----")
-    return <span className="text-zinc-300">—</span>;
+  if (!value || value === "----" || value === "-----") return <Empty />;
   if (value === "Yes")
     return (
-      <span className="inline-block px-2 py-0.5 rounded text-xs  bg-emerald-100 text-emerald-800">
+      <span
+        className="inline-block px-2 py-0.5 rounded"
+        style={{
+          fontSize: "var(--font-size-xs)",
+          backgroundColor: "var(--tag-bg)",
+          color: "var(--tag-text)",
+        }}
+      >
         Yes
       </span>
     );
-  return <span className="text-zinc-500 text-sm">{value}</span>;
-}
-
-function WebsiteLink({ url }: { url: string | null }) {
-  if (!url) return <span className="text-zinc-300">—</span>;
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-blue-600 hover:text-blue-800 hover:underline text-sm truncate block max-w-[180px]"
-      title={url}
-    >
-      {url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
-    </a>
+    <span className="text-muted-foreground" style={{ fontSize: "var(--font-size-sm)" }}>
+      {value}
+    </span>
   );
 }
 
 export function TalentTable({ data }: { data: TalentRow[] }) {
-  // Data arrives pre-sorted from the server via pick list sort_order
   const sorted = data;
 
-  // Compute rowSpan groups for each icicle column
-  const categorySpans = useMemo(
-    () => computeGroupSpans(sorted, (r) => r.primary_talent_category || "(none)"),
-    [sorted]
-  );
   const categoryAccessor = (r: TalentRow) => r.primary_talent_category || "(none)";
   const talentAccessor = (r: TalentRow) => r.primary_talent || "(none)";
 
+  const categorySpans = useMemo(
+    () =>
+      computeGroupSpans(
+        sorted,
+        categoryAccessor,
+        (r) => r.category_color
+      ),
+    [sorted]
+  );
   const talentSpans = useMemo(
-    () => computeGroupSpans(sorted, talentAccessor, [categoryAccessor]),
+    () =>
+      computeGroupSpans(
+        sorted,
+        talentAccessor,
+        (r) => r.talent_color,
+        [categoryAccessor]
+      ),
     [sorted]
   );
   const ratingSpans = useMemo(
-    () => computeGroupSpans(sorted, (r) => r.overall_rating || "(none)", [categoryAccessor, talentAccessor]),
+    () =>
+      computeGroupSpans(
+        sorted,
+        (r) => r.overall_rating || "(none)",
+        (r) => r.rating_color,
+        [categoryAccessor, talentAccessor]
+      ),
     [sorted]
   );
 
-  // Build lookup: for each row index, should we render each group cell?
   const categoryStartSet = new Set(categorySpans.map((s) => s.startIndex));
   const talentStartSet = new Set(talentSpans.map((s) => s.startIndex));
   const ratingStartSet = new Set(ratingSpans.map((s) => s.startIndex));
@@ -169,72 +154,55 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
     ratingSpans.map((s) => [s.startIndex, s])
   );
 
-  const ROW_HEIGHT = 36; // px per row
+  const ROW_HEIGHT = 36;
+  const headerClass =
+    "text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
+  const headerCenterClass =
+    "text-center text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-1 py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
+  const cellClass =
+    "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]";
+  const cellCenterClass =
+    "px-1 py-[var(--cell-padding-y)] text-center bg-[color:var(--cell-bg)]";
 
   return (
-    <PageShell title="Talent" count={sorted.length} maxWidth=""  className="talent-page">
+    <PageShell title="Talent" count={sorted.length} maxWidth="" className="talent-page">
       <div className="overflow-x-auto">
-        <table className="text-[length:var(--cell-font-size)] [&_td]:align-top" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: "var(--row-gap)" }}>
+        <table
+          className="text-[length:var(--cell-font-size)] [&_td]:align-top"
+          style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: "var(--row-gap)" }}
+        >
           <colgroup>
-            <col style={{ width: 120 }} /> {/* Category */}
-            <col style={{ width: 130 }} /> {/* Primary Talent */}
-            <col style={{ width: 175 }} /> {/* Overall Rating */}
-            <col style={{ width: 220 }} /> {/* Resource */}
-            <col style={{ width: 180 }} /> {/* Website */}
-            <col style={{ width: 100 }} /> {/* Instagram */}
-            <col style={{ width: 55 }} />  {/* Arch */}
-            <col style={{ width: 55 }} />  {/* Int */}
-            <col style={{ width: 55 }} />  {/* Land */}
-            <col style={{ width: 55 }} />  {/* Light */}
-            <col style={{ width: 55 }} />  {/* Kit */}
-            <col style={{ width: 55 }} />  {/* AViz */}
-            <col style={{ width: 140 }} /> {/* Areas */}
-            <col style={{ width: 180 }} /> {/* Notes */}
+            <col style={{ width: 120 }} />
+            <col style={{ width: 130 }} />
+            <col style={{ width: 175 }} />
+            <col style={{ width: 220 }} />
+            <col style={{ width: 180 }} />
+            <col style={{ width: 100 }} />
+            <col style={{ width: 55 }} />
+            <col style={{ width: 55 }} />
+            <col style={{ width: 55 }} />
+            <col style={{ width: 55 }} />
+            <col style={{ width: 55 }} />
+            <col style={{ width: 55 }} />
+            <col style={{ width: 140 }} />
+            <col style={{ width: 180 }} />
           </colgroup>
           <thead>
             <tr>
-              <th className="text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
-                Category
-              </th>
-              <th className="text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
-                Primary Talent
-              </th>
-              <th className="text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
-                Overall Rating
-              </th>
-              <th className="text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
-                Resource
-              </th>
-              <th className="text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
-                Website
-              </th>
-              <th className="text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
-                Instagram
-              </th>
-              <th className="text-center text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-1 py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
-                Arch
-              </th>
-              <th className="text-center text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-1 py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
-                Int
-              </th>
-              <th className="text-center text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-1 py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
-                Land
-              </th>
-              <th className="text-center text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-1 py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
-                Light
-              </th>
-              <th className="text-center text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-1 py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
-                Kit
-              </th>
-              <th className="text-center text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-1 py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
-                AViz
-              </th>
-              <th className="text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
-                Areas
-              </th>
-              <th className="text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]">
-                Notes
-              </th>
+              <th className={headerClass}>Category</th>
+              <th className={headerClass}>Primary Talent</th>
+              <th className={headerClass}>Overall Rating</th>
+              <th className={headerClass}>Resource</th>
+              <th className={headerClass}>Website</th>
+              <th className={headerClass}>Instagram</th>
+              <th className={headerCenterClass}>Arch</th>
+              <th className={headerCenterClass}>Int</th>
+              <th className={headerCenterClass}>Land</th>
+              <th className={headerCenterClass}>Light</th>
+              <th className={headerCenterClass}>Kit</th>
+              <th className={headerCenterClass}>AViz</th>
+              <th className={headerClass}>Areas</th>
+              <th className={headerClass}>Notes</th>
             </tr>
           </thead>
           <tbody>
@@ -243,99 +211,72 @@ export function TalentTable({ data }: { data: TalentRow[] }) {
             </tr>
             {sorted.map((row, i) => (
               <tr key={row.id}>
-                {/* Icicle Column 1: Category */}
-                {categoryStartSet.has(i) && (() => {
-                  const span = categoryByIndex[i];
-                  const bg = CATEGORY_BG[span.value] || "hsl(0,0%,95%)";
-                  const textColor = CATEGORY_TEXT[span.value] || "hsl(0,0%,40%)";
-                  return (
-                    <td
-                      rowSpan={span.rowSpan}
-                      className="align-top px-3 py-2"
-                      style={{ backgroundColor: bg, minHeight: span.rowSpan * ROW_HEIGHT }}
-                    >
-                      <div>
-                        <span style={{ color: textColor }} className="text-sm leading-snug whitespace-nowrap">
-                          {span.value}
-                        </span>
-                      </div>
-                    </td>
-                  );
-                })()}
+                {categoryStartSet.has(i) && (
+                  <IcicleCell span={categoryByIndex[i]} rowHeight={ROW_HEIGHT} />
+                )}
+                {talentStartSet.has(i) && (
+                  <IcicleCell span={talentByIndex[i]} rowHeight={ROW_HEIGHT} />
+                )}
+                {ratingStartSet.has(i) && (
+                  <IcicleCell span={ratingByIndex[i]} rowHeight={ROW_HEIGHT} />
+                )}
 
-                {/* Icicle Column 2: Primary Talent */}
-                {talentStartSet.has(i) && (() => {
-                  const span = talentByIndex[i];
-                  const bg = TALENT_BG[span.value] || "hsl(0,0%,95%)";
-                  const textColor = TALENT_TEXT[span.value] || "hsl(0,0%,40%)";
-                  return (
-                    <td
-                      rowSpan={span.rowSpan}
-                      className="align-top px-3 py-2"
-                      style={{ backgroundColor: bg, minHeight: span.rowSpan * ROW_HEIGHT }}
-                    >
-                      <div>
-                        <span style={{ color: textColor }} className="text-sm leading-snug whitespace-nowrap">
-                          {span.value}
-                        </span>
-                      </div>
-                    </td>
-                  );
-                })()}
-
-                {/* Icicle Column 3: Overall Rating */}
-                {ratingStartSet.has(i) && (() => {
-                  const span = ratingByIndex[i];
-                  const bg = RATING_BG[span.value] || "hsl(0,0%,95%)";
-                  const textColor = RATING_TEXT[span.value] || "hsl(0,0%,40%)";
-                  return (
-                    <td
-                      rowSpan={span.rowSpan}
-                      className="align-top px-3 py-2"
-                      style={{ backgroundColor: bg, minHeight: span.rowSpan * ROW_HEIGHT }}
-                    >
-                      <div>
-                        <span style={{ color: textColor }} className="text-sm leading-snug whitespace-nowrap">
-                          {span.value}
-                        </span>
-                      </div>
-                    </td>
-                  );
-                })()}
-
-                {/* Data columns */}
-                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] text-foreground bg-[color:var(--cell-bg)]">{row.name}</td>
-                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]"><WebsiteLink url={row.website} /></td>
-                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]"><WebsiteLink url={row.instagram} /></td>
-                <td className="px-1 py-[var(--cell-padding-y)] text-center bg-[color:var(--cell-bg)]"><YesBadge value={row.architecture} /></td>
-                <td className="px-1 py-[var(--cell-padding-y)] text-center bg-[color:var(--cell-bg)]"><YesBadge value={row.interiors} /></td>
-                <td className="px-1 py-[var(--cell-padding-y)] text-center bg-[color:var(--cell-bg)]"><YesBadge value={row.landscape} /></td>
-                <td className="px-1 py-[var(--cell-padding-y)] text-center bg-[color:var(--cell-bg)]"><YesBadge value={row.lighting} /></td>
-                <td className="px-1 py-[var(--cell-padding-y)] text-center bg-[color:var(--cell-bg)]"><YesBadge value={row.kitchens} /></td>
-                <td className="px-1 py-[var(--cell-padding-y)] text-center bg-[color:var(--cell-bg)]"><YesBadge value={row.archviz} /></td>
-                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]">
+                <td className={`${cellClass} text-foreground`}>{row.name}</td>
+                <td className={cellClass}>
+                  <WebLink url={row.website} className="max-w-[180px]" />
+                </td>
+                <td className={cellClass}>
+                  <WebLink url={row.instagram} className="max-w-[180px]" />
+                </td>
+                <td className={cellCenterClass}>
+                  <YesBadge value={row.architecture} />
+                </td>
+                <td className={cellCenterClass}>
+                  <YesBadge value={row.interiors} />
+                </td>
+                <td className={cellCenterClass}>
+                  <YesBadge value={row.landscape} />
+                </td>
+                <td className={cellCenterClass}>
+                  <YesBadge value={row.lighting} />
+                </td>
+                <td className={cellCenterClass}>
+                  <YesBadge value={row.kitchens} />
+                </td>
+                <td className={cellCenterClass}>
+                  <YesBadge value={row.archviz} />
+                </td>
+                <td className={cellClass}>
                   {row.areas ? (
                     <div className="flex gap-1 flex-wrap">
                       {row.areas.split(", ").map((area) => (
                         <span
                           key={area}
-                          className="inline-block px-1.5 py-0.5 rounded text-xs bg-zinc-100 text-zinc-600"
+                          className="inline-block px-1.5 py-0.5 rounded"
+                          style={{
+                            fontSize: "var(--font-size-xs)",
+                            backgroundColor: "var(--tag-bg)",
+                            color: "var(--tag-text)",
+                          }}
                         >
                           {area}
                         </span>
                       ))}
                     </div>
                   ) : (
-                    <span className="text-zinc-300">—</span>
+                    <Empty />
                   )}
                 </td>
-                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]">
+                <td className={cellClass}>
                   {row.notes ? (
-                    <span className="text-zinc-500 truncate block max-w-[160px]" title={row.notes}>
+                    <span
+                      className="truncate block max-w-[160px] text-muted-foreground"
+                      title={row.notes}
+                    >
                       {row.notes}
                     </span>
                   ) : (
-                    <span className="text-zinc-300">—</span>
+                    <Empty />
                   )}
                 </td>
               </tr>
