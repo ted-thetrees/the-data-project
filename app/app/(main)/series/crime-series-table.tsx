@@ -123,7 +123,12 @@ export function CrimeSeriesTable({ data }: { data: SeriesRow[] }) {
       <div className="overflow-x-auto">
         <table
           className="text-[length:var(--cell-font-size)] [&_td]:align-top"
-          style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: "var(--row-gap)" }}
+          style={{
+            tableLayout: "fixed",
+            borderCollapse: "separate",
+            borderSpacing: "var(--row-gap)",
+            width: Object.values(params.columnWidths).reduce((a, b) => a + b, 0),
+          }}
         >
           <colgroup>
             {CRIME_COLUMN_KEYS.map((key) => (

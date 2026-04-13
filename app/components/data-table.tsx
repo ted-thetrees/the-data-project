@@ -52,6 +52,10 @@ export function DataTable<T>({
     return col.width;
   };
 
+  const totalWidth = enabled
+    ? columns.reduce((sum, c) => sum + (getWidth(c) ?? 0), 0)
+    : undefined;
+
   return (
     <div className={cn("overflow-x-auto", className)}>
       {enabled && (
@@ -72,6 +76,7 @@ export function DataTable<T>({
           tableLayout: fixedLayout ? "fixed" : undefined,
           borderCollapse: "separate",
           borderSpacing: "var(--row-gap)",
+          width: totalWidth || undefined,
         }}
       >
         {columns.some((c) => c.width) && (
