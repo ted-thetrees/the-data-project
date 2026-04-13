@@ -7,6 +7,9 @@ const SOURCE_TABLES: Record<string, string> = {
   task_statuses: "task_statuses",
   crime_series_statuses: "crime_series_statuses",
   uber_projects: "uber_projects",
+  talent_categories: "talent_categories",
+  talent_types: "talent_types",
+  talent_rating_levels: "talent_rating_levels",
 };
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;

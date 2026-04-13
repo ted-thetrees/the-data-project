@@ -62,6 +62,27 @@ async function getUberProjectsForPickList(): Promise<Status[]> {
   return result.rows;
 }
 
+async function getTalentCategories(): Promise<Status[]> {
+  const result = await poolV002.query(
+    `SELECT id::text, name, COALESCE(color, '') as color FROM talent_categories ORDER BY sort_order NULLS LAST, name`
+  );
+  return result.rows;
+}
+
+async function getTalentTypes(): Promise<Status[]> {
+  const result = await poolV002.query(
+    `SELECT id::text, name, COALESCE(color, '') as color FROM talent_types ORDER BY sort_order NULLS LAST, name`
+  );
+  return result.rows;
+}
+
+async function getTalentRatingLevels(): Promise<Status[]> {
+  const result = await poolV002.query(
+    `SELECT id::text, name, COALESCE(color, '') as color FROM talent_rating_levels ORDER BY sort_order NULLS LAST, name`
+  );
+  return result.rows;
+}
+
 async function getPalettes(): Promise<PaletteForPicker[]> {
   const result = await poolV002.query(
     `SELECT id::text, name, ${COLOR_COLUMNS.join(", ")} FROM color_palettes ORDER BY created_at DESC`
@@ -167,6 +188,9 @@ export default async function PickListsPage() {
     taskStatuses,
     crimeSeriesStatuses,
     uberProjects,
+    talentCategories,
+    talentTypes,
+    talentRatingLevels,
     palettes,
   ] = await Promise.all([
     getPicklistColors(),
@@ -174,6 +198,9 @@ export default async function PickListsPage() {
     getTaskStatuses(),
     getCrimeSeriesStatuses(),
     getUberProjectsForPickList(),
+    getTalentCategories(),
+    getTalentTypes(),
+    getTalentRatingLevels(),
     getPalettes(),
   ]);
 
@@ -194,6 +221,9 @@ export default async function PickListsPage() {
           "task_statuses",
           "crime_series_statuses",
           "uber_projects",
+          "talent_categories",
+          "talent_types",
+          "talent_rating_levels",
           "color_palettes",
         ]}
       />
@@ -226,6 +256,30 @@ export default async function PickListsPage() {
           <DataTable
             columns={statusColumns("uber_projects", palettes)}
             rows={uberProjects}
+            rowKey={(r) => r.id}
+          />
+        </PickListSection>
+
+        <PickListSection title="Talent Categories" usedBy="Talent, Architecture">
+          <DataTable
+            columns={statusColumns("talent_categories", palettes)}
+            rows={talentCategories}
+            rowKey={(r) => r.id}
+          />
+        </PickListSection>
+
+        <PickListSection title="Talent Types" usedBy="Talent, Architecture">
+          <DataTable
+            columns={statusColumns("talent_types", palettes)}
+            rows={talentTypes}
+            rowKey={(r) => r.id}
+          />
+        </PickListSection>
+
+        <PickListSection title="Talent Rating Levels" usedBy="Talent, Architecture">
+          <DataTable
+            columns={statusColumns("talent_rating_levels", palettes)}
+            rows={talentRatingLevels}
             rowKey={(r) => r.id}
           />
         </PickListSection>
