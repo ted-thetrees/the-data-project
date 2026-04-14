@@ -61,3 +61,38 @@ export async function createTalent(
   );
   revalidateTalentPages();
 }
+
+export async function addTalentArea(talentId: string, areaId: string) {
+  await poolV002.query(
+    `INSERT INTO talent_area_links (talent_id, area_id)
+     VALUES ($1, $2)
+     ON CONFLICT DO NOTHING`,
+    [talentId, areaId],
+  );
+  revalidateTalentPages();
+}
+
+export async function removeTalentArea(talentId: string, areaId: string) {
+  await poolV002.query(
+    `DELETE FROM talent_area_links
+     WHERE talent_id = $1 AND area_id = $2`,
+    [talentId, areaId],
+  );
+  revalidateTalentPages();
+}
+
+// Creates a new "Untitled" talent already tagged with `areaId`, atomically.
+// Used by the "+ Add talent" row inside a group when the table is grouped by
+// area of expertise — otherwise the new row would land in "Uncategorized"
+// instead of the group the user clicked into.
+export async function createTalentInArea(areaId: string) {
+  await poolV002.query(
+    `WITH new_talent AS (
+       INSERT INTO talent (name) VALUES ('Untitled') RETURNING id
+     )
+     INSERT INTO talent_area_links (talent_id, area_id)
+     SELECT id, $1 FROM new_talent`,
+    [areaId],
+  );
+  revalidateTalentPages();
+}

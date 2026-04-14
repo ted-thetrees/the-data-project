@@ -33,9 +33,11 @@ interface TalentRow {
   instagram: string | null;
   notes: string | null;
   // Full tag list for this record, shared across every expanded instance so
-  // the Areas column can render the complete set on any row.
+  // the Areas column can render the complete set on any row. `areas` is the
+  // comma-joined name string (back-compat for the existing read-only Areas
+  // column); `areas_all` carries id+name for MultiPillSelect.
   areas: string | null;
-  areas_all: string[];
+  areas_all: Array<{ id: string; name: string }>;
   // Group instance identity. Non-null only when expandOn === "area".
   area_id: string | null;
   area_name: string | null;
@@ -55,7 +57,16 @@ async function getTalent(
              tt.color as talent_color,
              trl.color as rating_color,
              string_agg(DISTINCT ta.name, ', ') as areas,
-             array_agg(DISTINCT ta.name) FILTER (WHERE ta.id IS NOT NULL) as areas_all
+             COALESCE(
+               (SELECT json_agg(
+                         json_build_object('id', sta.id::text, 'name', sta.name)
+                         ORDER BY sta.name
+                       )
+                FROM talent_area_links stal
+                JOIN talent_areas sta ON sta.id = stal.area_id
+                WHERE stal.talent_id = t.id),
+               '[]'::json
+             ) as areas_all
       FROM talent t
       LEFT JOIN talent_area_links tal ON t.id = tal.talent_id
       LEFT JOIN talent_areas ta ON tal.area_id = ta.id
@@ -102,8 +113,8 @@ async function getTalent(
            dt.kitchens, dt.archviz, dt.primary_talent, dt.primary_talent_category,
            dt.overall_rating, dt.website, dt.instagram, dt.notes,
            dt.category_color, dt.talent_color, dt.rating_color,
-           ta.id   AS area_id,
-           ta.name AS area_name
+           ta.id::text AS area_id,
+           ta.name     AS area_name
     FROM distinct_talent dt
     LEFT JOIN talent_area_links tal ON tal.talent_id = dt.id
     LEFT JOIN talent_areas      ta  ON ta.id = tal.area_id
@@ -114,11 +125,14 @@ async function getTalent(
              ta.name NULLS FIRST
   `);
 
-  const areasByRecord = new Map<string, string[]>();
+  // Bucket the expanded rows by record_id and build the full tag list once
+  // per record, then broadcast it to each rendered instance. JS-only; one
+  // extra pass over the result rows, no extra round-trip.
+  const areasByRecord = new Map<string, Array<{ id: string; name: string }>>();
   for (const r of result.rows) {
     if (!areasByRecord.has(r.id)) areasByRecord.set(r.id, []);
-    if (r.area_name != null) {
-      areasByRecord.get(r.id)!.push(r.area_name);
+    if (r.area_id != null && r.area_name != null) {
+      areasByRecord.get(r.id)!.push({ id: r.area_id, name: r.area_name });
     }
   }
 
@@ -128,7 +142,7 @@ async function getTalent(
       ...r,
       record_id: r.id,
       display_id: makeDisplayId(r.id, r.area_id),
-      areas: areas_all.length > 0 ? areas_all.join(", ") : null,
+      areas: areas_all.length > 0 ? areas_all.map((a) => a.name).join(", ") : null,
       areas_all,
     };
   });
@@ -143,14 +157,39 @@ async function getLookupOptions(table: string): Promise<PillOption[]> {
   return result.rows;
 }
 
-export default async function TalentPage() {
-  const [{ rows: talent }, categoryOptions, typeOptions, ratingOptions] =
-    await Promise.all([
-      getTalent(),
-      getLookupOptions("talent_categories"),
-      getLookupOptions("talent_types"),
-      getLookupOptions("talent_rating_levels"),
-    ]);
+// talent_areas has uuid ids, no color, no sort_order — different shape from
+// the other lookup tables so it needs its own query.
+async function getAreaOptions(): Promise<PillOption[]> {
+  const result = await poolV002.query(
+    `SELECT id::text AS id, name, NULL::text AS color FROM talent_areas ORDER BY name`,
+  );
+  return result.rows;
+}
+
+export default async function TalentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ groupBy?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const rawGroupBy = Array.isArray(params.groupBy)
+    ? params.groupBy[0]
+    : params.groupBy;
+  const groupBy: "category" | "area" = rawGroupBy === "area" ? "area" : "category";
+
+  const [
+    { rows: talent, recordCount },
+    categoryOptions,
+    typeOptions,
+    ratingOptions,
+    areaOptions,
+  ] = await Promise.all([
+    getTalent({ expandOn: groupBy === "area" ? "area" : null }),
+    getLookupOptions("talent_categories"),
+    getLookupOptions("talent_types"),
+    getLookupOptions("talent_rating_levels"),
+    getAreaOptions(),
+  ]);
   return (
     <>
       <Realtime
@@ -165,9 +204,12 @@ export default async function TalentPage() {
       />
       <TalentTable
         data={talent}
+        recordCount={recordCount}
+        groupBy={groupBy}
         categoryOptions={categoryOptions}
         typeOptions={typeOptions}
         ratingOptions={ratingOptions}
+        areaOptions={areaOptions}
       />
     </>
   );
