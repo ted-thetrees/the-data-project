@@ -72,12 +72,14 @@ async function getTalent(
     return { rows, recordCount: rows.length };
   }
 
-  // expandOn === "area": two-stage CTE. Inner CTE pins the distinct talent set
-  // and its sort order; outer LEFT JOIN expands each talent once per tag, or
-  // once with area_id = null when the talent has no tags. LEFT JOIN is the
-  // "Uncategorized" contract — zero-area talents are never silently dropped.
-  // Outer ORDER BY puts the expansion key LAST so category/talent/rating order
-  // remains stable and computeGroupSpans() stays correct.
+  // expandOn === "area": two-stage CTE. Inner CTE pins the distinct talent set;
+  // outer LEFT JOIN expands each talent once per tag, or once with area_id =
+  // null when the talent has no tags. LEFT JOIN is the "Uncategorized"
+  // contract — zero-area talents are never silently dropped. Outer ORDER BY
+  // puts the area key FIRST: area is the outermost icicle group in this mode,
+  // so adjacent rows need to share an area for computeGroupSpans() to merge
+  // them into a single span. ta.sort_order honors whatever order the user set
+  // on the pick-list page; Uncategorized (NULLs) sorts to the end.
   const result = await poolV002.query(`
     WITH distinct_talent AS (
       SELECT t.id, t.name, t.primary_talent_category,
@@ -95,10 +97,11 @@ async function getTalent(
     FROM distinct_talent dt
     LEFT JOIN talent_area_links tal ON tal.talent_id = dt.id
     LEFT JOIN talent_areas      ta  ON ta.id = tal.area_id
-    ORDER BY dt._cat_sort NULLS LAST,
+    ORDER BY ta.sort_order NULLS LAST,
+             ta.name NULLS LAST,
+             dt._cat_sort NULLS LAST,
              dt._rating_sort NULLS LAST,
-             dt.name,
-             ta.name NULLS FIRST
+             dt.name
   `);
 
   // Bucket the expanded rows by record_id and build the full tag list once
