@@ -1,5 +1,6 @@
 "use client";
 
+import { useTransition } from "react";
 import { cn } from "@/lib/utils";
 import { useTableViews } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
@@ -26,6 +27,13 @@ interface DataTableProps<T> {
    */
   storageKey?: string;
   viewSwitcherFootnote?: React.ReactNode;
+  /**
+   * When provided, renders a faded dashed `+ Add` row at the bottom of the table.
+   * Click the row to invoke the handler. The standard pattern is to insert a
+   * placeholder record and let the user edit it via inline cell editors.
+   */
+  onAddRow?: () => void | Promise<void>;
+  addRowLabel?: string;
 }
 
 export function DataTable<T>({
@@ -36,7 +44,10 @@ export function DataTable<T>({
   fixedLayout,
   storageKey,
   viewSwitcherFootnote,
+  onAddRow,
+  addRowLabel = "+ Add row",
 }: DataTableProps<T>) {
+  const [addPending, startAddTransition] = useTransition();
   const defaultWidths: Record<string, number> = {};
   for (const col of columns) {
     if (col.width !== undefined) defaultWidths[col.key] = col.width;
@@ -151,6 +162,20 @@ export function DataTable<T>({
               </tr>
             );
           })}
+          {onAddRow && (
+            <tr>
+              <td
+                colSpan={columns.length}
+                className="themed-new-row-cell"
+                onClick={() => {
+                  if (!addPending) startAddTransition(() => onAddRow());
+                }}
+                title="Add a new row"
+              >
+                {addPending ? "Adding…" : addRowLabel}
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>

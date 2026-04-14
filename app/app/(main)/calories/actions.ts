@@ -14,36 +14,40 @@ function toTitleCase(s: string) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export async function addLogEntry(formData: FormData) {
-  const rawName = String(formData.get("name") ?? "").trim();
-  const rawCalories = String(formData.get("calories") ?? "").trim();
-  if (!rawName) return;
-
-  const name = toTitleCase(rawName);
-
-  const existing = await poolV002.query<{ id: string; calories: number }>(
-    `SELECT id::text, calories FROM calorie_foods WHERE lower(name) = lower($1) LIMIT 1`,
-    [name],
+export async function createLogEntry() {
+  await poolV002.query(
+    `INSERT INTO calorie_log (item, calories) VALUES ('Untitled', 0)`,
   );
+  revalidate();
+}
 
-  let foodId: string | null = null;
-  let calories: number;
-
-  if (existing.rows[0]) {
-    foodId = existing.rows[0].id;
-    calories = rawCalories ? Number(rawCalories) : existing.rows[0].calories;
+export async function updateLogItem(id: string, rawItem: string) {
+  const item = toTitleCase(rawItem || "Untitled");
+  const matched = await poolV002.query<{ id: string; calories: number }>(
+    `SELECT id::text, calories FROM calorie_foods WHERE lower(name) = lower($1) LIMIT 1`,
+    [item],
+  );
+  if (matched.rows[0]) {
+    await poolV002.query(
+      `UPDATE calorie_log SET item = $1, food_id = $2, calories = $3 WHERE id = $4`,
+      [item, matched.rows[0].id, matched.rows[0].calories, id],
+    );
   } else {
-    if (!rawCalories) throw new Error("Calories required for a new food");
-    calories = Number(rawCalories);
+    await poolV002.query(
+      `UPDATE calorie_log SET item = $1, food_id = NULL WHERE id = $2`,
+      [item, id],
+    );
   }
+  revalidate();
+}
 
+export async function updateLogCalories(id: string, calories: number) {
   if (!Number.isFinite(calories) || calories < 0) {
     throw new Error("Invalid calories");
   }
-
   await poolV002.query(
-    `INSERT INTO calorie_log (food_id, item, calories) VALUES ($1, $2, $3)`,
-    [foodId, name, Math.round(calories)],
+    `UPDATE calorie_log SET calories = $1 WHERE id = $2`,
+    [Math.round(calories), id],
   );
   revalidate();
 }
@@ -53,21 +57,21 @@ export async function deleteLogEntry(id: string) {
   revalidate();
 }
 
-export async function addFood(formData: FormData) {
-  const rawName = String(formData.get("name") ?? "").trim();
-  const rawCalories = String(formData.get("calories") ?? "").trim();
-  if (!rawName || !rawCalories) return;
-
-  const name = toTitleCase(rawName);
-  const calories = Number(rawCalories);
-  if (!Number.isFinite(calories) || calories < 0) {
-    throw new Error("Invalid calories");
-  }
-
+export async function createFood() {
+  // Use a UUID-suffixed placeholder to satisfy the UNIQUE constraint without
+  // race conditions. The user renames it inline immediately after creation.
   await poolV002.query(
-    `INSERT INTO calorie_foods (name, calories) VALUES ($1, $2)
-     ON CONFLICT (name) DO UPDATE SET calories = EXCLUDED.calories`,
-    [name, Math.round(calories)],
+    `INSERT INTO calorie_foods (name, calories)
+     VALUES ('Untitled ' || substring(gen_random_uuid()::text, 1, 4), 0)`,
+  );
+  revalidate();
+}
+
+export async function updateFoodName(id: string, rawName: string) {
+  const name = toTitleCase(rawName || "Untitled");
+  await poolV002.query(
+    `UPDATE calorie_foods SET name = $1 WHERE id = $2`,
+    [name, id],
   );
   revalidate();
 }

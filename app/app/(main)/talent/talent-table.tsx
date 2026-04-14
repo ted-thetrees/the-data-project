@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { Fragment, useMemo, useTransition } from "react";
 import { PageShell } from "@/components/page-shell";
 import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
 import { Pill, PillSelect, type PillOption } from "@/components/pill";
 import { Tag } from "@/components/tag";
+import { EditableText } from "@/components/editable-text";
 import { useTableViews } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
@@ -13,6 +14,8 @@ import {
   updateTalentCategory,
   updateTalentPrimaryTalent,
   updateTalentOverallRating,
+  updateTalentName,
+  createTalent,
 } from "./actions";
 import "./talent.css";
 
@@ -112,14 +115,46 @@ function computeGroupSpans(
   return spans;
 }
 
-function IcicleCell({ span }: { span: GroupSpan }) {
+function IcicleCell({ span, extraSpan = 0 }: { span: GroupSpan; extraSpan?: number }) {
   return (
     <td
-      rowSpan={span.rowSpan}
+      rowSpan={span.rowSpan + extraSpan}
       className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]"
     >
       <Pill color={span.color}>{span.value}</Pill>
     </td>
+  );
+}
+
+function AddTalentRow({
+  category,
+  primaryTalent,
+  rating,
+  colSpan,
+}: {
+  category: string | null;
+  primaryTalent: string | null;
+  rating: string | null;
+  colSpan: number;
+}) {
+  const [pending, startTransition] = useTransition();
+  return (
+    <tr>
+      <td
+        colSpan={colSpan}
+        className="themed-new-row-cell"
+        onClick={() => {
+          if (!pending) {
+            startTransition(() =>
+              createTalent(category, primaryTalent, rating),
+            );
+          }
+        }}
+        title="Add talent in this group"
+      >
+        {pending ? "Adding…" : "+ Add talent"}
+      </td>
+    </tr>
   );
 }
 
@@ -192,6 +227,27 @@ export function TalentTable({
   const ratingByIndex = Object.fromEntries(
     ratingSpans.map((s) => [s.startIndex, s])
   );
+
+  // Each rating fragment gets +1 row for the dashed add-row.
+  // The category and primary_talent icicles need to grow by the number of
+  // rating fragments that fall within their span (one extra row per fragment).
+  const ratingEndIndex = (start: number, span: number) => start + span - 1;
+  const ratingEndToSpan = Object.fromEntries(
+    ratingSpans.map((s) => [ratingEndIndex(s.startIndex, s.rowSpan), s]),
+  );
+  const ratingEndSet = new Set(
+    ratingSpans.map((s) => ratingEndIndex(s.startIndex, s.rowSpan)),
+  );
+
+  // Map: for any data row index i, how many rating fragments end at i
+  // within a given category/talent span (used to bump higher-level icicle rowSpans)
+  function ratingBumpsInsideSpan(start: number, length: number): number {
+    let n = 0;
+    for (const span of ratingSpans) {
+      if (span.startIndex >= start && span.startIndex < start + length) n++;
+    }
+    return n;
+  }
 
   const {
     views,
@@ -277,90 +333,113 @@ export function TalentTable({
                 style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
               />
             </tr>
-            {sorted.map((row, i) => (
-              <tr key={row.id}>
-                {categoryStartSet.has(i) && (
-                  <IcicleCell span={categoryByIndex[i]} />
-                )}
-                {talentStartSet.has(i) && (
-                  <IcicleCell span={talentByIndex[i]} />
-                )}
-                {ratingStartSet.has(i) && (
-                  <IcicleCell span={ratingByIndex[i]} />
-                )}
+            {sorted.map((row, i) => {
+              const isRatingEnd = ratingEndSet.has(i);
+              const ratingSpan = isRatingEnd ? ratingEndToSpan[i] : null;
+              return (
+                <Fragment key={row.id}>
+                  <tr>
+                    {categoryStartSet.has(i) && (() => {
+                      const span = categoryByIndex[i];
+                      const extra = ratingBumpsInsideSpan(span.startIndex, span.rowSpan);
+                      return <IcicleCell span={span} extraSpan={extra} />;
+                    })()}
+                    {talentStartSet.has(i) && (() => {
+                      const span = talentByIndex[i];
+                      const extra = ratingBumpsInsideSpan(span.startIndex, span.rowSpan);
+                      return <IcicleCell span={span} extraSpan={extra} />;
+                    })()}
+                    {ratingStartSet.has(i) && (
+                      <IcicleCell span={ratingByIndex[i]} extraSpan={1} />
+                    )}
 
-                <td className={cellClass}>
-                  <PillSelect
-                    value={row.primary_talent_category ?? ""}
-                    options={categoryOptions}
-                    onSave={(v) => updateTalentCategory(row.id, v)}
-                  />
-                </td>
-                <td className={cellClass}>
-                  <PillSelect
-                    value={row.primary_talent ?? ""}
-                    options={typeOptions}
-                    onSave={(v) => updateTalentPrimaryTalent(row.id, v)}
-                  />
-                </td>
-                <td className={cellClass}>
-                  <PillSelect
-                    value={row.overall_rating ?? ""}
-                    options={ratingOptions}
-                    onSave={(v) => updateTalentOverallRating(row.id, v)}
-                  />
-                </td>
+                    <td className={cellClass}>
+                      <PillSelect
+                        value={row.primary_talent_category ?? ""}
+                        options={categoryOptions}
+                        onSave={(v) => updateTalentCategory(row.id, v)}
+                      />
+                    </td>
+                    <td className={cellClass}>
+                      <PillSelect
+                        value={row.primary_talent ?? ""}
+                        options={typeOptions}
+                        onSave={(v) => updateTalentPrimaryTalent(row.id, v)}
+                      />
+                    </td>
+                    <td className={cellClass}>
+                      <PillSelect
+                        value={row.overall_rating ?? ""}
+                        options={ratingOptions}
+                        onSave={(v) => updateTalentOverallRating(row.id, v)}
+                      />
+                    </td>
 
-                <td className={`${cellClass} text-foreground`}>{row.name}</td>
-                <td className={cellClass}>
-                  <WebLink url={row.website} className="max-w-[180px]" />
-                </td>
-                <td className={cellClass}>
-                  <WebLink url={row.instagram} className="max-w-[180px]" />
-                </td>
-                <td className={cellCenterClass}>
-                  <YesBadge value={row.architecture} />
-                </td>
-                <td className={cellCenterClass}>
-                  <YesBadge value={row.interiors} />
-                </td>
-                <td className={cellCenterClass}>
-                  <YesBadge value={row.landscape} />
-                </td>
-                <td className={cellCenterClass}>
-                  <YesBadge value={row.lighting} />
-                </td>
-                <td className={cellCenterClass}>
-                  <YesBadge value={row.kitchens} />
-                </td>
-                <td className={cellCenterClass}>
-                  <YesBadge value={row.archviz} />
-                </td>
-                <td className={cellClass}>
-                  {row.areas ? (
-                    <div className="flex gap-1 flex-wrap">
-                      {row.areas.split(", ").map((area) => (
-                        <Tag key={area}>{area}</Tag>
-                      ))}
-                    </div>
-                  ) : (
-                    <Empty />
+                    <td className={`${cellClass} text-foreground`}>
+                      <EditableText
+                        value={row.name}
+                        onSave={(v) => updateTalentName(row.id, v)}
+                      />
+                    </td>
+                    <td className={cellClass}>
+                      <WebLink url={row.website} className="max-w-[180px]" />
+                    </td>
+                    <td className={cellClass}>
+                      <WebLink url={row.instagram} className="max-w-[180px]" />
+                    </td>
+                    <td className={cellCenterClass}>
+                      <YesBadge value={row.architecture} />
+                    </td>
+                    <td className={cellCenterClass}>
+                      <YesBadge value={row.interiors} />
+                    </td>
+                    <td className={cellCenterClass}>
+                      <YesBadge value={row.landscape} />
+                    </td>
+                    <td className={cellCenterClass}>
+                      <YesBadge value={row.lighting} />
+                    </td>
+                    <td className={cellCenterClass}>
+                      <YesBadge value={row.kitchens} />
+                    </td>
+                    <td className={cellCenterClass}>
+                      <YesBadge value={row.archviz} />
+                    </td>
+                    <td className={cellClass}>
+                      {row.areas ? (
+                        <div className="flex gap-1 flex-wrap">
+                          {row.areas.split(", ").map((area) => (
+                            <Tag key={area}>{area}</Tag>
+                          ))}
+                        </div>
+                      ) : (
+                        <Empty />
+                      )}
+                    </td>
+                    <td className={cellClass}>
+                      {row.notes ? (
+                        <span
+                          className="truncate block max-w-[160px] text-muted-foreground"
+                          title={row.notes}
+                        >
+                          {row.notes}
+                        </span>
+                      ) : (
+                        <Empty />
+                      )}
+                    </td>
+                  </tr>
+                  {isRatingEnd && ratingSpan && (
+                    <AddTalentRow
+                      category={row.primary_talent_category}
+                      primaryTalent={row.primary_talent}
+                      rating={row.overall_rating}
+                      colSpan={TALENT_COLUMN_KEYS.length - 3}
+                    />
                   )}
-                </td>
-                <td className={cellClass}>
-                  {row.notes ? (
-                    <span
-                      className="truncate block max-w-[160px] text-muted-foreground"
-                      title={row.notes}
-                    >
-                      {row.notes}
-                    </span>
-                  ) : (
-                    <Empty />
-                  )}
-                </td>
-              </tr>
-            ))}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>

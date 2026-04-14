@@ -1,11 +1,16 @@
 "use client";
 
-import { useId, useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { DataTable, type Column } from "@/components/data-table";
 import { Subtitle } from "@/components/subtitle";
+import { EditableText, EditableNumber } from "@/components/editable-text";
 import {
-  addLogEntry,
-  addFood,
+  createLogEntry,
+  createFood,
+  updateLogItem,
+  updateLogCalories,
+  updateFoodName,
+  updateFoodCalories,
   deleteLogEntry,
   deleteFood,
 } from "./actions";
@@ -39,13 +44,28 @@ export function CaloriesClient({
   const over = remaining < 0;
 
   const logColumns: Column<LogRow>[] = [
-    { key: "item", header: "Item", width: 260 },
+    {
+      key: "item",
+      header: "Item",
+      width: 260,
+      render: (row) => (
+        <EditableText
+          value={row.item}
+          onSave={(v) => updateLogItem(row.id, v)}
+        />
+      ),
+    },
     {
       key: "calories",
       header: "Calories",
       width: 100,
       align: "right",
-      render: (row) => row.calories.toLocaleString(),
+      render: (row) => (
+        <EditableNumber
+          value={row.calories}
+          onSave={(v) => updateLogCalories(row.id, v)}
+        />
+      ),
     },
     {
       key: "actions",
@@ -56,13 +76,28 @@ export function CaloriesClient({
   ];
 
   const foodColumns: Column<FoodRow>[] = [
-    { key: "name", header: "Food", width: 260 },
+    {
+      key: "name",
+      header: "Food",
+      width: 260,
+      render: (row) => (
+        <EditableText
+          value={row.name}
+          onSave={(v) => updateFoodName(row.id, v)}
+        />
+      ),
+    },
     {
       key: "calories",
       header: "Calories",
       width: 100,
       align: "right",
-      render: (row) => row.calories.toLocaleString(),
+      render: (row) => (
+        <EditableNumber
+          value={row.calories}
+          onSave={(v) => updateFoodCalories(row.id, v)}
+        />
+      ),
     },
     {
       key: "actions",
@@ -81,9 +116,8 @@ export function CaloriesClient({
       <section>
         <h2 className="text-lg font-semibold mb-1">Today&apos;s Log</h2>
         <Subtitle>
-          Enter a saved food name to auto-use its calories, or add a new item with a custom value.
+          Click any cell to edit. Type a saved food name to auto-fill its calories.
         </Subtitle>
-        <AddLogForm foods={foods} />
         <div className="mt-4">
           <DataTable
             columns={logColumns}
@@ -91,14 +125,15 @@ export function CaloriesClient({
             rowKey={(r) => r.id}
             fixedLayout
             storageKey="calories:log"
+            onAddRow={createLogEntry}
+            addRowLabel="+ Add entry"
           />
         </div>
       </section>
 
       <section>
         <h2 className="text-lg font-semibold mb-1">Custom Foods</h2>
-        <Subtitle>Saved foods with fixed calorie values.</Subtitle>
-        <AddFoodForm />
+        <Subtitle>Saved foods with fixed calorie values. Click any cell to edit.</Subtitle>
         <div className="mt-4">
           <DataTable
             columns={foodColumns}
@@ -106,6 +141,8 @@ export function CaloriesClient({
             rowKey={(r) => r.id}
             fixedLayout
             storageKey="calories:foods"
+            onAddRow={createFood}
+            addRowLabel="+ Add food"
           />
         </div>
       </section>
@@ -152,99 +189,6 @@ function TotalDisplay({
         </div>
       </div>
     </div>
-  );
-}
-
-function AddLogForm({ foods }: { foods: FoodRow[] }) {
-  const datalistId = useId();
-  const formRef = useRef<HTMLFormElement>(null);
-  const nameRef = useRef<HTMLInputElement>(null);
-  const [pending, startTransition] = useTransition();
-
-  return (
-    <form
-      ref={formRef}
-      action={(formData) => {
-        startTransition(async () => {
-          await addLogEntry(formData);
-          formRef.current?.reset();
-          nameRef.current?.focus();
-        });
-      }}
-      className="flex gap-2 items-center"
-    >
-      <input
-        ref={nameRef}
-        name="name"
-        list={datalistId}
-        placeholder="Food"
-        autoComplete="off"
-        required
-        className="flex-1 max-w-[320px] h-9 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--card)] px-3 text-[length:var(--font-size-base)] outline-none focus:border-[color:var(--ring)]"
-      />
-      <datalist id={datalistId}>
-        {foods.map((f) => (
-          <option key={f.id} value={f.name}>
-            {f.calories} cal
-          </option>
-        ))}
-      </datalist>
-      <input
-        name="calories"
-        type="number"
-        min="0"
-        placeholder="Calories"
-        className="w-32 h-9 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--card)] px-3 text-[length:var(--font-size-base)] outline-none focus:border-[color:var(--ring)]"
-      />
-      <button
-        type="submit"
-        disabled={pending}
-        className="themed-button themed-button-success"
-      >
-        {pending ? "Adding…" : "Add"}
-      </button>
-    </form>
-  );
-}
-
-function AddFoodForm() {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [pending, startTransition] = useTransition();
-
-  return (
-    <form
-      ref={formRef}
-      action={(formData) => {
-        startTransition(async () => {
-          await addFood(formData);
-          formRef.current?.reset();
-        });
-      }}
-      className="flex gap-2 items-center"
-    >
-      <input
-        name="name"
-        placeholder="Food name"
-        autoComplete="off"
-        required
-        className="flex-1 max-w-[320px] h-9 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--card)] px-3 text-[length:var(--font-size-base)] outline-none focus:border-[color:var(--ring)]"
-      />
-      <input
-        name="calories"
-        type="number"
-        min="0"
-        required
-        placeholder="Calories"
-        className="w-32 h-9 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--card)] px-3 text-[length:var(--font-size-base)] outline-none focus:border-[color:var(--ring)]"
-      />
-      <button
-        type="submit"
-        disabled={pending}
-        className="themed-button"
-      >
-        {pending ? "Saving…" : "Save"}
-      </button>
-    </form>
   );
 }
 

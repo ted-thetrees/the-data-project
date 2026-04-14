@@ -40,3 +40,24 @@ export async function updateTalentOverallRating(
   );
   revalidateTalentPages();
 }
+
+export async function updateTalentName(talentId: string, name: string) {
+  await poolV002.query(
+    `UPDATE talent SET name = $1 WHERE id = $2`,
+    [name || "Untitled", talentId],
+  );
+  revalidateTalentPages();
+}
+
+export async function createTalent(
+  category: string | null,
+  primaryTalent: string | null,
+  rating: string | null,
+) {
+  await poolV002.query(
+    `INSERT INTO talent (name, primary_talent_category, primary_talent, overall_rating)
+     VALUES ('Untitled', $1, $2, $3)`,
+    [category, primaryTalent, rating],
+  );
+  revalidateTalentPages();
+}

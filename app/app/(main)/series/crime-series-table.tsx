@@ -1,16 +1,21 @@
 "use client";
 
-import { useMemo } from "react";
+import { Fragment, useMemo, useTransition } from "react";
 import { PageShell } from "@/components/page-shell";
 import type { SeriesRow } from "./page";
 import { Pill, PillSelect, type PillOption } from "@/components/pill";
 import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
 import { Subtitle } from "@/components/subtitle";
+import { EditableText } from "@/components/editable-text";
 import { useTableViews } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
-import { updateCrimeSeriesStatus } from "./actions";
+import {
+  updateCrimeSeriesStatus,
+  updateCrimeSeriesTitle,
+  createCrimeSeries,
+} from "./actions";
 
 const CRIME_COLUMN_KEYS = [
   "status",
@@ -35,6 +40,7 @@ interface GroupSpan {
   rowSpan: number;
   startIndex: number;
   color?: string;
+  statusId?: string | null;
 }
 
 function computeGroupSpans(
@@ -54,6 +60,7 @@ function computeGroupSpans(
         rowSpan: 1,
         startIndex: i,
         color: colorAccessor?.(row),
+        statusId: row.status_id,
       };
     } else {
       current.rowSpan++;
@@ -61,6 +68,30 @@ function computeGroupSpans(
   });
   if (current) spans.push(current);
   return spans;
+}
+
+function AddSeriesRow({
+  statusId,
+  colSpan,
+}: {
+  statusId: string | null;
+  colSpan: number;
+}) {
+  const [pending, startTransition] = useTransition();
+  return (
+    <tr>
+      <td
+        colSpan={colSpan}
+        className="themed-new-row-cell"
+        onClick={() => {
+          if (!pending) startTransition(() => createCrimeSeries(statusId));
+        }}
+        title="Add a new series in this status"
+      >
+        {pending ? "Adding…" : "+ Add series"}
+      </td>
+    </tr>
+  );
 }
 
 function youtubeEmbedUrl(url: string): string | null {
@@ -98,6 +129,12 @@ export function CrimeSeriesTable({
   const statusStartSet = new Set(statusSpans.map((s) => s.startIndex));
   const statusByIndex = Object.fromEntries(
     statusSpans.map((s) => [s.startIndex, s]),
+  );
+  const statusEndToSpan = Object.fromEntries(
+    statusSpans.map((s) => [s.startIndex + s.rowSpan - 1, s]),
+  );
+  const statusEndSet = new Set(
+    statusSpans.map((s) => s.startIndex + s.rowSpan - 1),
   );
 
   const {
@@ -175,53 +212,64 @@ export function CrimeSeriesTable({
                 ? youtubeEmbedUrl(row.youtube_trailer)
                 : null;
               return (
-                <tr key={row.id}>
-                  {statusStartSet.has(i) &&
-                    (() => {
-                      const span = statusByIndex[i];
-                      return (
-                        <td
-                          rowSpan={span.rowSpan}
-                          className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]"
-                        >
-                          <Pill color={span.color}>{span.value}</Pill>
-                        </td>
-                      );
-                    })()}
-                  <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] align-top">
-                    <PillSelect
-                      value={row.status_id ?? ""}
-                      options={statusOptions}
-                      onSave={(statusId) =>
-                        updateCrimeSeriesStatus(row.id, statusId)
-                      }
-                    />
-                  </td>
-                  <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] font-medium align-top">
-                    {row.title}
-                  </td>
-                  <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] align-top">
-                    {row.network || <Empty />}
-                  </td>
-                  <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]">
-                    {embedUrl ? (
-                      <iframe
-                        src={embedUrl}
-                        width="440"
-                        height="248"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        className="rounded-md"
-                        style={{ border: "none" }}
+                <Fragment key={row.id}>
+                  <tr>
+                    {statusStartSet.has(i) &&
+                      (() => {
+                        const span = statusByIndex[i];
+                        return (
+                          <td
+                            rowSpan={span.rowSpan + 1}
+                            className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]"
+                          >
+                            <Pill color={span.color}>{span.value}</Pill>
+                          </td>
+                        );
+                      })()}
+                    <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] align-top">
+                      <PillSelect
+                        value={row.status_id ?? ""}
+                        options={statusOptions}
+                        onSave={(statusId) =>
+                          updateCrimeSeriesStatus(row.id, statusId)
+                        }
                       />
-                    ) : (
-                      <WebLink url={row.youtube_trailer} />
-                    )}
-                  </td>
-                  <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] align-top">
-                    {row.release_date || <Empty />}
-                  </td>
-                </tr>
+                    </td>
+                    <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] font-medium align-top">
+                      <EditableText
+                        value={row.title}
+                        onSave={(v) => updateCrimeSeriesTitle(row.id, v)}
+                      />
+                    </td>
+                    <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] align-top">
+                      {row.network || <Empty />}
+                    </td>
+                    <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]">
+                      {embedUrl ? (
+                        <iframe
+                          src={embedUrl}
+                          width="440"
+                          height="248"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          className="rounded-md"
+                          style={{ border: "none" }}
+                        />
+                      ) : (
+                        <WebLink url={row.youtube_trailer} />
+                      )}
+                    </td>
+                    <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] align-top">
+                      {row.release_date || <Empty />}
+                    </td>
+                  </tr>
+                  {statusEndSet.has(i) && (
+                    <AddSeriesRow
+                      statusId={statusEndToSpan[i].statusId ?? null}
+                      colSpan={CRIME_COLUMN_KEYS.length - 1}
+                    />
+                  )}
+                </Fragment>
               );
             })}
           </tbody>
