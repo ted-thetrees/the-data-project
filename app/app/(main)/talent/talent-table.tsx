@@ -26,24 +26,19 @@ import {
 } from "./actions";
 import "./talent.css";
 
-// Columns that exist in both grouping modes. The mode-specific keys are
-// prepended below — category mode gets the three-level icicles, area mode
-// gets the single area icicle.
+// Default mode is ungrouped — same column set whether you're in the default
+// view or grouping by area. Area mode prepends an icicle column.
 const TALENT_COMMON_COLUMN_KEYS = [
+  "category",
+  "overall_rating",
   "resource",
   "website",
   "instagram",
   "areas",
-  "category_edit",
-  "overall_rating_edit",
   "notes",
 ] as const;
 
-const TALENT_CATEGORY_MODE_KEYS = [
-  "category",
-  "overall_rating",
-  ...TALENT_COMMON_COLUMN_KEYS,
-] as const;
+const TALENT_DEFAULT_MODE_KEYS = TALENT_COMMON_COLUMN_KEYS;
 
 const TALENT_AREA_MODE_KEYS = [
   "area",
@@ -51,11 +46,9 @@ const TALENT_AREA_MODE_KEYS = [
 ] as const;
 
 const TALENT_DEFAULT_WIDTHS: Record<string, number> = {
-  category: 120,
-  overall_rating: 175,
+  category: 140,
+  overall_rating: 180,
   area: 140,
-  category_edit: 140,
-  overall_rating_edit: 180,
   resource: 220,
   website: 180,
   instagram: 100,
@@ -70,8 +63,6 @@ interface TalentRow {
   name: string;
   primary_talent_category: string | null;
   overall_rating: string | null;
-  category_color: string | null;
-  rating_color: string | null;
   website: string | null;
   instagram: string | null;
   notes: string | null;
@@ -144,7 +135,7 @@ function GroupByControl({ current }: { current: "category" | "area" }) {
     label: string;
     href: string;
   }> = [
-    { key: "category", label: "Category tree", href: "/talent" },
+    { key: "category", label: "No grouping", href: "/talent" },
     { key: "area", label: "Area of expertise", href: "/talent?groupBy=area" },
   ];
   return (
@@ -171,34 +162,6 @@ function GroupByControl({ current }: { current: "category" | "area" }) {
         );
       })}
     </div>
-  );
-}
-
-function AddTalentRowCategory({
-  category,
-  rating,
-  colSpan,
-}: {
-  category: string | null;
-  rating: string | null;
-  colSpan: number;
-}) {
-  const [pending, startTransition] = useTransition();
-  return (
-    <tr>
-      <td
-        colSpan={colSpan}
-        className="themed-new-row-cell"
-        onClick={() => {
-          if (!pending) {
-            startTransition(() => createTalent(category, rating));
-          }
-        }}
-        title="Add talent in this group"
-      >
-        {pending ? "Adding…" : "+ Add talent"}
-      </td>
-    </tr>
   );
 }
 
@@ -266,52 +229,7 @@ export function TalentTable({
 }) {
   const sorted = data;
   const columnKeys =
-    groupBy === "area" ? TALENT_AREA_MODE_KEYS : TALENT_CATEGORY_MODE_KEYS;
-
-  const categoryAccessor = (r: TalentRow) =>
-    r.primary_talent_category || "(none)";
-
-  const categorySpans = useMemo(
-    () =>
-      computeGroupSpans(sorted, categoryAccessor, (r) => r.category_color),
-    [sorted],
-  );
-  const ratingSpans = useMemo(
-    () =>
-      computeGroupSpans(
-        sorted,
-        (r) => r.overall_rating || "(none)",
-        (r) => r.rating_color,
-        [categoryAccessor],
-      ),
-    [sorted],
-  );
-
-  const categoryStartSet = new Set(categorySpans.map((s) => s.startIndex));
-  const ratingStartSet = new Set(ratingSpans.map((s) => s.startIndex));
-
-  const categoryByIndex = Object.fromEntries(
-    categorySpans.map((s) => [s.startIndex, s]),
-  );
-  const ratingByIndex = Object.fromEntries(
-    ratingSpans.map((s) => [s.startIndex, s]),
-  );
-
-  const ratingEndIndex = (start: number, span: number) => start + span - 1;
-  const ratingEndToSpan = Object.fromEntries(
-    ratingSpans.map((s) => [ratingEndIndex(s.startIndex, s.rowSpan), s]),
-  );
-  const ratingEndSet = new Set(
-    ratingSpans.map((s) => ratingEndIndex(s.startIndex, s.rowSpan)),
-  );
-
-  function ratingBumpsInsideSpan(start: number, length: number): number {
-    let n = 0;
-    for (const span of ratingSpans) {
-      if (span.startIndex >= start && span.startIndex < start + length) n++;
-    }
-    return n;
-  }
+    groupBy === "area" ? TALENT_AREA_MODE_KEYS : TALENT_DEFAULT_MODE_KEYS;
 
   // Area mode spans — pre-expanded rows already carry area_name, so a single
   // pass over computeGroupSpans produces one span per tag group. Records with
@@ -358,22 +276,18 @@ export function TalentTable({
     "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]";
 
   const commonHeaders = [
+    { key: "category", label: "Category" },
+    { key: "overall_rating", label: "Overall Rating" },
     { key: "resource", label: "Resource" },
     { key: "website", label: "Website" },
     { key: "instagram", label: "Instagram" },
     { key: "areas", label: "Areas" },
-    { key: "category_edit", label: "Category (edit)" },
-    { key: "overall_rating_edit", label: "Rating (edit)" },
     { key: "notes", label: "Notes" },
   ];
   const headers =
     groupBy === "area"
       ? [{ key: "area", label: "Area" }, ...commonHeaders]
-      : [
-          { key: "category", label: "Category" },
-          { key: "overall_rating", label: "Overall Rating" },
-          ...commonHeaders,
-        ];
+      : commonHeaders;
 
   const totalWidth = columnKeys.reduce(
     (sum, k) => sum + (params.columnWidths[k] ?? 0),
@@ -385,6 +299,20 @@ export function TalentTable({
   // every render.
   const renderRowBody = (row: TalentRow) => (
     <>
+      <td className={cellClass}>
+        <PillSelect
+          value={row.primary_talent_category ?? ""}
+          options={categoryOptions}
+          onSave={(v) => updateTalentCategory(row.record_id, v)}
+        />
+      </td>
+      <td className={cellClass}>
+        <PillSelect
+          value={row.overall_rating ?? ""}
+          options={ratingOptions}
+          onSave={(v) => updateTalentOverallRating(row.record_id, v)}
+        />
+      </td>
       <td className={`${cellClass} text-foreground`}>
         <EditableText
           value={row.name}
@@ -403,20 +331,6 @@ export function TalentTable({
           options={areaOptions}
           onAdd={(id) => addTalentArea(row.record_id, id)}
           onRemove={(id) => removeTalentArea(row.record_id, id)}
-        />
-      </td>
-      <td className={cellClass}>
-        <PillSelect
-          value={row.primary_talent_category ?? ""}
-          options={categoryOptions}
-          onSave={(v) => updateTalentCategory(row.record_id, v)}
-        />
-      </td>
-      <td className={cellClass}>
-        <PillSelect
-          value={row.overall_rating ?? ""}
-          options={ratingOptions}
-          onSave={(v) => updateTalentOverallRating(row.record_id, v)}
         />
       </td>
       <td className={cellClass}>
@@ -503,36 +417,9 @@ export function TalentTable({
               />
             </tr>
             {groupBy === "category"
-              ? sorted.map((row, i) => {
-                  const isRatingEnd = ratingEndSet.has(i);
-                  const ratingSpan = isRatingEnd ? ratingEndToSpan[i] : null;
-                  return (
-                    <Fragment key={row.display_id}>
-                      <tr>
-                        {categoryStartSet.has(i) &&
-                          (() => {
-                            const span = categoryByIndex[i];
-                            const extra = ratingBumpsInsideSpan(
-                              span.startIndex,
-                              span.rowSpan,
-                            );
-                            return <IcicleCell span={span} extraSpan={extra} />;
-                          })()}
-                        {ratingStartSet.has(i) && (
-                          <IcicleCell span={ratingByIndex[i]} extraSpan={1} />
-                        )}
-                        {renderRowBody(row)}
-                      </tr>
-                      {isRatingEnd && ratingSpan && (
-                        <AddTalentRowCategory
-                          category={row.primary_talent_category}
-                          rating={row.overall_rating}
-                          colSpan={columnKeys.length - 2}
-                        />
-                      )}
-                    </Fragment>
-                  );
-                })
+              ? sorted.map((row) => (
+                  <tr key={row.display_id}>{renderRowBody(row)}</tr>
+                ))
               : sorted.map((row, i) => {
                   const isAreaEnd = areaEndSet.has(i);
                   return (

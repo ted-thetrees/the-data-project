@@ -19,8 +19,6 @@ interface TalentRow {
   name: string;
   primary_talent_category: string | null;
   overall_rating: string | null;
-  category_color: string | null;
-  rating_color: string | null;
   website: string | null;
   instagram: string | null;
   notes: string | null;
@@ -44,8 +42,6 @@ async function getTalent(
     const result = await poolV002.query(`
       SELECT t.id, t.name, t.primary_talent_category,
              t.overall_rating, t.website, t.instagram, t.notes,
-             tc.color as category_color,
-             trl.color as rating_color,
              string_agg(DISTINCT ta.name, ', ') as areas,
              COALESCE(
                (SELECT json_agg(
@@ -62,7 +58,7 @@ async function getTalent(
       LEFT JOIN talent_areas ta ON tal.area_id = ta.id
       LEFT JOIN talent_categories tc ON t.primary_talent_category = tc.name
       LEFT JOIN talent_rating_levels trl ON t.overall_rating = trl.name
-      GROUP BY t.id, tc.sort_order, tc.color, trl.sort_order, trl.color
+      GROUP BY t.id, tc.sort_order, trl.sort_order
       ORDER BY tc.sort_order NULLS LAST, trl.sort_order NULLS LAST, t.name
     `);
     const rows: TalentRow[] = result.rows.map((r) => ({
@@ -87,16 +83,13 @@ async function getTalent(
       SELECT t.id, t.name, t.primary_talent_category,
              t.overall_rating, t.website, t.instagram, t.notes,
              tc.sort_order as _cat_sort,
-             tc.color as category_color,
-             trl.sort_order as _rating_sort,
-             trl.color as rating_color
+             trl.sort_order as _rating_sort
       FROM talent t
       LEFT JOIN talent_categories tc ON t.primary_talent_category = tc.name
       LEFT JOIN talent_rating_levels trl ON t.overall_rating = trl.name
     )
     SELECT dt.id, dt.name, dt.primary_talent_category,
            dt.overall_rating, dt.website, dt.instagram, dt.notes,
-           dt.category_color, dt.rating_color,
            ta.id::text AS area_id,
            ta.name     AS area_name
     FROM distinct_talent dt
