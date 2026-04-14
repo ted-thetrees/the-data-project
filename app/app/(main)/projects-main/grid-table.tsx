@@ -381,7 +381,7 @@ export function GridTable({
                 </ContextMenuTrigger>
                 <ContextMenuContent>
                   <ContextMenuItem
-                    onSelect={() => {
+                    onClick={() => {
                       void deleteTask(row.id);
                     }}
                     variant="destructive"
