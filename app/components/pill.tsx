@@ -50,19 +50,34 @@ export type PillOption = {
   color: string | null;
 };
 
-const TAG_STYLE: React.CSSProperties = {
-  backgroundColor: "var(--tag-bg)",
-  color: "var(--tag-text)",
+const TAG_GEOMETRY: React.CSSProperties = {
   fontSize: "var(--tag-font-size)",
   padding: "var(--tag-padding-y) var(--tag-padding-x)",
   borderRadius: "var(--tag-radius)",
 };
+
+const DEFAULT_TAG_BG = "var(--tag-bg)";
+const DEFAULT_TAG_FG = "var(--tag-text)";
+
+function tagColors(color: string | null | undefined): {
+  backgroundColor: string;
+  color: string;
+} {
+  if (!color) {
+    return { backgroundColor: DEFAULT_TAG_BG, color: DEFAULT_TAG_FG };
+  }
+  return { backgroundColor: color, color: contrastTextColor(color) };
+}
 
 /**
  * Multi-value variant of PillSelect — renders the current selection as a
  * flex-wrap of tag chips followed by a "+" affordance. Clicking opens a
  * popover that lists every option; clicking an option toggles membership.
  * The popover stays open so the user can toggle several in one session.
+ *
+ * Each option's `color` drives the chip background (with contrast-computed
+ * text), matching PillSelect. Options with no color fall back to the
+ * --tag-bg / --tag-text theme tokens.
  *
  * Follows the multi-value grouping contract in lib/table-grouping.ts: the
  * callbacks receive option ids, not display_ids. The caller is responsible
@@ -94,16 +109,20 @@ export function MultiPillSelect({
         title="Edit tags"
       >
         {selectedOptions.map((opt) => (
-          <span key={opt.id} className="inline-block" style={TAG_STYLE}>
+          <span
+            key={opt.id}
+            className="inline-block"
+            style={{ ...TAG_GEOMETRY, ...tagColors(opt.color) }}
+          >
             {opt.name}
           </span>
         ))}
         <span
           className="inline-flex items-center justify-center text-muted-foreground"
           style={{
-            ...TAG_STYLE,
+            ...TAG_GEOMETRY,
             backgroundColor: "transparent",
-            color: "var(--tag-text)",
+            color: DEFAULT_TAG_FG,
             opacity: 0.55,
           }}
           aria-label="Add tag"
@@ -131,7 +150,7 @@ export function MultiPillSelect({
                 className={`inline-block cursor-pointer ring-offset-1 ${
                   isSelected ? "ring-2 ring-foreground/40" : ""
                 }`}
-                style={TAG_STYLE}
+                style={{ ...TAG_GEOMETRY, ...tagColors(opt.color) }}
               >
                 {opt.name}
               </button>
