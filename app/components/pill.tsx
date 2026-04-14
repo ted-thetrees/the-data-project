@@ -50,23 +50,15 @@ export type PillOption = {
   color: string | null;
 };
 
-const TAG_GEOMETRY: React.CSSProperties = {
-  fontSize: "var(--tag-font-size)",
-  padding: "var(--tag-padding-y) var(--tag-padding-x)",
-  borderRadius: "var(--tag-radius)",
-};
-
-const DEFAULT_TAG_BG = "var(--tag-bg)";
-const DEFAULT_TAG_FG = "var(--tag-text)";
-
-function tagColors(color: string | null | undefined): {
-  backgroundColor: string;
-  color: string;
-} {
-  if (!color) {
-    return { backgroundColor: DEFAULT_TAG_BG, color: DEFAULT_TAG_FG };
-  }
-  return { backgroundColor: color, color: contrastTextColor(color) };
+// MultiPillSelect chips share the geometry of PillSelect (stadium-rounded,
+// --cell-font-size) so the Areas column visually matches Category / Primary
+// Talent / Rating in the same row. --tag-* would render a smaller,
+// rectangular chip that looks out of place next to real pills.
+function tagColors(color: string | null | undefined) {
+  return {
+    backgroundColor: color || DEFAULT_COLOR,
+    color: contrastTextColor(color ?? null),
+  };
 }
 
 /**
@@ -111,18 +103,18 @@ export function MultiPillSelect({
         {selectedOptions.map((opt) => (
           <span
             key={opt.id}
-            className="inline-block"
-            style={{ ...TAG_GEOMETRY, ...tagColors(opt.color) }}
+            className={PILL_CLASS}
+            style={{ ...PILL_STYLE, ...tagColors(opt.color) }}
           >
             {opt.name}
           </span>
         ))}
         <span
-          className="inline-flex items-center justify-center text-muted-foreground"
+          className={`${PILL_CLASS} text-muted-foreground`}
           style={{
-            ...TAG_GEOMETRY,
+            ...PILL_STYLE,
             backgroundColor: "transparent",
-            color: DEFAULT_TAG_FG,
+            color: "currentColor",
             opacity: 0.55,
           }}
           aria-label="Add tag"
@@ -147,10 +139,10 @@ export function MultiPillSelect({
                     else onAdd(opt.id);
                   });
                 }}
-                className={`inline-block cursor-pointer ring-offset-1 ${
+                className={`${PILL_CLASS} cursor-pointer ring-offset-1 ${
                   isSelected ? "ring-2 ring-foreground/40" : ""
                 }`}
-                style={{ ...TAG_GEOMETRY, ...tagColors(opt.color) }}
+                style={{ ...PILL_STYLE, ...tagColors(opt.color) }}
               >
                 {opt.name}
               </button>
