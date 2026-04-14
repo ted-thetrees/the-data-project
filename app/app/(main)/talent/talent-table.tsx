@@ -70,6 +70,7 @@ interface TalentRow {
   areas_all: Array<{ id: string; name: string }>;
   area_id: string | null;
   area_name: string | null;
+  area_color: string | null;
 }
 
 interface GroupSpan {
@@ -239,7 +240,7 @@ export function TalentTable({
       computeGroupSpans(
         sorted,
         (r) => r.area_name || "(Uncategorized)",
-        () => null,
+        (r) => r.area_color,
       ),
     [sorted],
   );

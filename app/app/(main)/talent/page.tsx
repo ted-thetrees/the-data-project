@@ -31,6 +31,7 @@ interface TalentRow {
   // Group instance identity. Non-null only when expandOn === "area".
   area_id: string | null;
   area_name: string | null;
+  area_color: string | null;
 }
 
 async function getTalent(
@@ -68,6 +69,7 @@ async function getTalent(
       areas_all: r.areas_all ?? [],
       area_id: null,
       area_name: null,
+      area_color: null,
     }));
     return { rows, recordCount: rows.length };
   }
@@ -93,7 +95,8 @@ async function getTalent(
     SELECT dt.id, dt.name, dt.primary_talent_category,
            dt.overall_rating, dt.website, dt.instagram, dt.notes,
            ta.id::text AS area_id,
-           ta.name     AS area_name
+           ta.name     AS area_name,
+           ta.color    AS area_color
     FROM distinct_talent dt
     LEFT JOIN talent_area_links tal ON tal.talent_id = dt.id
     LEFT JOIN talent_areas      ta  ON ta.id = tal.area_id
