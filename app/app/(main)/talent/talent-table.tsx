@@ -352,6 +352,12 @@ export function TalentTable({
               />
             </tr>
             <NewTalentRow colSpan={TALENT_COLUMN_KEYS.length} />
+            <tr aria-hidden="true">
+              <td
+                colSpan={TALENT_COLUMN_KEYS.length}
+                style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
+              />
+            </tr>
             {sorted.map((row, i) => {
               const isRatingEnd = ratingEndSet.has(i);
               const ratingSpan = isRatingEnd ? ratingEndToSpan[i] : null;

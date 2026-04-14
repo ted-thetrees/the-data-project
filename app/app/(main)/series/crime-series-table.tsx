@@ -226,6 +226,12 @@ export function CrimeSeriesTable({
               />
             </tr>
             <NewSeriesRow colSpan={CRIME_COLUMN_KEYS.length} />
+            <tr aria-hidden="true">
+              <td
+                colSpan={CRIME_COLUMN_KEYS.length}
+                style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
+              />
+            </tr>
             {data.map((row, i) => {
               const embedUrl = row.youtube_trailer
                 ? youtubeEmbedUrl(row.youtube_trailer)

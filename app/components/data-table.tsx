@@ -147,18 +147,26 @@ export function DataTable<T>({
             />
           </tr>
           {onAddTopRow && (
-            <tr>
-              <td
-                colSpan={columns.length}
-                className="themed-new-row-cell"
-                onClick={() => {
-                  if (!addTopPending) startAddTopTransition(() => onAddTopRow());
-                }}
-                title="Add a new record"
-              >
-                {addTopPending ? "Adding…" : addTopRowLabel}
-              </td>
-            </tr>
+            <>
+              <tr>
+                <td
+                  colSpan={columns.length}
+                  className="themed-new-row-cell"
+                  onClick={() => {
+                    if (!addTopPending) startAddTopTransition(() => onAddTopRow());
+                  }}
+                  title="Add a new record"
+                >
+                  {addTopPending ? "Adding…" : addTopRowLabel}
+                </td>
+              </tr>
+              <tr aria-hidden="true">
+                <td
+                  colSpan={columns.length}
+                  style={{ height: 14, padding: 0, background: "transparent" }}
+                />
+              </tr>
+            </>
           )}
           {rows.map((row) => {
             const record = row as Record<string, unknown>;

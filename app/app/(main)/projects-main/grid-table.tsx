@@ -219,6 +219,12 @@ export function GridTable({
               />
             </tr>
             <NewProjectRow colSpan={COLUMN_KEYS.length} />
+            <tr aria-hidden="true">
+              <td
+                colSpan={COLUMN_KEYS.length}
+                style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
+              />
+            </tr>
             {data.map((row, i) => {
               const prev = i > 0 ? data[i - 1] : null;
               const tickleChanged =
