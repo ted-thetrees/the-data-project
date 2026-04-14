@@ -24,8 +24,15 @@ import {
   finalizeProject,
   createTask,
   createProject,
+  deleteTask,
 } from "./actions";
 import { Pill, PillSelect } from "@/components/pill";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { useTableViews } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
@@ -239,7 +246,8 @@ export function GridTable({
                   />
                 </tr>
               )}
-              <tr>
+              <ContextMenu>
+                <ContextMenuTrigger render={<tr />}>
                 {/* Icicle: Project (rowspan-merged, +1 to span add-row) */}
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
@@ -370,7 +378,18 @@ export function GridTable({
                     }
                   />
                 </td>
-              </tr>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem
+                    onSelect={() => {
+                      void deleteTask(row.id);
+                    }}
+                    variant="destructive"
+                  >
+                    Delete task
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
               {projectEndSet.has(i) && (
                 <AddTaskRow
                   projectId={projectEndToSpan[i].extra?.project_id as string ?? row.project_id}

@@ -65,6 +65,15 @@ export async function finalizeProject(id: string) {
   revalidatePath("/super-combo");
 }
 
+export async function deleteTask(id: string) {
+  await poolV002.query(
+    `UPDATE tasks SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL`,
+    [id],
+  );
+  revalidatePath("/projects-main");
+  revalidatePath("/super-combo");
+}
+
 export async function createTask(projectId: string) {
   const status = await poolV002.query(
     `SELECT id FROM task_statuses WHERE name = 'Tickled' LIMIT 1`
