@@ -157,11 +157,11 @@ async function getLookupOptions(table: string): Promise<PillOption[]> {
   return result.rows;
 }
 
-// talent_areas has uuid ids, no color, no sort_order — different shape from
-// the other lookup tables so it needs its own query.
 async function getAreaOptions(): Promise<PillOption[]> {
   const result = await poolV002.query(
-    `SELECT id::text AS id, name, NULL::text AS color FROM talent_areas ORDER BY name`,
+    `SELECT id::text AS id, name, color
+     FROM talent_areas
+     ORDER BY sort_order NULLS LAST, name`,
   );
   return result.rows;
 }

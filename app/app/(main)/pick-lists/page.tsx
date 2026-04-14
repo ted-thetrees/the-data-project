@@ -70,6 +70,13 @@ async function getTalentRatingLevels(): Promise<Status[]> {
   return result.rows;
 }
 
+async function getTalentAreas(): Promise<Status[]> {
+  const result = await poolV002.query(
+    `SELECT id::text, name, COALESCE(color, '') as color FROM talent_areas ORDER BY sort_order NULLS LAST, name`
+  );
+  return result.rows;
+}
+
 async function getPalettes(): Promise<PaletteForPicker[]> {
   const result = await poolV002.query(
     `SELECT id::text, name, ${COLOR_COLUMNS.join(", ")} FROM color_palettes ORDER BY created_at DESC`
@@ -109,6 +116,7 @@ export default async function PickListsPage() {
     talentCategories,
     talentTypes,
     talentRatingLevels,
+    talentAreas,
     palettes,
   ] = await Promise.all([
     getPicklistColors(),
@@ -119,6 +127,7 @@ export default async function PickListsPage() {
     getTalentCategories(),
     getTalentTypes(),
     getTalentRatingLevels(),
+    getTalentAreas(),
     getPalettes(),
   ]);
 
@@ -142,6 +151,7 @@ export default async function PickListsPage() {
           "talent_categories",
           "talent_types",
           "talent_rating_levels",
+          "talent_areas",
           "color_palettes",
         ]}
       />
@@ -207,6 +217,15 @@ export default async function PickListsPage() {
             rows={talentRatingLevels}
             palettes={palettes}
             storageKey="pick-lists:talent_rating_levels"
+          />
+        </PickListSection>
+
+        <PickListSection title="Talent Areas" usedBy="Talent (areas of expertise)">
+          <PicklistStatusTable
+            source="talent_areas"
+            rows={talentAreas}
+            palettes={palettes}
+            storageKey="pick-lists:talent_areas"
           />
         </PickListSection>
 

@@ -11,6 +11,7 @@ const SOURCE_TABLES: Record<string, { table: string; hasSortOrder: boolean }> = 
   talent_categories: { table: "talent_categories", hasSortOrder: true },
   talent_types: { table: "talent_types", hasSortOrder: true },
   talent_rating_levels: { table: "talent_rating_levels", hasSortOrder: true },
+  talent_areas: { table: "talent_areas", hasSortOrder: true },
 };
 
 function revalidate() {

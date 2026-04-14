@@ -34,6 +34,7 @@ const TALENT_COMMON_COLUMN_KEYS = [
   "resource",
   "website",
   "instagram",
+  "areas",
   "category_edit",
   "primary_talent_edit",
   "overall_rating_edit",
@@ -43,7 +44,6 @@ const TALENT_COMMON_COLUMN_KEYS = [
   "light",
   "kit",
   "aviz",
-  "areas",
   "notes",
 ] as const;
 
@@ -438,6 +438,7 @@ export function TalentTable({
     { key: "resource", label: "Resource", center: false },
     { key: "website", label: "Website", center: false },
     { key: "instagram", label: "Instagram", center: false },
+    { key: "areas", label: "Areas", center: false },
     { key: "category_edit", label: "Category (edit)", center: false },
     { key: "primary_talent_edit", label: "Primary Talent (edit)", center: false },
     { key: "overall_rating_edit", label: "Rating (edit)", center: false },
@@ -447,7 +448,6 @@ export function TalentTable({
     { key: "light", label: "Light", center: true },
     { key: "kit", label: "Kit", center: true },
     { key: "aviz", label: "AViz", center: true },
-    { key: "areas", label: "Areas", center: false },
     { key: "notes", label: "Notes", center: false },
   ];
   const headers =
@@ -481,6 +481,14 @@ export function TalentTable({
       </td>
       <td className={cellClass}>
         <WebLink url={row.instagram} className="max-w-[180px]" />
+      </td>
+      <td className={cellClass}>
+        <MultiPillSelect
+          value={row.areas_all.map((a) => a.id)}
+          options={areaOptions}
+          onAdd={(id) => addTalentArea(row.record_id, id)}
+          onRemove={(id) => removeTalentArea(row.record_id, id)}
+        />
       </td>
       <td className={cellClass}>
         <PillSelect
@@ -520,14 +528,6 @@ export function TalentTable({
       </td>
       <td className={cellCenterClass}>
         <YesBadge value={row.archviz} />
-      </td>
-      <td className={cellClass}>
-        <MultiPillSelect
-          value={row.areas_all.map((a) => a.id)}
-          options={areaOptions}
-          onAdd={(id) => addTalentArea(row.record_id, id)}
-          onRemove={(id) => removeTalentArea(row.record_id, id)}
-        />
       </td>
       <td className={cellClass}>
         {row.notes ? (
