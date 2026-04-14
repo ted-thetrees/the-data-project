@@ -38,12 +38,6 @@ const TALENT_COMMON_COLUMN_KEYS = [
   "category_edit",
   "primary_talent_edit",
   "overall_rating_edit",
-  "arch",
-  "int",
-  "land",
-  "light",
-  "kit",
-  "aviz",
   "notes",
 ] as const;
 
@@ -70,13 +64,7 @@ const TALENT_DEFAULT_WIDTHS: Record<string, number> = {
   resource: 220,
   website: 180,
   instagram: 100,
-  arch: 55,
-  int: 55,
-  land: 55,
-  light: 55,
-  kit: 55,
-  aviz: 55,
-  areas: 180,
+  areas: 220,
   notes: 180,
 };
 
@@ -85,12 +73,6 @@ interface TalentRow {
   record_id: string;
   display_id: string;
   name: string;
-  architecture: string | null;
-  interiors: string | null;
-  landscape: string | null;
-  lighting: string | null;
-  kitchens: string | null;
-  archviz: string | null;
   primary_talent: string | null;
   primary_talent_category: string | null;
   overall_rating: string | null;
@@ -278,33 +260,6 @@ function NewTalentRow({ colSpan }: { colSpan: number }) {
   );
 }
 
-function YesBadge({ value }: { value: string | null }) {
-  if (!value || value === "----" || value === "-----") return <Empty />;
-  if (value === "Yes")
-    return (
-      <span
-        className="inline-block"
-        style={{
-          backgroundColor: "var(--tag-bg)",
-          color: "var(--tag-text)",
-          fontSize: "var(--tag-font-size)",
-          padding: "var(--tag-padding-y) var(--tag-padding-x)",
-          borderRadius: "var(--tag-radius)",
-        }}
-      >
-        Yes
-      </span>
-    );
-  return (
-    <span
-      className="text-muted-foreground"
-      style={{ fontSize: "var(--font-size-sm)" }}
-    >
-      {value}
-    </span>
-  );
-}
-
 export function TalentTable({
   data,
   recordCount,
@@ -427,36 +382,26 @@ export function TalentTable({
 
   const headerClass =
     "relative text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
-  const headerCenterClass =
-    "relative text-center text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x-narrow)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
   const cellClass =
     "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]";
-  const cellCenterClass =
-    "px-[var(--header-padding-x-narrow)] py-[var(--cell-padding-y)] text-center bg-[color:var(--cell-bg)]";
 
   const commonHeaders = [
-    { key: "resource", label: "Resource", center: false },
-    { key: "website", label: "Website", center: false },
-    { key: "instagram", label: "Instagram", center: false },
-    { key: "areas", label: "Areas", center: false },
-    { key: "category_edit", label: "Category (edit)", center: false },
-    { key: "primary_talent_edit", label: "Primary Talent (edit)", center: false },
-    { key: "overall_rating_edit", label: "Rating (edit)", center: false },
-    { key: "arch", label: "Arch", center: true },
-    { key: "int", label: "Int", center: true },
-    { key: "land", label: "Land", center: true },
-    { key: "light", label: "Light", center: true },
-    { key: "kit", label: "Kit", center: true },
-    { key: "aviz", label: "AViz", center: true },
-    { key: "notes", label: "Notes", center: false },
+    { key: "resource", label: "Resource" },
+    { key: "website", label: "Website" },
+    { key: "instagram", label: "Instagram" },
+    { key: "areas", label: "Areas" },
+    { key: "category_edit", label: "Category (edit)" },
+    { key: "primary_talent_edit", label: "Primary Talent (edit)" },
+    { key: "overall_rating_edit", label: "Rating (edit)" },
+    { key: "notes", label: "Notes" },
   ];
   const headers =
     groupBy === "area"
-      ? [{ key: "area", label: "Area", center: false }, ...commonHeaders]
+      ? [{ key: "area", label: "Area" }, ...commonHeaders]
       : [
-          { key: "category", label: "Category", center: false },
-          { key: "primary_talent", label: "Primary Talent", center: false },
-          { key: "overall_rating", label: "Overall Rating", center: false },
+          { key: "category", label: "Category" },
+          { key: "primary_talent", label: "Primary Talent" },
+          { key: "overall_rating", label: "Overall Rating" },
           ...commonHeaders,
         ];
 
@@ -511,24 +456,6 @@ export function TalentTable({
           onSave={(v) => updateTalentOverallRating(row.record_id, v)}
         />
       </td>
-      <td className={cellCenterClass}>
-        <YesBadge value={row.architecture} />
-      </td>
-      <td className={cellCenterClass}>
-        <YesBadge value={row.interiors} />
-      </td>
-      <td className={cellCenterClass}>
-        <YesBadge value={row.landscape} />
-      </td>
-      <td className={cellCenterClass}>
-        <YesBadge value={row.lighting} />
-      </td>
-      <td className={cellCenterClass}>
-        <YesBadge value={row.kitchens} />
-      </td>
-      <td className={cellCenterClass}>
-        <YesBadge value={row.archviz} />
-      </td>
       <td className={cellClass}>
         {row.notes ? (
           <span
@@ -579,10 +506,7 @@ export function TalentTable({
           <thead>
             <tr>
               {headers.map((h, i) => (
-                <th
-                  key={h.key}
-                  className={h.center ? headerCenterClass : headerClass}
-                >
+                <th key={h.key} className={headerClass}>
                   {h.label}
                   <ColumnResizer
                     columnIndex={i}

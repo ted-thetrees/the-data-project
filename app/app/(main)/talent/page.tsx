@@ -17,12 +17,6 @@ interface TalentRow {
   // mode it's `makeDisplayId(record_id, area_id)`.
   display_id: string;
   name: string;
-  architecture: string | null;
-  interiors: string | null;
-  landscape: string | null;
-  lighting: string | null;
-  kitchens: string | null;
-  archviz: string | null;
   primary_talent: string | null;
   primary_talent_category: string | null;
   overall_rating: string | null;
@@ -50,8 +44,7 @@ async function getTalent(
 
   if (expandOn === null) {
     const result = await poolV002.query(`
-      SELECT t.id, t.name, t.architecture, t.interiors, t.landscape, t.lighting,
-             t.kitchens, t.archviz, t.primary_talent, t.primary_talent_category,
+      SELECT t.id, t.name, t.primary_talent, t.primary_talent_category,
              t.overall_rating, t.website, t.instagram, t.notes,
              tc.color as category_color,
              tt.color as talent_color,
@@ -95,8 +88,7 @@ async function getTalent(
   // remains stable and computeGroupSpans() stays correct.
   const result = await poolV002.query(`
     WITH distinct_talent AS (
-      SELECT t.id, t.name, t.architecture, t.interiors, t.landscape, t.lighting,
-             t.kitchens, t.archviz, t.primary_talent, t.primary_talent_category,
+      SELECT t.id, t.name, t.primary_talent, t.primary_talent_category,
              t.overall_rating, t.website, t.instagram, t.notes,
              tc.sort_order as _cat_sort,
              tc.color as category_color,
@@ -109,8 +101,7 @@ async function getTalent(
       LEFT JOIN talent_types tt ON t.primary_talent = tt.name
       LEFT JOIN talent_rating_levels trl ON t.overall_rating = trl.name
     )
-    SELECT dt.id, dt.name, dt.architecture, dt.interiors, dt.landscape, dt.lighting,
-           dt.kitchens, dt.archviz, dt.primary_talent, dt.primary_talent_category,
+    SELECT dt.id, dt.name, dt.primary_talent, dt.primary_talent_category,
            dt.overall_rating, dt.website, dt.instagram, dt.notes,
            dt.category_color, dt.talent_color, dt.rating_color,
            ta.id::text AS area_id,
