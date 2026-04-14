@@ -2,7 +2,13 @@ import { cn } from "@/lib/utils";
 
 interface PageShellProps {
   title: string;
+  /** Distinct record count (the canonical record total, ignoring expansion). */
   count?: number;
+  /**
+   * Visible row count after multi-value tag expansion. When set and different
+   * from `count`, the header renders "N records · M rows in view".
+   */
+  displayRowCount?: number;
   maxWidth?: string;
   children: React.ReactNode;
   className?: string;
@@ -11,6 +17,7 @@ interface PageShellProps {
 export function PageShell({
   title,
   count,
+  displayRowCount,
   maxWidth = "max-w-4xl",
   children,
   className,
@@ -22,6 +29,11 @@ export function PageShell({
     className,
   ].filter(Boolean).join(" ");
 
+  const showExpanded =
+    count != null &&
+    displayRowCount != null &&
+    displayRowCount !== count;
+
   return (
     <div className={classes}>
       <div className="flex items-baseline justify-between mb-6">
@@ -31,6 +43,7 @@ export function PageShell({
         {count != null && (
           <span className="text-[length:var(--record-count-font-size)] text-[color:var(--record-count-color)]">
             {count.toLocaleString()} records
+            {showExpanded && ` · ${displayRowCount!.toLocaleString()} rows in view`}
           </span>
         )}
       </div>

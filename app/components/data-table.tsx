@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useTableViews } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
+import type { ExpandOnGroupConfig } from "@/lib/table-grouping";
 
 export interface Column<T> {
   key: string;
@@ -13,6 +14,19 @@ export interface Column<T> {
   width?: number;
   render?: (row: T) => React.ReactNode;
   className?: string;
+  /** Whether this column can be used as a grouping field. */
+  groupable?: boolean;
+  /**
+   * When set, grouping by this column expands rows: a record with N values
+   * in this column renders once per value, under each group header. Records
+   * with no values land in a synthetic "Uncategorized" bucket.
+   *
+   * See lib/table-grouping.ts for the display-multiplicity/counting-singularity
+   * invariant. The data layer is responsible for producing pre-expanded rows
+   * with `record_id` / `display_id` fields when this is active; DataTable
+   * itself does not diff or re-sort.
+   */
+  expandOnGroup?: ExpandOnGroupConfig;
 }
 
 interface DataTableProps<T> {
