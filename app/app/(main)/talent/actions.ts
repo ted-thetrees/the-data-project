@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 
 function revalidateTalentPages() {
   revalidatePath("/talent");
-  revalidatePath("/architecture");
 }
 
 export async function updateTalentCategory(
@@ -15,17 +14,6 @@ export async function updateTalentCategory(
   await poolV002.query(
     `UPDATE talent SET primary_talent_category = $1 WHERE id = $2`,
     [category, talentId],
-  );
-  revalidateTalentPages();
-}
-
-export async function updateTalentPrimaryTalent(
-  talentId: string,
-  primaryTalent: string,
-) {
-  await poolV002.query(
-    `UPDATE talent SET primary_talent = $1 WHERE id = $2`,
-    [primaryTalent, talentId],
   );
   revalidateTalentPages();
 }
@@ -51,13 +39,12 @@ export async function updateTalentName(talentId: string, name: string) {
 
 export async function createTalent(
   category: string | null,
-  primaryTalent: string | null,
   rating: string | null,
 ) {
   await poolV002.query(
-    `INSERT INTO talent (name, primary_talent_category, primary_talent, overall_rating)
-     VALUES ('Untitled', $1, $2, $3)`,
-    [category, primaryTalent, rating],
+    `INSERT INTO talent (name, primary_talent_category, overall_rating)
+     VALUES ('Untitled', $1, $2)`,
+    [category, rating],
   );
   revalidateTalentPages();
 }

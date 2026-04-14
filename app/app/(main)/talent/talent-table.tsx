@@ -17,7 +17,6 @@ import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import {
   updateTalentCategory,
-  updateTalentPrimaryTalent,
   updateTalentOverallRating,
   updateTalentName,
   createTalent,
@@ -36,14 +35,12 @@ const TALENT_COMMON_COLUMN_KEYS = [
   "instagram",
   "areas",
   "category_edit",
-  "primary_talent_edit",
   "overall_rating_edit",
   "notes",
 ] as const;
 
 const TALENT_CATEGORY_MODE_KEYS = [
   "category",
-  "primary_talent",
   "overall_rating",
   ...TALENT_COMMON_COLUMN_KEYS,
 ] as const;
@@ -55,11 +52,9 @@ const TALENT_AREA_MODE_KEYS = [
 
 const TALENT_DEFAULT_WIDTHS: Record<string, number> = {
   category: 120,
-  primary_talent: 130,
   overall_rating: 175,
   area: 140,
   category_edit: 140,
-  primary_talent_edit: 150,
   overall_rating_edit: 180,
   resource: 220,
   website: 180,
@@ -73,11 +68,9 @@ interface TalentRow {
   record_id: string;
   display_id: string;
   name: string;
-  primary_talent: string | null;
   primary_talent_category: string | null;
   overall_rating: string | null;
   category_color: string | null;
-  talent_color: string | null;
   rating_color: string | null;
   website: string | null;
   instagram: string | null;
@@ -183,12 +176,10 @@ function GroupByControl({ current }: { current: "category" | "area" }) {
 
 function AddTalentRowCategory({
   category,
-  primaryTalent,
   rating,
   colSpan,
 }: {
   category: string | null;
-  primaryTalent: string | null;
   rating: string | null;
   colSpan: number;
 }) {
@@ -200,9 +191,7 @@ function AddTalentRowCategory({
         className="themed-new-row-cell"
         onClick={() => {
           if (!pending) {
-            startTransition(() =>
-              createTalent(category, primaryTalent, rating),
-            );
+            startTransition(() => createTalent(category, rating));
           }
         }}
         title="Add talent in this group"
@@ -230,7 +219,7 @@ function AddTalentRowArea({
           if (pending) return;
           startTransition(() =>
             areaId == null
-              ? createTalent(null, null, null)
+              ? createTalent(null, null)
               : createTalentInArea(areaId),
           );
         }}
@@ -250,7 +239,7 @@ function NewTalentRow({ colSpan }: { colSpan: number }) {
         colSpan={colSpan}
         className="themed-new-row-cell"
         onClick={() => {
-          if (!pending) startTransition(() => createTalent(null, null, null));
+          if (!pending) startTransition(() => createTalent(null, null));
         }}
         title="Create a new talent with nothing pre-filled"
       >
@@ -265,7 +254,6 @@ export function TalentTable({
   recordCount,
   groupBy,
   categoryOptions,
-  typeOptions,
   ratingOptions,
   areaOptions,
 }: {
@@ -273,7 +261,6 @@ export function TalentTable({
   recordCount: number;
   groupBy: "category" | "area";
   categoryOptions: PillOption[];
-  typeOptions: PillOption[];
   ratingOptions: PillOption[];
   areaOptions: PillOption[];
 }) {
@@ -283,21 +270,10 @@ export function TalentTable({
 
   const categoryAccessor = (r: TalentRow) =>
     r.primary_talent_category || "(none)";
-  const talentAccessor = (r: TalentRow) => r.primary_talent || "(none)";
 
   const categorySpans = useMemo(
     () =>
       computeGroupSpans(sorted, categoryAccessor, (r) => r.category_color),
-    [sorted],
-  );
-  const talentSpans = useMemo(
-    () =>
-      computeGroupSpans(
-        sorted,
-        talentAccessor,
-        (r) => r.talent_color,
-        [categoryAccessor],
-      ),
     [sorted],
   );
   const ratingSpans = useMemo(
@@ -306,20 +282,16 @@ export function TalentTable({
         sorted,
         (r) => r.overall_rating || "(none)",
         (r) => r.rating_color,
-        [categoryAccessor, talentAccessor],
+        [categoryAccessor],
       ),
     [sorted],
   );
 
   const categoryStartSet = new Set(categorySpans.map((s) => s.startIndex));
-  const talentStartSet = new Set(talentSpans.map((s) => s.startIndex));
   const ratingStartSet = new Set(ratingSpans.map((s) => s.startIndex));
 
   const categoryByIndex = Object.fromEntries(
     categorySpans.map((s) => [s.startIndex, s]),
-  );
-  const talentByIndex = Object.fromEntries(
-    talentSpans.map((s) => [s.startIndex, s]),
   );
   const ratingByIndex = Object.fromEntries(
     ratingSpans.map((s) => [s.startIndex, s]),
@@ -391,7 +363,6 @@ export function TalentTable({
     { key: "instagram", label: "Instagram" },
     { key: "areas", label: "Areas" },
     { key: "category_edit", label: "Category (edit)" },
-    { key: "primary_talent_edit", label: "Primary Talent (edit)" },
     { key: "overall_rating_edit", label: "Rating (edit)" },
     { key: "notes", label: "Notes" },
   ];
@@ -400,7 +371,6 @@ export function TalentTable({
       ? [{ key: "area", label: "Area" }, ...commonHeaders]
       : [
           { key: "category", label: "Category" },
-          { key: "primary_talent", label: "Primary Talent" },
           { key: "overall_rating", label: "Overall Rating" },
           ...commonHeaders,
         ];
@@ -440,13 +410,6 @@ export function TalentTable({
           value={row.primary_talent_category ?? ""}
           options={categoryOptions}
           onSave={(v) => updateTalentCategory(row.record_id, v)}
-        />
-      </td>
-      <td className={cellClass}>
-        <PillSelect
-          value={row.primary_talent ?? ""}
-          options={typeOptions}
-          onSave={(v) => updateTalentPrimaryTalent(row.record_id, v)}
         />
       </td>
       <td className={cellClass}>
@@ -555,15 +518,6 @@ export function TalentTable({
                             );
                             return <IcicleCell span={span} extraSpan={extra} />;
                           })()}
-                        {talentStartSet.has(i) &&
-                          (() => {
-                            const span = talentByIndex[i];
-                            const extra = ratingBumpsInsideSpan(
-                              span.startIndex,
-                              span.rowSpan,
-                            );
-                            return <IcicleCell span={span} extraSpan={extra} />;
-                          })()}
                         {ratingStartSet.has(i) && (
                           <IcicleCell span={ratingByIndex[i]} extraSpan={1} />
                         )}
@@ -572,9 +526,8 @@ export function TalentTable({
                       {isRatingEnd && ratingSpan && (
                         <AddTalentRowCategory
                           category={row.primary_talent_category}
-                          primaryTalent={row.primary_talent}
                           rating={row.overall_rating}
-                          colSpan={columnKeys.length - 3}
+                          colSpan={columnKeys.length - 2}
                         />
                       )}
                     </Fragment>

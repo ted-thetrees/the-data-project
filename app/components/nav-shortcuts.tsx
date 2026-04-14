@@ -7,7 +7,6 @@ const shortcuts: Record<string, string> = {
   "1": "/projects-main",
   "2": "/inbox",
   "3": "/talent",
-  "4": "/architecture",
   "5": "/dag",
   "6": "/new-project",
   "7": "/pick-lists",

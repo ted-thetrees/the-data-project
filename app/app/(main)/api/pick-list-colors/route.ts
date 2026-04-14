@@ -8,7 +8,6 @@ const SOURCE_TABLES: Record<string, string> = {
   crime_series_statuses: "crime_series_statuses",
   uber_projects: "uber_projects",
   talent_categories: "talent_categories",
-  talent_types: "talent_types",
   talent_rating_levels: "talent_rating_levels",
   talent_areas: "talent_areas",
 };

@@ -56,13 +56,6 @@ async function getTalentCategories(): Promise<Status[]> {
   return result.rows;
 }
 
-async function getTalentTypes(): Promise<Status[]> {
-  const result = await poolV002.query(
-    `SELECT id::text, name, COALESCE(color, '') as color FROM talent_types ORDER BY sort_order NULLS LAST, name`
-  );
-  return result.rows;
-}
-
 async function getTalentRatingLevels(): Promise<Status[]> {
   const result = await poolV002.query(
     `SELECT id::text, name, COALESCE(color, '') as color FROM talent_rating_levels ORDER BY sort_order NULLS LAST, name`
@@ -114,7 +107,6 @@ export default async function PickListsPage() {
     crimeSeriesStatuses,
     uberProjects,
     talentCategories,
-    talentTypes,
     talentRatingLevels,
     talentAreas,
     palettes,
@@ -125,7 +117,6 @@ export default async function PickListsPage() {
     getCrimeSeriesStatuses(),
     getUberProjectsForPickList(),
     getTalentCategories(),
-    getTalentTypes(),
     getTalentRatingLevels(),
     getTalentAreas(),
     getPalettes(),
@@ -149,7 +140,6 @@ export default async function PickListsPage() {
           "crime_series_statuses",
           "uber_projects",
           "talent_categories",
-          "talent_types",
           "talent_rating_levels",
           "talent_areas",
           "color_palettes",
@@ -193,7 +183,7 @@ export default async function PickListsPage() {
           />
         </PickListSection>
 
-        <PickListSection title="Talent Categories" usedBy="Talent, Architecture">
+        <PickListSection title="Talent Categories" usedBy="Talent">
           <PicklistStatusTable
             source="talent_categories"
             rows={talentCategories}
@@ -202,16 +192,7 @@ export default async function PickListsPage() {
           />
         </PickListSection>
 
-        <PickListSection title="Talent Types" usedBy="Talent, Architecture">
-          <PicklistStatusTable
-            source="talent_types"
-            rows={talentTypes}
-            palettes={palettes}
-            storageKey="pick-lists:talent_types"
-          />
-        </PickListSection>
-
-        <PickListSection title="Talent Rating Levels" usedBy="Talent, Architecture">
+        <PickListSection title="Talent Rating Levels" usedBy="Talent">
           <PicklistStatusTable
             source="talent_rating_levels"
             rows={talentRatingLevels}

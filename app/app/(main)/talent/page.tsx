@@ -17,11 +17,9 @@ interface TalentRow {
   // mode it's `makeDisplayId(record_id, area_id)`.
   display_id: string;
   name: string;
-  primary_talent: string | null;
   primary_talent_category: string | null;
   overall_rating: string | null;
   category_color: string | null;
-  talent_color: string | null;
   rating_color: string | null;
   website: string | null;
   instagram: string | null;
@@ -44,10 +42,9 @@ async function getTalent(
 
   if (expandOn === null) {
     const result = await poolV002.query(`
-      SELECT t.id, t.name, t.primary_talent, t.primary_talent_category,
+      SELECT t.id, t.name, t.primary_talent_category,
              t.overall_rating, t.website, t.instagram, t.notes,
              tc.color as category_color,
-             tt.color as talent_color,
              trl.color as rating_color,
              string_agg(DISTINCT ta.name, ', ') as areas,
              COALESCE(
@@ -64,10 +61,9 @@ async function getTalent(
       LEFT JOIN talent_area_links tal ON t.id = tal.talent_id
       LEFT JOIN talent_areas ta ON tal.area_id = ta.id
       LEFT JOIN talent_categories tc ON t.primary_talent_category = tc.name
-      LEFT JOIN talent_types tt ON t.primary_talent = tt.name
       LEFT JOIN talent_rating_levels trl ON t.overall_rating = trl.name
-      GROUP BY t.id, tc.sort_order, tc.color, tt.sort_order, tt.color, trl.sort_order, trl.color
-      ORDER BY tc.sort_order NULLS LAST, tt.sort_order NULLS LAST, trl.sort_order NULLS LAST, t.name
+      GROUP BY t.id, tc.sort_order, tc.color, trl.sort_order, trl.color
+      ORDER BY tc.sort_order NULLS LAST, trl.sort_order NULLS LAST, t.name
     `);
     const rows: TalentRow[] = result.rows.map((r) => ({
       ...r,
@@ -88,29 +84,25 @@ async function getTalent(
   // remains stable and computeGroupSpans() stays correct.
   const result = await poolV002.query(`
     WITH distinct_talent AS (
-      SELECT t.id, t.name, t.primary_talent, t.primary_talent_category,
+      SELECT t.id, t.name, t.primary_talent_category,
              t.overall_rating, t.website, t.instagram, t.notes,
              tc.sort_order as _cat_sort,
              tc.color as category_color,
-             tt.sort_order as _talent_sort,
-             tt.color as talent_color,
              trl.sort_order as _rating_sort,
              trl.color as rating_color
       FROM talent t
       LEFT JOIN talent_categories tc ON t.primary_talent_category = tc.name
-      LEFT JOIN talent_types tt ON t.primary_talent = tt.name
       LEFT JOIN talent_rating_levels trl ON t.overall_rating = trl.name
     )
-    SELECT dt.id, dt.name, dt.primary_talent, dt.primary_talent_category,
+    SELECT dt.id, dt.name, dt.primary_talent_category,
            dt.overall_rating, dt.website, dt.instagram, dt.notes,
-           dt.category_color, dt.talent_color, dt.rating_color,
+           dt.category_color, dt.rating_color,
            ta.id::text AS area_id,
            ta.name     AS area_name
     FROM distinct_talent dt
     LEFT JOIN talent_area_links tal ON tal.talent_id = dt.id
     LEFT JOIN talent_areas      ta  ON ta.id = tal.area_id
     ORDER BY dt._cat_sort NULLS LAST,
-             dt._talent_sort NULLS LAST,
              dt._rating_sort NULLS LAST,
              dt.name,
              ta.name NULLS FIRST
@@ -171,13 +163,11 @@ export default async function TalentPage({
   const [
     { rows: talent, recordCount },
     categoryOptions,
-    typeOptions,
     ratingOptions,
     areaOptions,
   ] = await Promise.all([
     getTalent({ expandOn: groupBy === "area" ? "area" : null }),
     getLookupOptions("talent_categories"),
-    getLookupOptions("talent_types"),
     getLookupOptions("talent_rating_levels"),
     getAreaOptions(),
   ]);
@@ -189,7 +179,6 @@ export default async function TalentPage({
           "talent_area_links",
           "talent_areas",
           "talent_categories",
-          "talent_types",
           "talent_rating_levels",
         ]}
       />
@@ -198,7 +187,6 @@ export default async function TalentPage({
         recordCount={recordCount}
         groupBy={groupBy}
         categoryOptions={categoryOptions}
-        typeOptions={typeOptions}
         ratingOptions={ratingOptions}
         areaOptions={areaOptions}
       />
