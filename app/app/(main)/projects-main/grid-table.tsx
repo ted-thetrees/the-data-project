@@ -23,6 +23,7 @@ import {
   updateProjectField,
   finalizeProject,
   createTask,
+  createProject,
 } from "./actions";
 import { Pill, PillSelect } from "@/components/pill";
 import { useTableViews } from "@/components/table-views";
@@ -217,6 +218,7 @@ export function GridTable({
                 style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
               />
             </tr>
+            <NewProjectRow colSpan={COLUMN_KEYS.length} />
             {data.map((row, i) => {
               const prev = i > 0 ? data[i - 1] : null;
               const tickleChanged =
@@ -420,6 +422,24 @@ function AddTaskRow({
         title="Add a blank task to this project"
       >
         {pending ? "Adding…" : "+ Add task"}
+      </td>
+    </tr>
+  );
+}
+
+function NewProjectRow({ colSpan }: { colSpan: number }) {
+  const [pending, startTransition] = useTransition();
+  return (
+    <tr>
+      <td
+        colSpan={colSpan}
+        className="themed-new-row-cell"
+        onClick={() => {
+          if (!pending) startTransition(() => createProject());
+        }}
+        title="Create a new draft project"
+      >
+        {pending ? "Creating…" : "+ New project"}
       </td>
     </tr>
   );

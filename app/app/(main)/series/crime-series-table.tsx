@@ -94,6 +94,24 @@ function AddSeriesRow({
   );
 }
 
+function NewSeriesRow({ colSpan }: { colSpan: number }) {
+  const [pending, startTransition] = useTransition();
+  return (
+    <tr>
+      <td
+        colSpan={colSpan}
+        className="themed-new-row-cell"
+        onClick={() => {
+          if (!pending) startTransition(() => createCrimeSeries(null));
+        }}
+        title="Create a new series with no status"
+      >
+        {pending ? "Creating…" : "+ New series"}
+      </td>
+    </tr>
+  );
+}
+
 function youtubeEmbedUrl(url: string): string | null {
   try {
     const u = new URL(url);
@@ -207,6 +225,7 @@ export function CrimeSeriesTable({
                 style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
               />
             </tr>
+            <NewSeriesRow colSpan={CRIME_COLUMN_KEYS.length} />
             {data.map((row, i) => {
               const embedUrl = row.youtube_trailer
                 ? youtubeEmbedUrl(row.youtube_trailer)

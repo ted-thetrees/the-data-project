@@ -125,6 +125,8 @@ export function CaloriesClient({
             rowKey={(r) => r.id}
             fixedLayout
             storageKey="calories:log"
+            onAddTopRow={createLogEntry}
+            addTopRowLabel="+ New entry"
             onAddRow={createLogEntry}
             addRowLabel="+ Add entry"
           />
@@ -141,6 +143,8 @@ export function CaloriesClient({
             rowKey={(r) => r.id}
             fixedLayout
             storageKey="calories:foods"
+            onAddTopRow={createFood}
+            addTopRowLabel="+ New food"
             onAddRow={createFood}
             addRowLabel="+ Add food"
           />

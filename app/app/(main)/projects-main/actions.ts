@@ -77,3 +77,27 @@ export async function createTask(projectId: string) {
   revalidatePath("/projects-main");
   revalidatePath("/super-combo");
 }
+
+export async function createProject() {
+  const [projectStatus, taskStatus, uberProject] = await Promise.all([
+    poolV002.query(`SELECT id FROM project_statuses WHERE name = 'Active' LIMIT 1`),
+    poolV002.query(`SELECT id FROM task_statuses WHERE name = 'Tickled' LIMIT 1`),
+    poolV002.query(`SELECT id FROM uber_projects ORDER BY name LIMIT 1`),
+  ]);
+  if (!projectStatus.rows[0]) throw new Error("Active project status missing");
+  if (!taskStatus.rows[0]) throw new Error("Tickled task status missing");
+  if (!uberProject.rows[0]) throw new Error("No uber projects available");
+
+  const project = await poolV002.query(
+    `INSERT INTO projects (name, status_id, uber_project_id, is_draft)
+     VALUES ('Untitled Project', $1, $2, true)
+     RETURNING id`,
+    [projectStatus.rows[0].id, uberProject.rows[0].id],
+  );
+  await poolV002.query(
+    `INSERT INTO tasks (name, project_id, status_id) VALUES ('', $1, $2)`,
+    [project.rows[0].id, taskStatus.rows[0].id],
+  );
+  revalidatePath("/projects-main");
+  revalidatePath("/super-combo");
+}

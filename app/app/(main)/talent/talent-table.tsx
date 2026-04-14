@@ -158,6 +158,24 @@ function AddTalentRow({
   );
 }
 
+function NewTalentRow({ colSpan }: { colSpan: number }) {
+  const [pending, startTransition] = useTransition();
+  return (
+    <tr>
+      <td
+        colSpan={colSpan}
+        className="themed-new-row-cell"
+        onClick={() => {
+          if (!pending) startTransition(() => createTalent(null, null, null));
+        }}
+        title="Create a new talent with nothing pre-filled"
+      >
+        {pending ? "Creating…" : "+ New talent"}
+      </td>
+    </tr>
+  );
+}
+
 function YesBadge({ value }: { value: string | null }) {
   if (!value || value === "----" || value === "-----") return <Empty />;
   if (value === "Yes") return <Tag>Yes</Tag>;
@@ -333,6 +351,7 @@ export function TalentTable({
                 style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
               />
             </tr>
+            <NewTalentRow colSpan={TALENT_COLUMN_KEYS.length} />
             {sorted.map((row, i) => {
               const isRatingEnd = ratingEndSet.has(i);
               const ratingSpan = isRatingEnd ? ratingEndToSpan[i] : null;

@@ -34,6 +34,13 @@ interface DataTableProps<T> {
    */
   onAddRow?: () => void | Promise<void>;
   addRowLabel?: string;
+  /**
+   * When provided, renders a faded dashed `+ Add` row at the TOP of the table,
+   * directly below the header row. Used to create a new record "from scratch"
+   * without inheriting any grouping context.
+   */
+  onAddTopRow?: () => void | Promise<void>;
+  addTopRowLabel?: string;
 }
 
 export function DataTable<T>({
@@ -46,8 +53,11 @@ export function DataTable<T>({
   viewSwitcherFootnote,
   onAddRow,
   addRowLabel = "+ Add row",
+  onAddTopRow,
+  addTopRowLabel = "+ Add new",
 }: DataTableProps<T>) {
   const [addPending, startAddTransition] = useTransition();
+  const [addTopPending, startAddTopTransition] = useTransition();
   const defaultWidths: Record<string, number> = {};
   for (const col of columns) {
     if (col.width !== undefined) defaultWidths[col.key] = col.width;
@@ -136,6 +146,20 @@ export function DataTable<T>({
               style={{ height: 14, padding: 0, background: "transparent" }}
             />
           </tr>
+          {onAddTopRow && (
+            <tr>
+              <td
+                colSpan={columns.length}
+                className="themed-new-row-cell"
+                onClick={() => {
+                  if (!addTopPending) startAddTopTransition(() => onAddTopRow());
+                }}
+                title="Add a new record"
+              >
+                {addTopPending ? "Adding…" : addTopRowLabel}
+              </td>
+            </tr>
+          )}
           {rows.map((row) => {
             const record = row as Record<string, unknown>;
             return (
