@@ -23,12 +23,12 @@ const TALENT_COLUMN_KEYS = [
   "category",
   "primary_talent",
   "overall_rating",
-  "category_edit",
-  "primary_talent_edit",
-  "overall_rating_edit",
   "resource",
   "website",
   "instagram",
+  "category_edit",
+  "primary_talent_edit",
+  "overall_rating_edit",
   "arch",
   "int",
   "land",
@@ -300,12 +300,12 @@ export function TalentTable({
                 { key: "category", label: "Category", center: false },
                 { key: "primary_talent", label: "Primary Talent", center: false },
                 { key: "overall_rating", label: "Overall Rating", center: false },
-                { key: "category_edit", label: "Category (edit)", center: false },
-                { key: "primary_talent_edit", label: "Primary Talent (edit)", center: false },
-                { key: "overall_rating_edit", label: "Rating (edit)", center: false },
                 { key: "resource", label: "Resource", center: false },
                 { key: "website", label: "Website", center: false },
                 { key: "instagram", label: "Instagram", center: false },
+                { key: "category_edit", label: "Category (edit)", center: false },
+                { key: "primary_talent_edit", label: "Primary Talent (edit)", center: false },
+                { key: "overall_rating_edit", label: "Rating (edit)", center: false },
                 { key: "arch", label: "Arch", center: true },
                 { key: "int", label: "Int", center: true },
                 { key: "land", label: "Land", center: true },
@@ -353,6 +353,19 @@ export function TalentTable({
                       <IcicleCell span={ratingByIndex[i]} extraSpan={1} />
                     )}
 
+                    <td className={`${cellClass} text-foreground`}>
+                      <EditableText
+                        value={row.name}
+                        onSave={(v) => updateTalentName(row.id, v)}
+                      />
+                    </td>
+                    <td className={cellClass}>
+                      <WebLink url={row.website} className="max-w-[180px]" />
+                    </td>
+                    <td className={cellClass}>
+                      <WebLink url={row.instagram} className="max-w-[180px]" />
+                    </td>
+
                     <td className={cellClass}>
                       <PillSelect
                         value={row.primary_talent_category ?? ""}
@@ -373,19 +386,6 @@ export function TalentTable({
                         options={ratingOptions}
                         onSave={(v) => updateTalentOverallRating(row.id, v)}
                       />
-                    </td>
-
-                    <td className={`${cellClass} text-foreground`}>
-                      <EditableText
-                        value={row.name}
-                        onSave={(v) => updateTalentName(row.id, v)}
-                      />
-                    </td>
-                    <td className={cellClass}>
-                      <WebLink url={row.website} className="max-w-[180px]" />
-                    </td>
-                    <td className={cellClass}>
-                      <WebLink url={row.instagram} className="max-w-[180px]" />
                     </td>
                     <td className={cellCenterClass}>
                       <YesBadge value={row.architecture} />
