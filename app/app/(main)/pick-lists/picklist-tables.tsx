@@ -1,10 +1,12 @@
 "use client";
 
 import { DataTable, type Column } from "@/components/data-table";
+import { EditableText } from "@/components/editable-text";
 import {
   EditableColorCell,
   type PaletteForPicker,
 } from "@/components/editable-color-cell";
+import { createPicklistOption, updatePicklistName } from "./actions";
 
 export type Status = {
   id: string;
@@ -27,7 +29,16 @@ function buildStatusColumns(
   showVisible: boolean,
 ): Column<Status>[] {
   const base: Column<Status>[] = [
-    { key: "name", header: "Option" },
+    {
+      key: "name",
+      header: "Option",
+      render: (row) => (
+        <EditableText
+          value={row.name}
+          onSave={(v) => updatePicklistName(source, row.id, v)}
+        />
+      ),
+    },
     {
       key: "color",
       header: "Color",
@@ -74,12 +85,17 @@ export function PicklistStatusTable({
   storageKey: string;
 }) {
   const columns = buildStatusColumns(source, palettes, showVisible);
+  const create = () => createPicklistOption(source);
   return (
     <DataTable
       columns={columns}
       rows={rows}
       rowKey={(r) => r.id}
       storageKey={storageKey}
+      onAddTopRow={create}
+      addTopRowLabel="+ New option"
+      onAddRow={create}
+      addRowLabel="+ Add option"
     />
   );
 }

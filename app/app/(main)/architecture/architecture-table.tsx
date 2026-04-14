@@ -5,7 +5,9 @@ import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
 import { PillSelect, type PillOption } from "@/components/pill";
 import { Tag } from "@/components/tag";
-import { updateTalentOverallRating } from "../talent/actions";
+import { EditableText } from "@/components/editable-text";
+import { updateTalentOverallRating, updateTalentName } from "../talent/actions";
+import { createArchitect } from "./actions";
 
 export interface ArchitectureRow {
   id: string;
@@ -37,7 +39,17 @@ export function ArchitectureTable({
   ratingOptions: PillOption[];
 }) {
   const columns: Column<ArchitectureRow>[] = [
-    { key: "name", header: "Resource", width: 220 },
+    {
+      key: "name",
+      header: "Resource",
+      width: 220,
+      render: (row) => (
+        <EditableText
+          value={row.name}
+          onSave={(v) => updateTalentName(row.id, v)}
+        />
+      ),
+    },
     {
       key: "overall_rating",
       header: "Overall Rating",
@@ -90,6 +102,10 @@ export function ArchitectureTable({
       rowKey={(r) => r.id}
       fixedLayout
       storageKey="architecture"
+      onAddTopRow={createArchitect}
+      addTopRowLabel="+ New architect"
+      onAddRow={createArchitect}
+      addRowLabel="+ Add architect"
     />
   );
 }

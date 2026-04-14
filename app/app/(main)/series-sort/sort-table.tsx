@@ -1,13 +1,18 @@
 "use client";
 
+import { useTransition } from "react";
 import { PageShell } from "@/components/page-shell";
 import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
 import { Subtitle } from "@/components/subtitle";
+import { EditableText } from "@/components/editable-text";
 import { useTableViews } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import type { SortRow } from "./page";
+import { updateCrimeSeriesTitle, createCrimeSeries } from "../series/actions";
+
+const PRE_EVAL_STATUS_ID = "e5dc627e-c7e7-474e-b097-c23850c1906c";
 
 const SORT_COLUMN_KEYS = ["title", "network", "trailer", "release_date"] as const;
 
@@ -99,12 +104,19 @@ export function SortTable({ data }: { data: SortRow[] }) {
             <tr aria-hidden="true">
               <td colSpan={SORT_COLUMN_KEYS.length} style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }} />
             </tr>
+            <NewSortSeriesRow colSpan={SORT_COLUMN_KEYS.length} />
+            <tr aria-hidden="true">
+              <td colSpan={SORT_COLUMN_KEYS.length} style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }} />
+            </tr>
             {data.map((row) => {
               const embedUrl = row.youtube_trailer ? youtubeEmbedUrl(row.youtube_trailer) : null;
               return (
                 <tr key={row.id}>
                   <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] font-medium align-top">
-                    {row.title}
+                    <EditableText
+                      value={row.title}
+                      onSave={(v) => updateCrimeSeriesTitle(row.id, v)}
+                    />
                   </td>
                   <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] align-top">
                     {row.network || <Empty />}
@@ -130,9 +142,46 @@ export function SortTable({ data }: { data: SortRow[] }) {
                 </tr>
               );
             })}
+            <AddSortSeriesRow colSpan={SORT_COLUMN_KEYS.length} />
           </tbody>
         </table>
       </div>
     </PageShell>
+  );
+}
+
+function NewSortSeriesRow({ colSpan }: { colSpan: number }) {
+  const [pending, startTransition] = useTransition();
+  return (
+    <tr>
+      <td
+        colSpan={colSpan}
+        className="themed-new-row-cell"
+        onClick={() => {
+          if (!pending) startTransition(() => createCrimeSeries(PRE_EVAL_STATUS_ID));
+        }}
+        title="Create a new series in the evaluation queue"
+      >
+        {pending ? "Creating…" : "+ New series"}
+      </td>
+    </tr>
+  );
+}
+
+function AddSortSeriesRow({ colSpan }: { colSpan: number }) {
+  const [pending, startTransition] = useTransition();
+  return (
+    <tr>
+      <td
+        colSpan={colSpan}
+        className="themed-new-row-cell"
+        onClick={() => {
+          if (!pending) startTransition(() => createCrimeSeries(PRE_EVAL_STATUS_ID));
+        }}
+        title="Add another series to the evaluation queue"
+      >
+        {pending ? "Adding…" : "+ Add series"}
+      </td>
+    </tr>
   );
 }
