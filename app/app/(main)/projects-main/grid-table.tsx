@@ -497,6 +497,7 @@ function EditableTextWrap({
       placeholder={placeholder}
       rows={1}
       onChange={(e) => setV(e.target.value)}
+      onContextMenu={(e) => e.preventDefault()}
       onBlur={() => {
         if (v !== value) {
           startTransition(() => {
@@ -552,6 +553,7 @@ function EditableText({
       value={v}
       placeholder={placeholder}
       onChange={(e) => setV(e.target.value)}
+      onContextMenu={(e) => e.preventDefault()}
       onBlur={() => {
         if (v !== value) {
           startTransition(() => {
