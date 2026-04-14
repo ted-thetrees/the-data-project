@@ -132,6 +132,22 @@
   border-color: color-mix(in srgb, var(--success) 40%, transparent);
 }
 
+.themed-new-row-cell {
+  background: var(--cell-bg);
+  border: 1px var(--new-row-border-style) var(--border);
+  color: var(--muted-foreground);
+  font-size: var(--new-row-placeholder-font-size);
+  opacity: var(--new-row-opacity);
+  cursor: pointer;
+  text-align: left;
+  padding: var(--cell-padding-y) var(--cell-padding-x);
+  transition: opacity var(--transition-fast), border-color var(--transition-fast);
+}
+.themed-new-row-cell:hover {
+  opacity: var(--new-row-hover-opacity);
+  border-color: var(--ring);
+}
+
 :root {
 
   /* ── Default status color (used when a status has no DB color) ── */

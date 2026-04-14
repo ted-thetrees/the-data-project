@@ -140,7 +140,15 @@ export function GridTable({
   );
 
   const projectStartSet = new Set(projectSpans.map((s) => s.startIndex));
+  const projectEndSet = new Set(
+    projectSpans.map((s) => s.startIndex + s.rowSpan - 1)
+  );
+  const projectEndToSpan = Object.fromEntries(
+    projectSpans.map((s) => [s.startIndex + s.rowSpan - 1, s])
+  );
   const projectByIndex = Object.fromEntries(projectSpans.map((s) => [s.startIndex, s]));
+
+  const TASK_COL_COUNT = 4; // task, task_status, result, notes
 
   const {
     views,
@@ -224,13 +232,13 @@ export function GridTable({
                 </tr>
               )}
               <tr>
-                {/* Icicle: Project (rowspan-merged) */}
+                {/* Icicle: Project (rowspan-merged, +1 to span add-row) */}
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
                   const isDraft = Boolean(span.extra?.is_draft);
                   return (
                     <td
-                      rowSpan={span.rowSpan}
+                      rowSpan={span.rowSpan + 1}
                       className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
                     >
                       <div className="flex items-start gap-2">
@@ -242,23 +250,22 @@ export function GridTable({
                             }
                           />
                         </div>
-                        <div className="flex flex-col items-end gap-1 shrink-0">
-                          <AddTaskButton projectId={row.project_id} />
-                          {isDraft && (
+                        {isDraft && (
+                          <div className="flex flex-col items-end gap-1 shrink-0">
                             <FinalizeButton projectId={row.project_id} />
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     </td>
                   );
                 })()}
 
-                {/* Icicle: Tickle (project-level, rowspan-merged) */}
+                {/* Icicle: Tickle (project-level, rowspan-merged, +1) */}
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
                   return (
                     <td
-                      rowSpan={span.rowSpan}
+                      rowSpan={span.rowSpan + 1}
                       className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
                     >
                       <EditableDate
@@ -275,12 +282,12 @@ export function GridTable({
                   );
                 })()}
 
-                {/* Icicle: Uber Project (rowspan-merged pill select, project-level) */}
+                {/* Icicle: Uber Project (rowspan-merged pill select, +1) */}
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
                   return (
                     <td
-                      rowSpan={span.rowSpan}
+                      rowSpan={span.rowSpan + 1}
                       className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] text-sm bg-[color:var(--cell-bg)]"
                     >
                       <PillSelect
@@ -298,12 +305,12 @@ export function GridTable({
                   );
                 })()}
 
-                {/* Icicle: Project Status (rowspan-merged pill select) */}
+                {/* Icicle: Project Status (rowspan-merged pill select, +1) */}
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
                   return (
                     <td
-                      rowSpan={span.rowSpan}
+                      rowSpan={span.rowSpan + 1}
                       className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
                     >
                       <PillSelect
@@ -356,6 +363,12 @@ export function GridTable({
                   />
                 </td>
               </tr>
+              {projectEndSet.has(i) && (
+                <AddTaskRow
+                  projectId={projectEndToSpan[i].extra?.project_id as string ?? row.project_id}
+                  colSpan={TASK_COL_COUNT}
+                />
+              )}
             </Fragment>
               );
             })}
@@ -388,18 +401,27 @@ function FinalizeButton({ projectId }: { projectId: string }) {
   );
 }
 
-function AddTaskButton({ projectId }: { projectId: string }) {
+function AddTaskRow({
+  projectId,
+  colSpan,
+}: {
+  projectId: string;
+  colSpan: number;
+}) {
   const [pending, startTransition] = useTransition();
   return (
-    <button
-      type="button"
-      onClick={() => startTransition(() => createTask(projectId))}
-      disabled={pending}
-      title="Add a blank task to this project"
-      className="themed-button-sm shrink-0"
-    >
-      {pending ? "…" : "+ Task"}
-    </button>
+    <tr>
+      <td
+        colSpan={colSpan}
+        className="themed-new-row-cell"
+        onClick={() => {
+          if (!pending) startTransition(() => createTask(projectId));
+        }}
+        title="Add a blank task to this project"
+      >
+        {pending ? "Adding…" : "+ Add task"}
+      </td>
+    </tr>
   );
 }
 
