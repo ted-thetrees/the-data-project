@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Outfit, Source_Sans_3, Nunito } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
@@ -33,18 +34,21 @@ export const metadata: Metadata = {
   description: "Project and task management",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const userAgent = (await headers()).get("user-agent") ?? "";
+  const isDesktopShell = userAgent.includes("DataDesktop/");
+
   return (
     <html lang="en" className={cn("h-full", "antialiased", outfit.variable, sourceSans.variable, nunito.variable)}>
       <body className="min-h-full flex flex-col">
         <TooltipProvider>
           <SidebarProvider defaultOpen={false}>
-            <AppSidebar />
-            <NavShortcuts />
+            {!isDesktopShell && <AppSidebar />}
+            {!isDesktopShell && <NavShortcuts />}
             <SidebarInset>{children}</SidebarInset>
           </SidebarProvider>
         </TooltipProvider>
