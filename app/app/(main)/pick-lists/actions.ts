@@ -84,3 +84,17 @@ export async function updatePicklistName(
   );
   revalidate();
 }
+
+export async function updatePicklistFullName(
+  source: string,
+  id: string,
+  fullName: string,
+) {
+  const config = SOURCE_TABLES[source];
+  if (!config) throw new Error(`Invalid picklist source: ${source}`);
+  await poolV002.query(
+    `UPDATE ${config.table} SET full_name = $1 WHERE id = $2`,
+    [fullName || "Untitled", id],
+  );
+  revalidate();
+}

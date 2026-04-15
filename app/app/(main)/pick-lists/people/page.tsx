@@ -106,6 +106,7 @@ export default async function PickListsPeoplePage() {
             source="people_metro_areas"
             rows={metroAreas}
             palettes={palettes}
+            showFullName
             storageKey="pick-lists:people_metro_areas"
           />
         </PickListSection>

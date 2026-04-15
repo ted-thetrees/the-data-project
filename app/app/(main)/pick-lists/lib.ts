@@ -88,8 +88,13 @@ export function getPeopleOrgFillStatuses() {
   );
 }
 
-export function getPeopleMetroAreas() {
-  return getStatusesByName("people_metro_areas", "ORDER BY sort_order NULLS LAST, name");
+export async function getPeopleMetroAreas(): Promise<Status[]> {
+  const result = await poolV002.query(
+    `SELECT id::text, name, full_name, COALESCE(color, '') as color
+     FROM people_metro_areas
+     ORDER BY sort_order NULLS LAST, name`,
+  );
+  return result.rows;
 }
 
 export async function getPicklistColorsForTables(

@@ -6,13 +6,18 @@ import {
   EditableColorCell,
   type PaletteForPicker,
 } from "@/components/editable-color-cell";
-import { createPicklistOption, updatePicklistName } from "./actions";
+import {
+  createPicklistOption,
+  updatePicklistName,
+  updatePicklistFullName,
+} from "./actions";
 
 export type Status = {
   id: string;
   name: string;
   color: string;
   visible?: boolean;
+  full_name?: string;
 };
 
 export type PicklistColor = {
@@ -27,6 +32,7 @@ function buildStatusColumns(
   source: string,
   palettes: PaletteForPicker[],
   showVisible: boolean,
+  showFullName: boolean,
 ): Column<Status>[] {
   const base: Column<Status>[] = [
     {
@@ -39,6 +45,20 @@ function buildStatusColumns(
         />
       ),
     },
+  ];
+  if (showFullName) {
+    base.push({
+      key: "full_name",
+      header: "Full Name",
+      render: (row) => (
+        <EditableText
+          value={row.full_name ?? ""}
+          onSave={(v) => updatePicklistFullName(source, row.id, v)}
+        />
+      ),
+    });
+  }
+  base.push(
     {
       key: "color",
       header: "Color",
@@ -58,7 +78,7 @@ function buildStatusColumns(
         <span className="font-mono text-xs text-muted-foreground">{row.color}</span>
       ),
     },
-  ];
+  );
   if (showVisible) {
     base.push({
       key: "visible",
@@ -76,15 +96,17 @@ export function PicklistStatusTable({
   rows,
   palettes,
   showVisible = false,
+  showFullName = false,
   storageKey,
 }: {
   source: string;
   rows: Status[];
   palettes: PaletteForPicker[];
   showVisible?: boolean;
+  showFullName?: boolean;
   storageKey: string;
 }) {
-  const columns = buildStatusColumns(source, palettes, showVisible);
+  const columns = buildStatusColumns(source, palettes, showVisible, showFullName);
   const create = () => createPicklistOption(source);
   return (
     <DataTable
