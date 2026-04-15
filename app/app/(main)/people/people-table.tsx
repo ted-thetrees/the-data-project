@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -30,6 +30,7 @@ import {
   updatePersonOrgFilled,
   updatePersonMetroArea,
   createPerson,
+  createPersonMetroArea,
 } from "./actions";
 
 export interface PersonRow {
@@ -76,6 +77,76 @@ const HEADER_LABELS: Record<string, string> = {
   has_org_filled: "Org Filled",
   passphrase: "Passphrase",
 };
+
+function MetroAreaCreateForm({
+  personId,
+  defaultColor,
+  close,
+}: {
+  personId: string;
+  defaultColor: string;
+  close: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [color, setColor] = useState(defaultColor);
+  const [pending, startTransition] = useTransition();
+  const canSubmit =
+    name.trim().length > 0 && fullName.trim().length > 0 && !pending;
+
+  const submit = () => {
+    if (!canSubmit) return;
+    startTransition(async () => {
+      await createPersonMetroArea(personId, name, fullName, color);
+      close();
+    });
+  };
+
+  return (
+    <div className="flex flex-col gap-2 w-[220px]">
+      <div className="text-[11px] text-muted-foreground">New metro area</div>
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Name"
+        autoFocus
+        className="border border-border rounded-sm px-2 py-1 text-xs"
+      />
+      <input
+        type="text"
+        value={fullName}
+        onChange={(e) => setFullName(e.target.value)}
+        placeholder="Full name"
+        onKeyDown={(e) => {
+          if (e.key === "Enter") submit();
+        }}
+        className="border border-border rounded-sm px-2 py-1 text-xs"
+      />
+      <div className="flex items-center gap-2">
+        <span
+          className="inline-block w-5 h-5 rounded-sm border border-border shrink-0"
+          style={{ backgroundColor: color }}
+        />
+        <input
+          type="text"
+          value={color}
+          onChange={(e) => setColor(e.target.value)}
+          placeholder="#rrggbb"
+          className="flex-1 border border-border rounded-sm px-2 py-1 font-mono text-[11px]"
+        />
+      </div>
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!canSubmit}
+        className="text-xs px-2 py-1 rounded-sm bg-foreground text-background disabled:opacity-50"
+      >
+        {pending ? "Creating…" : "Create"}
+      </button>
+    </div>
+  );
+}
 
 function NewPersonRow({ colSpan }: { colSpan: number }) {
   const [pending, startTransition] = useTransition();
@@ -130,6 +201,8 @@ export function PeopleTable({
       ),
     [params.columnOrder],
   );
+
+  const defaultMetroAreaColor = metroAreaOptions[0]?.color ?? "#727272";
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -195,6 +268,13 @@ export function PeopleTable({
           value={row.metro_area_id ?? ""}
           options={metroAreaOptions}
           onSave={(v) => updatePersonMetroArea(row.id, v)}
+          createSlot={(close) => (
+            <MetroAreaCreateForm
+              personId={row.id}
+              defaultColor={defaultMetroAreaColor}
+              close={close}
+            />
+          )}
         />
       </td>
     ),
