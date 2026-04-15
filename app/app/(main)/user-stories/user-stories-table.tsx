@@ -32,6 +32,12 @@ import {
   removeUserStoryRole,
   createUserStory,
 } from "./actions";
+import { createPicklistOptionNamed } from "../pick-lists/actions";
+
+const createUserStoryRoleOption = (name: string) =>
+  createPicklistOptionNamed("user_story_roles", name);
+const createUserStoryCategoryOption = (name: string) =>
+  createPicklistOptionNamed("user_story_categories", name);
 
 export interface UserStoryRow {
   id: string;
@@ -137,6 +143,7 @@ export function UserStoriesTable({
             options={roleOptions}
             onAdd={(id) => addUserStoryRole(row.id, id)}
             onRemove={(id) => removeUserStoryRole(row.id, id)}
+            onCreate={createUserStoryRoleOption}
           />
         </td>
       ),
@@ -162,6 +169,7 @@ export function UserStoriesTable({
             value={row.category_id ?? ""}
             options={categoryOptions}
             onSave={(v) => updateUserStoryCategory(row.id, v)}
+            onCreate={createUserStoryCategoryOption}
           />
         </td>
       ),

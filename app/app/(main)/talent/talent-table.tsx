@@ -38,7 +38,15 @@ import {
   addTalentArea,
   removeTalentArea,
 } from "./actions";
+import { createPicklistOptionNamed } from "../pick-lists/actions";
 import "./talent.css";
+
+const createTalentCategoryOption = (name: string) =>
+  createPicklistOptionNamed("talent_categories", name);
+const createTalentRatingOption = (name: string) =>
+  createPicklistOptionNamed("talent_rating_levels", name);
+const createTalentAreaOption = (name: string) =>
+  createPicklistOptionNamed("talent_areas", name);
 
 // Default mode is ungrouped — same column set whether you're in the default
 // view or grouping by area. Area mode prepends an icicle column.
@@ -343,6 +351,7 @@ export function TalentTable({
           value={row.primary_talent_category ?? ""}
           options={categoryOptions}
           onSave={(v) => updateTalentCategory(row.record_id, v)}
+          onCreate={createTalentCategoryOption}
         />
       </td>
     ),
@@ -352,6 +361,7 @@ export function TalentTable({
           value={row.overall_rating ?? ""}
           options={ratingOptions}
           onSave={(v) => updateTalentOverallRating(row.record_id, v)}
+          onCreate={createTalentRatingOption}
         />
       </td>
     ),
@@ -380,6 +390,7 @@ export function TalentTable({
           options={areaOptions}
           onAdd={(id) => addTalentArea(row.record_id, id)}
           onRemove={(id) => removeTalentArea(row.record_id, id)}
+          onCreate={createTalentAreaOption}
         />
       </td>
     ),

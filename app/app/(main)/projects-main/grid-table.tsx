@@ -39,7 +39,15 @@ import {
   createProject,
   deleteTask,
 } from "./actions";
+import { createPicklistOptionNamed } from "../pick-lists/actions";
 import { Pill, PillSelect } from "@/components/pill";
+
+const createUberProjectOption = (name: string) =>
+  createPicklistOptionNamed("uber_projects", name);
+const createProjectStatusOption = (name: string) =>
+  createPicklistOptionNamed("project_statuses", name);
+const createTaskStatusOption = (name: string) =>
+  createPicklistOptionNamed("task_statuses", name);
 import {
   ContextMenu,
   ContextMenuContent,
@@ -384,6 +392,7 @@ export function GridTable({
                             v
                           )
                         }
+                        onCreate={createUberProjectOption}
                       />
                     </td>
                   );
@@ -403,6 +412,7 @@ export function GridTable({
                         onSave={(v) =>
                           updateProjectField(row.project_id, "status_id", v)
                         }
+                        onCreate={createProjectStatusOption}
                       />
                     </td>
                   );
@@ -444,6 +454,7 @@ export function GridTable({
                           onSave={(v) =>
                             updateTaskField(row.id, "status_id", v)
                           }
+                          onCreate={createTaskStatusOption}
                         />
                       </td>
                     );

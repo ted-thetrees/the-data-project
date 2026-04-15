@@ -30,6 +30,10 @@ import {
   updateCrimeSeriesTitle,
   createCrimeSeries,
 } from "./actions";
+import { createPicklistOptionNamed } from "../pick-lists/actions";
+
+const createCrimeSeriesStatusOption = (name: string) =>
+  createPicklistOptionNamed("crime_series_statuses", name);
 
 // "status" is the pinned icicle column; the rest are user-reorderable.
 const CRIME_COMMON_KEYS = [
@@ -312,6 +316,7 @@ export function CrimeSeriesTable({
                       onSave={(statusId) =>
                         updateCrimeSeriesStatus(row.id, statusId)
                       }
+                      onCreate={createCrimeSeriesStatusOption}
                     />
                   </td>
                 ),

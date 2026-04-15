@@ -6,6 +6,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { contrastTextColor } from "@/lib/contrast";
 
 export const PILL_CLASS =
@@ -75,26 +83,67 @@ function tagColors(color: string | null | undefined) {
  * callbacks receive option ids, not display_ids. The caller is responsible
  * for mutating the canonical record (typically keyed off `row.record_id`).
  */
+// Sentinel value for the "Create '…'" item so it can never collide with a
+// real option id. Keywords carry the search term so cmdk keeps it visible.
+const CREATE_VALUE = "__pill_create__";
+
 export function MultiPillSelect({
   value,
   options,
   onAdd,
   onRemove,
+  onCreate,
 }: {
   value: string[];
   options: PillOption[];
   onAdd: (id: string) => void | Promise<void>;
   onRemove: (id: string) => void | Promise<void>;
+  onCreate?: (name: string) => Promise<PillOption>;
 }) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const [isPending, startTransition] = useTransition();
   const selected = new Set(value);
   const selectedOptions = value
     .map((id) => options.find((o) => o.id === id))
     .filter((o): o is PillOption => o != null);
 
+  const trimmed = search.trim();
+  const exact = trimmed
+    ? options.find((o) => o.name.toLowerCase() === trimmed.toLowerCase())
+    : null;
+  const showCreate = !!onCreate && trimmed.length > 0 && !exact;
+
+  const toggle = (opt: PillOption) => {
+    startTransition(() => {
+      if (selected.has(opt.id)) onRemove(opt.id);
+      else onAdd(opt.id);
+    });
+    setSearch("");
+  };
+
+  const handleCreate = () => {
+    if (!onCreate || !trimmed) return;
+    startTransition(async () => {
+      const newOpt = await onCreate(trimmed);
+      await onAdd(newOpt.id);
+    });
+    setSearch("");
+  };
+
+  const removeLast = () => {
+    if (value.length === 0) return;
+    startTransition(() => onRemove(value[value.length - 1]));
+  };
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) setSearch("");
+      }}
+    >
       <PopoverTrigger
         className="flex flex-wrap gap-1 cursor-pointer items-center text-left"
         style={{ opacity: isPending ? 0.6 : 1 }}
@@ -124,31 +173,57 @@ export function MultiPillSelect({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-auto min-w-[160px] gap-1 p-2 !rounded-none"
+        className="w-[260px] p-0 !rounded-md"
       >
-        <div className="flex flex-col items-start gap-1.5">
-          {options.map((opt) => {
-            const isSelected = selected.has(opt.id);
-            return (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => {
-                  startTransition(() => {
-                    if (isSelected) onRemove(opt.id);
-                    else onAdd(opt.id);
-                  });
-                }}
-                className={`${PILL_CLASS} cursor-pointer ring-offset-1 ${
-                  isSelected ? "ring-2 ring-foreground/40" : ""
-                }`}
-                style={{ ...PILL_STYLE, ...tagColors(opt.color) }}
-              >
-                {opt.name}
-              </button>
-            );
-          })}
-        </div>
+        <Command className="!rounded-md" loop>
+          <CommandInput
+            value={search}
+            onValueChange={setSearch}
+            placeholder={onCreate ? "Search or create…" : "Search…"}
+            onKeyDown={(e) => {
+              if (e.key === "Backspace" && search === "") {
+                e.preventDefault();
+                removeLast();
+              } else if (e.key === "Escape") {
+                setOpen(false);
+              }
+            }}
+          />
+          <CommandList>
+            <CommandEmpty>{showCreate ? null : "No matches."}</CommandEmpty>
+            <CommandGroup>
+              {options.map((opt) => {
+                const isSel = selected.has(opt.id);
+                return (
+                  <CommandItem
+                    key={opt.id}
+                    value={opt.id}
+                    keywords={[opt.name]}
+                    onSelect={() => toggle(opt)}
+                    data-checked={isSel || undefined}
+                  >
+                    <span
+                      className={PILL_CLASS}
+                      style={{ ...PILL_STYLE, ...tagColors(opt.color) }}
+                    >
+                      {opt.name}
+                    </span>
+                  </CommandItem>
+                );
+              })}
+              {showCreate && (
+                <CommandItem
+                  value={CREATE_VALUE}
+                  keywords={[trimmed]}
+                  onSelect={handleCreate}
+                >
+                  <span className="text-muted-foreground">Create</span>
+                  <span className="ml-1">&ldquo;{trimmed}&rdquo;</span>
+                </CommandItem>
+              )}
+            </CommandGroup>
+          </CommandList>
+        </Command>
       </PopoverContent>
     </Popover>
   );
@@ -158,19 +233,56 @@ export function PillSelect({
   value,
   options,
   onSave,
+  onCreate,
 }: {
   value: string;
   options: PillOption[];
   onSave: (v: string) => void | Promise<void>;
+  onCreate?: (name: string) => Promise<PillOption>;
 }) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const [isPending, startTransition] = useTransition();
   const current = options.find((o) => o.id === value);
   const bg = current?.color || DEFAULT_COLOR;
   const fg = contrastTextColor(current?.color ?? null);
 
+  const trimmed = search.trim();
+  const exact = trimmed
+    ? options.find((o) => o.name.toLowerCase() === trimmed.toLowerCase())
+    : null;
+  const showCreate = !!onCreate && trimmed.length > 0 && !exact;
+
+  const handleSelect = (id: string) => {
+    startTransition(() => onSave(id));
+    setOpen(false);
+    setSearch("");
+  };
+
+  const handleClear = () => {
+    startTransition(() => onSave(""));
+    setOpen(false);
+    setSearch("");
+  };
+
+  const handleCreate = () => {
+    if (!onCreate || !trimmed) return;
+    startTransition(async () => {
+      const newOpt = await onCreate(trimmed);
+      await onSave(newOpt.id);
+    });
+    setOpen(false);
+    setSearch("");
+  };
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) setSearch("");
+      }}
+    >
       <PopoverTrigger
         className={`${PILL_CLASS} cursor-pointer`}
         style={{
@@ -185,37 +297,63 @@ export function PillSelect({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-auto min-w-[160px] gap-1 p-2 !rounded-none"
+        className="w-[260px] p-0 !rounded-md"
       >
-        <div className="flex flex-col items-start gap-1.5">
-          {options.map((opt) => {
-            const isSelected = opt.id === value;
-            const obg = opt.color || DEFAULT_COLOR;
-            const ofg = contrastTextColor(opt.color ?? null);
-            return (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => {
-                  startTransition(() => {
-                    onSave(opt.id);
-                  });
-                  setOpen(false);
-                }}
-                className={`${PILL_CLASS} cursor-pointer ring-offset-1 ${
-                  isSelected ? "ring-2 ring-foreground/40" : ""
-                }`}
-                style={{
-                  ...PILL_STYLE,
-                  backgroundColor: obg,
-                  color: ofg,
-                }}
-              >
-                {opt.name}
-              </button>
-            );
-          })}
-        </div>
+        <Command className="!rounded-md" loop>
+          <CommandInput
+            value={search}
+            onValueChange={setSearch}
+            placeholder={onCreate ? "Search or create…" : "Search…"}
+            onKeyDown={(e) => {
+              if (e.key === "Backspace" && search === "") {
+                e.preventDefault();
+                if (value) handleClear();
+              } else if (e.key === "Escape") {
+                setOpen(false);
+              }
+            }}
+          />
+          <CommandList>
+            <CommandEmpty>{showCreate ? null : "No matches."}</CommandEmpty>
+            <CommandGroup>
+              {options.map((opt) => {
+                const obg = opt.color || DEFAULT_COLOR;
+                const ofg = contrastTextColor(opt.color ?? null);
+                const isSel = opt.id === value;
+                return (
+                  <CommandItem
+                    key={opt.id}
+                    value={opt.id}
+                    keywords={[opt.name]}
+                    onSelect={() => handleSelect(opt.id)}
+                    data-checked={isSel || undefined}
+                  >
+                    <span
+                      className={PILL_CLASS}
+                      style={{
+                        ...PILL_STYLE,
+                        backgroundColor: obg,
+                        color: ofg,
+                      }}
+                    >
+                      {opt.name}
+                    </span>
+                  </CommandItem>
+                );
+              })}
+              {showCreate && (
+                <CommandItem
+                  value={CREATE_VALUE}
+                  keywords={[trimmed]}
+                  onSelect={handleCreate}
+                >
+                  <span className="text-muted-foreground">Create</span>
+                  <span className="ml-1">&ldquo;{trimmed}&rdquo;</span>
+                </CommandItem>
+              )}
+            </CommandGroup>
+          </CommandList>
+        </Command>
       </PopoverContent>
     </Popover>
   );

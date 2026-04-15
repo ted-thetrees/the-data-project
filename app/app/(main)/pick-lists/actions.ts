@@ -46,6 +46,55 @@ function revalidate() {
   revalidatePath("/people");
 }
 
+export async function createPicklistOptionNamed(
+  source: string,
+  name: string,
+): Promise<{ id: string; name: string; color: string | null }> {
+  const config = SOURCE_TABLES[source];
+  if (!config) throw new Error(`Invalid picklist source: ${source}`);
+  const cleanName = name.trim();
+  if (!cleanName) throw new Error("Name is required");
+
+  // Inherit color from the first existing option so created tags blend in.
+  const colorRow = await poolV002.query<{ color: string | null }>(
+    `SELECT color FROM ${config.table} ORDER BY sort_order NULLS LAST, id LIMIT 1`,
+  );
+  const inheritedColor = colorRow.rows[0]?.color ?? "#727272";
+
+  const columns: string[] = ["name", "color"];
+  const params: unknown[] = [cleanName, inheritedColor];
+  const placeholders: string[] = ["$1", "$2"];
+
+  if (config.hasSortOrder) {
+    columns.push("sort_order");
+    placeholders.push(
+      `COALESCE((SELECT MAX(sort_order) + 1 FROM ${config.table}), 1)`,
+    );
+  }
+
+  // For tables with extra NOT NULL columns (e.g. people_metro_areas.full_name),
+  // mirror the new name into them so the created row passes constraints. The
+  // user can refine these from the Pick Lists page.
+  for (const col of Object.keys(config.extraInsertDefaults ?? {})) {
+    columns.push(col);
+    params.push(cleanName);
+    placeholders.push(`$${params.length}`);
+  }
+
+  const result = await poolV002.query<{
+    id: string;
+    name: string;
+    color: string | null;
+  }>(
+    `INSERT INTO ${config.table} (${columns.join(", ")})
+     VALUES (${placeholders.join(", ")})
+     RETURNING id::text AS id, name, color`,
+    params,
+  );
+  revalidate();
+  return result.rows[0];
+}
+
 export async function createPicklistOption(source: string) {
   const config = SOURCE_TABLES[source];
   if (!config) throw new Error(`Invalid picklist source: ${source}`);

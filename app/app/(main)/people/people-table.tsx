@@ -31,6 +31,18 @@ import {
   updatePersonMetroArea,
   createPerson,
 } from "./actions";
+import { createPicklistOptionNamed } from "../pick-lists/actions";
+
+const createGender = (name: string) =>
+  createPicklistOptionNamed("people_genders", name);
+const createFamiliarity = (name: string) =>
+  createPicklistOptionNamed("people_familiarity_levels", name);
+const createTellerStatus = (name: string) =>
+  createPicklistOptionNamed("people_teller_statuses", name);
+const createOrgFilled = (name: string) =>
+  createPicklistOptionNamed("people_org_fill_statuses", name);
+const createMetroArea = (name: string) =>
+  createPicklistOptionNamed("people_metro_areas", name);
 
 export interface PersonRow {
   id: string;
@@ -177,6 +189,7 @@ export function PeopleTable({
           value={row.gender_id ?? ""}
           options={genderOptions}
           onSave={(v) => updatePersonGender(row.id, v)}
+          onCreate={createGender}
         />
       </td>
     ),
@@ -186,6 +199,7 @@ export function PeopleTable({
           value={row.familiarity_id ?? ""}
           options={familiarityOptions}
           onSave={(v) => updatePersonFamiliarity(row.id, v)}
+          onCreate={createFamiliarity}
         />
       </td>
     ),
@@ -195,6 +209,7 @@ export function PeopleTable({
           value={row.metro_area_id ?? ""}
           options={metroAreaOptions}
           onSave={(v) => updatePersonMetroArea(row.id, v)}
+          onCreate={createMetroArea}
         />
       </td>
     ),
@@ -204,6 +219,7 @@ export function PeopleTable({
           value={row.teller_status_id ?? ""}
           options={tellerStatusOptions}
           onSave={(v) => updatePersonTellerStatus(row.id, v)}
+          onCreate={createTellerStatus}
         />
       </td>
     ),
@@ -213,6 +229,7 @@ export function PeopleTable({
           value={row.has_org_filled_id ?? ""}
           options={orgFilledOptions}
           onSave={(v) => updatePersonOrgFilled(row.id, v)}
+          onCreate={createOrgFilled}
         />
       </td>
     ),
