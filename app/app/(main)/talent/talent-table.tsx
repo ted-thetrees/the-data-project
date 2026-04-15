@@ -2,6 +2,19 @@
 
 import { Fragment, useMemo, useTransition } from "react";
 import Link from "next/link";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { PageShell } from "@/components/page-shell";
 import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
@@ -12,9 +25,10 @@ import {
   type PillOption,
 } from "@/components/pill";
 import { EditableText } from "@/components/editable-text";
-import { useTableViews } from "@/components/table-views";
+import { useTableViews, resolveColumnOrder } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
+import { SortableHeaderCell } from "@/components/sortable-header-cell";
 import {
   updateTalentCategory,
   updateTalentOverallRating,
@@ -229,8 +243,6 @@ export function TalentTable({
   areaOptions: PillOption[];
 }) {
   const sorted = data;
-  const columnKeys =
-    groupBy === "area" ? TALENT_AREA_MODE_KEYS : TALENT_DEFAULT_MODE_KEYS;
 
   // Area mode spans — pre-expanded rows already carry area_name, so a single
   // pass over computeGroupSpans produces one span per tag group. Records with
@@ -269,64 +281,100 @@ export function TalentTable({
     renameView,
     deleteView,
     setColumnWidth,
+    setColumnOrder,
   } = useTableViews("talent", TALENT_DEFAULT_WIDTHS);
+
+  const orderedCommonKeys = useMemo(
+    () =>
+      resolveColumnOrder(
+        params.columnOrder,
+        TALENT_COMMON_COLUMN_KEYS as readonly string[],
+      ),
+    [params.columnOrder],
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = orderedCommonKeys.indexOf(String(active.id));
+    const newIndex = orderedCommonKeys.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    setColumnOrder(arrayMove(orderedCommonKeys, oldIndex, newIndex));
+  };
 
   const headerClass =
     "relative text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
   const cellClass =
     "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]";
 
-  const commonHeaders = [
-    { key: "category", label: "Category" },
-    { key: "overall_rating", label: "Overall Rating" },
-    { key: "resource", label: "Resource" },
-    { key: "website", label: "Website" },
-    { key: "instagram", label: "Instagram" },
-    { key: "areas", label: "Areas" },
-    { key: "notes", label: "Notes" },
-  ];
-  const headers =
-    groupBy === "area"
-      ? [{ key: "area", label: "Area" }, ...commonHeaders]
-      : commonHeaders;
+  const HEADER_LABELS: Record<string, string> = {
+    area: "Area",
+    category: "Category",
+    overall_rating: "Overall Rating",
+    resource: "Resource",
+    website: "Website",
+    instagram: "Instagram",
+    areas: "Areas",
+    notes: "Notes",
+  };
+
+  const columnKeys =
+    groupBy === "area" ? ["area", ...orderedCommonKeys] : orderedCommonKeys;
 
   const totalWidth = columnKeys.reduce(
     (sum, k) => sum + (params.columnWidths[k] ?? 0),
     0,
   );
 
-  // Render the cells that are identical across both grouping modes. Returns
-  // plain JSX (not a nested component) so React doesn't rebuild the tree on
-  // every render.
-  const renderRowBody = (row: TalentRow) => (
-    <>
-      <td className={cellClass}>
+  // Per-column cell renderers keyed by TALENT_COMMON_COLUMN_KEYS. renderRowBody
+  // walks the (user-reordered) key list and emits cells in that order. The
+  // "area" icicle column is rendered separately by the tbody loop in area mode.
+  const commonCellRenderers: Record<
+    string,
+    (row: TalentRow) => React.ReactNode
+  > = {
+    category: (row) => (
+      <td key="category" className={cellClass}>
         <PillSelect
           value={row.primary_talent_category ?? ""}
           options={categoryOptions}
           onSave={(v) => updateTalentCategory(row.record_id, v)}
         />
       </td>
-      <td className={cellClass}>
+    ),
+    overall_rating: (row) => (
+      <td key="overall_rating" className={cellClass}>
         <PillSelect
           value={row.overall_rating ?? ""}
           options={ratingOptions}
           onSave={(v) => updateTalentOverallRating(row.record_id, v)}
         />
       </td>
-      <td className={`${cellClass} text-foreground`}>
+    ),
+    resource: (row) => (
+      <td key="resource" className={`${cellClass} text-foreground`}>
         <EditableText
           value={row.name}
           onSave={(v) => updateTalentName(row.record_id, v)}
         />
       </td>
-      <td className={cellClass}>
+    ),
+    website: (row) => (
+      <td key="website" className={cellClass}>
         <WebLink url={row.website} className="max-w-[180px]" />
       </td>
-      <td className={cellClass}>
+    ),
+    instagram: (row) => (
+      <td key="instagram" className={cellClass}>
         <WebLink url={row.instagram} className="max-w-[180px]" />
       </td>
-      <td className={cellClass}>
+    ),
+    areas: (row) => (
+      <td key="areas" className={cellClass}>
         <MultiPillSelect
           value={row.areas_all.map((a) => a.id)}
           options={areaOptions}
@@ -334,7 +382,9 @@ export function TalentTable({
           onRemove={(id) => removeTalentArea(row.record_id, id)}
         />
       </td>
-      <td className={cellClass}>
+    ),
+    notes: (row) => (
+      <td key="notes" className={cellClass}>
         {row.notes ? (
           <span
             className="truncate block max-w-[160px] text-muted-foreground"
@@ -346,7 +396,11 @@ export function TalentTable({
           <Empty />
         )}
       </td>
-    </>
+    ),
+  };
+
+  const renderRowBody = (row: TalentRow) => (
+    <>{orderedCommonKeys.map((key) => commonCellRenderers[key]?.(row))}</>
   );
 
   return (
@@ -367,6 +421,11 @@ export function TalentTable({
         onDelete={deleteView}
       />
       <div className="overflow-x-auto">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
         <table
           className="text-[length:var(--cell-font-size)] [&_td]:align-top"
           style={{
@@ -383,16 +442,37 @@ export function TalentTable({
           </colgroup>
           <thead>
             <tr>
-              {headers.map((h, i) => (
-                <th key={h.key} className={headerClass}>
-                  {h.label}
+              {groupBy === "area" && (
+                <th key="area" className={headerClass}>
+                  Area
                   <ColumnResizer
-                    columnIndex={i}
-                    currentWidth={params.columnWidths[h.key]}
-                    onResize={(w) => setColumnWidth(h.key, w)}
+                    columnIndex={0}
+                    currentWidth={params.columnWidths["area"]}
+                    onResize={(w) => setColumnWidth("area", w)}
                   />
                 </th>
-              ))}
+              )}
+              <SortableContext
+                items={orderedCommonKeys}
+                strategy={horizontalListSortingStrategy}
+              >
+                {orderedCommonKeys.map((key, i) => (
+                  <SortableHeaderCell
+                    key={key}
+                    id={key}
+                    className={headerClass}
+                    extras={
+                      <ColumnResizer
+                        columnIndex={i + (groupBy === "area" ? 1 : 0)}
+                        currentWidth={params.columnWidths[key]}
+                        onResize={(w) => setColumnWidth(key, w)}
+                      />
+                    }
+                  >
+                    {HEADER_LABELS[key]}
+                  </SortableHeaderCell>
+                ))}
+              </SortableContext>
             </tr>
           </thead>
           <tbody>
@@ -445,6 +525,7 @@ export function TalentTable({
                 })}
           </tbody>
         </table>
+        </DndContext>
       </div>
     </PageShell>
   );

@@ -1,10 +1,24 @@
 "use client";
 
-import { useTransition } from "react";
+import { useMemo, useTransition } from "react";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { cn } from "@/lib/utils";
-import { useTableViews } from "@/components/table-views";
+import { useTableViews, resolveColumnOrder } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
+import { SortableHeaderCell } from "@/components/sortable-header-cell";
 import type { ExpandOnGroupConfig } from "@/lib/table-grouping";
 
 export interface Column<T> {
@@ -20,11 +34,6 @@ export interface Column<T> {
    * When set, grouping by this column expands rows: a record with N values
    * in this column renders once per value, under each group header. Records
    * with no values land in a synthetic "Uncategorized" bucket.
-   *
-   * See lib/table-grouping.ts for the display-multiplicity/counting-singularity
-   * invariant. The data layer is responsible for producing pre-expanded rows
-   * with `record_id` / `display_id` fields when this is active; DataTable
-   * itself does not diff or re-sort.
    */
   expandOnGroup?: ExpandOnGroupConfig;
 }
@@ -35,24 +44,10 @@ interface DataTableProps<T> {
   rowKey: (row: T) => string;
   className?: string;
   fixedLayout?: boolean;
-  /**
-   * When provided, enables column resize + saved views persisted under this key.
-   * Defaults come from each Column.width.
-   */
   storageKey?: string;
   viewSwitcherFootnote?: React.ReactNode;
-  /**
-   * When provided, renders a faded dashed `+ Add` row at the bottom of the table.
-   * Click the row to invoke the handler. The standard pattern is to insert a
-   * placeholder record and let the user edit it via inline cell editors.
-   */
   onAddRow?: () => void | Promise<void>;
   addRowLabel?: string;
-  /**
-   * When provided, renders a faded dashed `+ Add` row at the TOP of the table,
-   * directly below the header row. Used to create a new record "from scratch"
-   * without inheriting any grouping context.
-   */
   onAddTopRow?: () => void | Promise<void>;
   addTopRowLabel?: string;
 }
@@ -77,19 +72,52 @@ export function DataTable<T>({
     if (col.width !== undefined) defaultWidths[col.key] = col.width;
   }
 
-  // Always call the hook (React rules); when storageKey is missing we use a
-  // stable sentinel and ignore the results.
   const views = useTableViews(storageKey ?? "__datatable_unused__", defaultWidths);
   const enabled = !!storageKey;
+
+  const orderedColumns = useMemo(() => {
+    if (!enabled) return columns;
+    const keys = resolveColumnOrder(
+      views.params.columnOrder,
+      columns.map((c) => c.key),
+    );
+    const byKey = new Map(columns.map((c) => [c.key, c]));
+    return keys
+      .map((k) => byKey.get(k))
+      .filter((c): c is Column<T> => c != null);
+  }, [columns, enabled, views.params.columnOrder]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const keys = orderedColumns.map((c) => c.key);
+    const oldIndex = keys.indexOf(String(active.id));
+    const newIndex = keys.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    views.setColumnOrder(arrayMove(keys, oldIndex, newIndex));
+  };
 
   const getWidth = (col: Column<T>): number | undefined => {
     if (enabled) return views.params.columnWidths[col.key] ?? col.width;
     return col.width;
   };
 
+  const alignFor = (col: Column<T>) =>
+    col.align === "center"
+      ? "text-center"
+      : col.align === "right"
+        ? "text-right"
+        : "text-left";
+
   const totalWidth = enabled
-    ? columns.reduce((sum, c) => sum + (getWidth(c) ?? 0), 0)
+    ? orderedColumns.reduce((sum, c) => sum + (getWidth(c) ?? 0), 0)
     : undefined;
+
+  const sortableIds = orderedColumns.map((c) => c.key);
 
   return (
     <div className={cn("overflow-x-auto", className)}>
@@ -105,125 +133,133 @@ export function DataTable<T>({
           {viewSwitcherFootnote}
         </ViewSwitcher>
       )}
-      <table
-        className="text-[length:var(--cell-font-size)] [&_td]:align-top"
-        style={{
-          tableLayout: fixedLayout ? "fixed" : undefined,
-          borderCollapse: "separate",
-          borderSpacing: "var(--row-gap)",
-          width: totalWidth || undefined,
-        }}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
       >
-        {columns.some((c) => c.width) && (
-          <colgroup>
-            {columns.map((col) => {
-              const w = getWidth(col);
+        <table
+          className="text-[length:var(--cell-font-size)] [&_td]:align-top"
+          style={{
+            tableLayout: fixedLayout ? "fixed" : undefined,
+            borderCollapse: "separate",
+            borderSpacing: "var(--row-gap)",
+            width: totalWidth || undefined,
+          }}
+        >
+          {orderedColumns.some((c) => c.width) && (
+            <colgroup>
+              {orderedColumns.map((col) => {
+                const w = getWidth(col);
+                return (
+                  <col key={col.key} style={w ? { width: w } : undefined} />
+                );
+              })}
+            </colgroup>
+          )}
+          <thead>
+            <tr>
+              <SortableContext
+                items={sortableIds}
+                strategy={horizontalListSortingStrategy}
+              >
+                {orderedColumns.map((col, i) => (
+                  <SortableHeaderCell
+                    key={col.key}
+                    id={col.key}
+                    enableDrag={enabled}
+                    style={{ position: enabled ? "relative" : undefined }}
+                    className={cn(
+                      "px-[var(--header-padding-x)] py-[var(--header-padding-y)]",
+                      "text-[length:var(--header-font-size)] font-[number:var(--header-font-weight)]",
+                      "bg-[color:var(--header-bg)] text-[color:var(--header-color)]",
+                      alignFor(col),
+                    )}
+                    extras={
+                      enabled && (
+                        <ColumnResizer
+                          columnIndex={i}
+                          currentWidth={getWidth(col) ?? 100}
+                          onResize={(w) => views.setColumnWidth(col.key, w)}
+                        />
+                      )
+                    }
+                  >
+                    {col.header}
+                  </SortableHeaderCell>
+                ))}
+              </SortableContext>
+            </tr>
+          </thead>
+          <tbody>
+            <tr aria-hidden="true">
+              <td
+                colSpan={orderedColumns.length}
+                style={{ height: 14, padding: 0, background: "transparent" }}
+              />
+            </tr>
+            {onAddTopRow && (
+              <>
+                <tr>
+                  <td
+                    colSpan={orderedColumns.length}
+                    className="themed-new-row-cell"
+                    onClick={() => {
+                      if (!addTopPending)
+                        startAddTopTransition(() => onAddTopRow());
+                    }}
+                    title="Add a new record"
+                  >
+                    {addTopPending ? "Adding…" : addTopRowLabel}
+                  </td>
+                </tr>
+                <tr aria-hidden="true">
+                  <td
+                    colSpan={orderedColumns.length}
+                    style={{ height: 14, padding: 0, background: "transparent" }}
+                  />
+                </tr>
+              </>
+            )}
+            {rows.map((row) => {
+              const record = row as Record<string, unknown>;
               return (
-                <col key={col.key} style={w ? { width: w } : undefined} />
+                <tr key={rowKey(row)}>
+                  {orderedColumns.map((col) => (
+                    <td
+                      key={col.key}
+                      className={cn(
+                        "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)]",
+                        "bg-[color:var(--cell-bg)]",
+                        alignFor(col),
+                        col.className,
+                      )}
+                    >
+                      {col.render
+                        ? col.render(row)
+                        : String(record[col.key] ?? "")}
+                    </td>
+                  ))}
+                </tr>
               );
             })}
-          </colgroup>
-        )}
-        <thead>
-          <tr>
-            {columns.map((col, i) => (
-              <th
-                key={col.key}
-                style={{ position: enabled ? "relative" : undefined }}
-                className={cn(
-                  "px-[var(--header-padding-x)] py-[var(--header-padding-y)]",
-                  "text-[length:var(--header-font-size)] font-[number:var(--header-font-weight)]",
-                  "bg-[color:var(--header-bg)] text-[color:var(--header-color)]",
-                  col.align === "center"
-                    ? "text-center"
-                    : col.align === "right"
-                      ? "text-right"
-                      : "text-left",
-                )}
-              >
-                {col.header}
-                {enabled && (
-                  <ColumnResizer
-                    columnIndex={i}
-                    currentWidth={getWidth(col) ?? 100}
-                    onResize={(w) => views.setColumnWidth(col.key, w)}
-                  />
-                )}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          <tr aria-hidden="true">
-            <td
-              colSpan={columns.length}
-              style={{ height: 14, padding: 0, background: "transparent" }}
-            />
-          </tr>
-          {onAddTopRow && (
-            <>
+            {onAddRow && (
               <tr>
                 <td
-                  colSpan={columns.length}
+                  colSpan={orderedColumns.length}
                   className="themed-new-row-cell"
                   onClick={() => {
-                    if (!addTopPending) startAddTopTransition(() => onAddTopRow());
+                    if (!addPending) startAddTransition(() => onAddRow());
                   }}
-                  title="Add a new record"
+                  title="Add a new row"
                 >
-                  {addTopPending ? "Adding…" : addTopRowLabel}
+                  {addPending ? "Adding…" : addRowLabel}
                 </td>
               </tr>
-              <tr aria-hidden="true">
-                <td
-                  colSpan={columns.length}
-                  style={{ height: 14, padding: 0, background: "transparent" }}
-                />
-              </tr>
-            </>
-          )}
-          {rows.map((row) => {
-            const record = row as Record<string, unknown>;
-            return (
-              <tr key={rowKey(row)}>
-                {columns.map((col) => (
-                  <td
-                    key={col.key}
-                    className={cn(
-                      "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)]",
-                      "bg-[color:var(--cell-bg)]",
-                      col.align === "center"
-                        ? "text-center"
-                        : col.align === "right"
-                          ? "text-right"
-                          : "text-left",
-                      col.className,
-                    )}
-                  >
-                    {col.render
-                      ? col.render(row)
-                      : String(record[col.key] ?? "")}
-                  </td>
-                ))}
-              </tr>
-            );
-          })}
-          {onAddRow && (
-            <tr>
-              <td
-                colSpan={columns.length}
-                className="themed-new-row-cell"
-                onClick={() => {
-                  if (!addPending) startAddTransition(() => onAddRow());
-                }}
-                title="Add a new row"
-              >
-                {addPending ? "Adding…" : addRowLabel}
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            )}
+          </tbody>
+        </table>
+      </DndContext>
     </div>
   );
 }

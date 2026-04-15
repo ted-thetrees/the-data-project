@@ -4,6 +4,11 @@ import { useState, useEffect } from "react";
 
 export interface ViewParams {
   columnWidths: Record<string, number>;
+  // Persisted column order for reorderable (ungrouped) columns. Undefined on
+  // legacy saved views — consumers fall back to their declared default order.
+  // Keys not present in the array are appended to the end of the rendered set,
+  // which handles schema additions without wiping user preferences.
+  columnOrder?: string[];
 }
 
 export interface View {
@@ -134,6 +139,10 @@ export function useTableViews(
     }));
   };
 
+  const setColumnOrder = (keys: string[]) => {
+    setParams((p) => ({ ...p, columnOrder: keys }));
+  };
+
   return {
     views,
     activeViewId,
@@ -144,5 +153,33 @@ export function useTableViews(
     renameView,
     deleteView,
     setColumnWidth,
+    setColumnOrder,
   };
+}
+
+/**
+ * Resolve a stored columnOrder against the set of keys the table currently
+ * knows about. Any saved keys that no longer exist are dropped; any current
+ * keys missing from the saved order get appended at the end (so schema
+ * additions flow in). Returns the authoritative render order. When no order
+ * is stored, returns `allKeys` unchanged.
+ */
+export function resolveColumnOrder(
+  stored: string[] | undefined,
+  allKeys: readonly string[],
+): string[] {
+  if (!stored || stored.length === 0) return [...allKeys];
+  const allowed = new Set<string>(allKeys);
+  const seen = new Set<string>();
+  const ordered: string[] = [];
+  for (const key of stored) {
+    if (allowed.has(key) && !seen.has(key)) {
+      ordered.push(key);
+      seen.add(key);
+    }
+  }
+  for (const key of allKeys) {
+    if (!seen.has(key)) ordered.push(key);
+  }
+  return ordered;
 }

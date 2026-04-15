@@ -1,6 +1,19 @@
 "use client";
 
 import { Fragment, useMemo, useTransition } from "react";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { PageShell } from "@/components/page-shell";
 import type { SeriesRow } from "./page";
 import { Pill, PillSelect, type PillOption } from "@/components/pill";
@@ -8,17 +21,18 @@ import { Empty } from "@/components/empty";
 import { WebLink } from "@/components/web-link";
 import { Subtitle } from "@/components/subtitle";
 import { EditableText } from "@/components/editable-text";
-import { useTableViews } from "@/components/table-views";
+import { useTableViews, resolveColumnOrder } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
+import { SortableHeaderCell } from "@/components/sortable-header-cell";
 import {
   updateCrimeSeriesStatus,
   updateCrimeSeriesTitle,
   createCrimeSeries,
 } from "./actions";
 
-const CRIME_COLUMN_KEYS = [
-  "status",
+// "status" is the pinned icicle column; the rest are user-reorderable.
+const CRIME_COMMON_KEYS = [
   "status_edit",
   "title",
   "network",
@@ -164,16 +178,43 @@ export function CrimeSeriesTable({
     renameView,
     deleteView,
     setColumnWidth,
+    setColumnOrder,
   } = useTableViews("crime-series", CRIME_DEFAULT_WIDTHS);
 
-  const headers: { key: string; label: string }[] = [
-    { key: "status", label: "Status" },
-    { key: "status_edit", label: "Status (edit)" },
-    { key: "title", label: "Series Title" },
-    { key: "network", label: "Network" },
-    { key: "trailer", label: "Trailer" },
-    { key: "release_date", label: "Release Date" },
-  ];
+  const orderedCommonKeys = useMemo(
+    () =>
+      resolveColumnOrder(
+        params.columnOrder,
+        CRIME_COMMON_KEYS as readonly string[],
+      ),
+    [params.columnOrder],
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = orderedCommonKeys.indexOf(String(active.id));
+    const newIndex = orderedCommonKeys.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    setColumnOrder(arrayMove(orderedCommonKeys, oldIndex, newIndex));
+  };
+
+  const HEADER_LABELS: Record<string, string> = {
+    status: "Status",
+    status_edit: "Status (edit)",
+    title: "Series Title",
+    network: "Network",
+    trailer: "Trailer",
+    release_date: "Release Date",
+  };
+
+  const columnKeys = ["status", ...orderedCommonKeys];
+  const headerClass =
+    "relative text-left text-[length:var(--header-font-size)] font-[number:var(--header-font-weight)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
 
   return (
     <PageShell title="Series" count={data.length} maxWidth="">
@@ -187,89 +228,118 @@ export function CrimeSeriesTable({
         onDelete={deleteView}
       />
       <div className="overflow-x-auto">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
         <table
           className="text-[length:var(--cell-font-size)] [&_td]:align-top"
           style={{
             tableLayout: "fixed",
             borderCollapse: "separate",
             borderSpacing: "var(--row-gap)",
-            width: Object.values(params.columnWidths).reduce((a, b) => a + b, 0),
+            width: columnKeys.reduce(
+              (sum, k) => sum + (params.columnWidths[k] ?? 0),
+              0,
+            ),
           }}
         >
           <colgroup>
-            {CRIME_COLUMN_KEYS.map((key) => (
+            {columnKeys.map((key) => (
               <col key={key} style={{ width: params.columnWidths[key] }} />
             ))}
           </colgroup>
           <thead>
             <tr>
-              {headers.map((h, i) => (
-                <th
-                  key={h.key}
-                  className="relative text-left text-[length:var(--header-font-size)] font-[number:var(--header-font-weight)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]"
-                >
-                  {h.label}
-                  <ColumnResizer
-                    columnIndex={i}
-                    currentWidth={params.columnWidths[h.key]}
-                    onResize={(w) => setColumnWidth(h.key, w)}
-                  />
-                </th>
-              ))}
+              <th key="status" className={headerClass}>
+                Status
+                <ColumnResizer
+                  columnIndex={0}
+                  currentWidth={params.columnWidths["status"]}
+                  onResize={(w) => setColumnWidth("status", w)}
+                />
+              </th>
+              <SortableContext
+                items={orderedCommonKeys}
+                strategy={horizontalListSortingStrategy}
+              >
+                {orderedCommonKeys.map((key, i) => (
+                  <SortableHeaderCell
+                    key={key}
+                    id={key}
+                    className={headerClass}
+                    extras={
+                      <ColumnResizer
+                        columnIndex={i + 1}
+                        currentWidth={params.columnWidths[key]}
+                        onResize={(w) => setColumnWidth(key, w)}
+                      />
+                    }
+                  >
+                    {HEADER_LABELS[key]}
+                  </SortableHeaderCell>
+                ))}
+              </SortableContext>
             </tr>
           </thead>
           <tbody>
             <tr aria-hidden="true">
               <td
-                colSpan={CRIME_COLUMN_KEYS.length}
+                colSpan={columnKeys.length}
                 style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
               />
             </tr>
-            <NewSeriesRow colSpan={CRIME_COLUMN_KEYS.length} />
+            <NewSeriesRow colSpan={columnKeys.length} />
             <tr aria-hidden="true">
               <td
-                colSpan={CRIME_COLUMN_KEYS.length}
+                colSpan={columnKeys.length}
                 style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
               />
             </tr>
-            {data.map((row, i) => {
-              const embedUrl = row.youtube_trailer
-                ? youtubeEmbedUrl(row.youtube_trailer)
-                : null;
-              return (
-                <Fragment key={row.id}>
-                  <tr>
-                    {statusStartSet.has(i) &&
-                      (() => {
-                        const span = statusByIndex[i];
-                        return (
-                          <td
-                            rowSpan={span.rowSpan + 1}
-                            className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]"
-                          >
-                            <Pill color={span.color}>{span.value}</Pill>
-                          </td>
-                        );
-                      })()}
-                    <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] align-top">
-                      <PillSelect
-                        value={row.status_id ?? ""}
-                        options={statusOptions}
-                        onSave={(statusId) =>
-                          updateCrimeSeriesStatus(row.id, statusId)
-                        }
-                      />
-                    </td>
-                    <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] font-medium align-top">
-                      <EditableText
-                        value={row.title}
-                        onSave={(v) => updateCrimeSeriesTitle(row.id, v)}
-                      />
-                    </td>
-                    <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] align-top">
-                      {row.network || <Empty />}
-                    </td>
-                    <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]">
+            {(() => {
+              const crimeCellClass =
+                "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] align-top";
+              const commonCellRenderers: Record<
+                string,
+                (row: SeriesRow) => React.ReactNode
+              > = {
+                status_edit: (row) => (
+                  <td key="status_edit" className={crimeCellClass}>
+                    <PillSelect
+                      value={row.status_id ?? ""}
+                      options={statusOptions}
+                      onSave={(statusId) =>
+                        updateCrimeSeriesStatus(row.id, statusId)
+                      }
+                    />
+                  </td>
+                ),
+                title: (row) => (
+                  <td
+                    key="title"
+                    className={`${crimeCellClass} font-medium`}
+                  >
+                    <EditableText
+                      value={row.title}
+                      onSave={(v) => updateCrimeSeriesTitle(row.id, v)}
+                    />
+                  </td>
+                ),
+                network: (row) => (
+                  <td key="network" className={crimeCellClass}>
+                    {row.network || <Empty />}
+                  </td>
+                ),
+                trailer: (row) => {
+                  const embedUrl = row.youtube_trailer
+                    ? youtubeEmbedUrl(row.youtube_trailer)
+                    : null;
+                  return (
+                    <td
+                      key="trailer"
+                      className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]"
+                    >
                       {embedUrl ? (
                         <iframe
                           src={embedUrl}
@@ -284,21 +354,45 @@ export function CrimeSeriesTable({
                         <WebLink url={row.youtube_trailer} />
                       )}
                     </td>
-                    <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] align-top">
-                      {row.release_date || <Empty />}
-                    </td>
+                  );
+                },
+                release_date: (row) => (
+                  <td key="release_date" className={crimeCellClass}>
+                    {row.release_date || <Empty />}
+                  </td>
+                ),
+              };
+              return data.map((row, i) => (
+                <Fragment key={row.id}>
+                  <tr>
+                    {statusStartSet.has(i) &&
+                      (() => {
+                        const span = statusByIndex[i];
+                        return (
+                          <td
+                            rowSpan={span.rowSpan + 1}
+                            className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]"
+                          >
+                            <Pill color={span.color}>{span.value}</Pill>
+                          </td>
+                        );
+                      })()}
+                    {orderedCommonKeys.map((key) =>
+                      commonCellRenderers[key]?.(row),
+                    )}
                   </tr>
                   {statusEndSet.has(i) && (
                     <AddSeriesRow
                       statusId={statusEndToSpan[i].statusId ?? null}
-                      colSpan={CRIME_COLUMN_KEYS.length - 1}
+                      colSpan={columnKeys.length - 1}
                     />
                   )}
                 </Fragment>
-              );
-            })}
+              ));
+            })()}
           </tbody>
         </table>
+        </DndContext>
       </div>
     </PageShell>
   );

@@ -9,6 +9,19 @@ import {
   useState,
   useTransition,
 } from "react";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { format, parse } from "date-fns";
 import { PageShell } from "@/components/page-shell";
 import { Calendar } from "@/components/ui/calendar";
@@ -33,34 +46,34 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { useTableViews } from "@/components/table-views";
+import { useTableViews, resolveColumnOrder } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
+import { SortableHeaderCell } from "@/components/sortable-header-cell";
 
-const COLUMN_KEYS = [
+// Project-level icicle columns (rowspan-merged, pinned — not reorderable).
+const PROJECT_ICICLE_KEYS = [
   "project",
   "tickle",
   "uber_project",
   "project_status",
-  "task",
-  "task_status",
-  "result",
-  "notes",
 ] as const;
-type ColumnKey = (typeof COLUMN_KEYS)[number];
 
-const COLUMN_HEADERS: { key: ColumnKey; label: string }[] = [
-  { key: "project", label: "Project" },
-  { key: "tickle", label: "Tickle" },
-  { key: "uber_project", label: "Uber Project" },
-  { key: "project_status", label: "Project Status" },
-  { key: "task", label: "Task" },
-  { key: "task_status", label: "Task Status" },
-  { key: "result", label: "Result" },
-  { key: "notes", label: "Notes" },
-];
+// Task-level columns (per-row, user-reorderable).
+const TASK_COMMON_KEYS = ["task", "task_status", "result", "notes"] as const;
 
-const DEFAULT_COLUMN_WIDTHS: Record<ColumnKey, number> = {
+const HEADER_LABELS: Record<string, string> = {
+  project: "Project",
+  tickle: "Tickle",
+  uber_project: "Uber Project",
+  project_status: "Project Status",
+  task: "Task",
+  task_status: "Task Status",
+  result: "Result",
+  notes: "Notes",
+};
+
+const DEFAULT_COLUMN_WIDTHS: Record<string, number> = {
   uber_project: 140,
   project: 220,
   tickle: 110,
@@ -167,7 +180,35 @@ export function GridTable({
     renameView,
     deleteView,
     setColumnWidth,
+    setColumnOrder,
   } = useTableViews("projects-main", DEFAULT_COLUMN_WIDTHS);
+
+  const orderedTaskKeys = useMemo(
+    () =>
+      resolveColumnOrder(
+        params.columnOrder,
+        TASK_COMMON_KEYS as readonly string[],
+      ),
+    [params.columnOrder],
+  );
+
+  const columnKeys = [...PROJECT_ICICLE_KEYS, ...orderedTaskKeys];
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = orderedTaskKeys.indexOf(String(active.id));
+    const newIndex = orderedTaskKeys.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    setColumnOrder(arrayMove(orderedTaskKeys, oldIndex, newIndex));
+  };
+
+  const headerClass =
+    "text-left text-[length:var(--header-font-size)] font-[number:var(--header-font-weight)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
 
   const body = (
     <>
@@ -183,32 +224,37 @@ export function GridTable({
       </ViewSwitcher>
 
       <div className="overflow-x-auto">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
         <table
           className="text-[length:var(--cell-font-size)] [&_td]:align-top"
           style={{
             tableLayout: "fixed",
-            width: Object.values(params.columnWidths).reduce(
-              (a, b) => a + b,
-              0
+            width: columnKeys.reduce(
+              (sum, k) => sum + (params.columnWidths[k] ?? 0),
+              0,
             ),
             borderCollapse: "separate",
             borderSpacing: "var(--row-gap)",
           }}
         >
           <colgroup>
-            {COLUMN_KEYS.map((key) => (
+            {columnKeys.map((key) => (
               <col key={key} style={{ width: params.columnWidths[key] }} />
             ))}
           </colgroup>
           <thead>
             <tr>
-              {COLUMN_HEADERS.map(({ key, label }, i) => (
+              {PROJECT_ICICLE_KEYS.map((key, i) => (
                 <th
                   key={key}
-                  className="text-left text-[length:var(--header-font-size)] font-[number:var(--header-font-weight)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]"
+                  className={headerClass}
                   style={{ position: "relative" }}
                 >
-                  {label}
+                  {HEADER_LABELS[key]}
                   <ColumnResizer
                     columnIndex={i}
                     currentWidth={params.columnWidths[key]}
@@ -216,19 +262,41 @@ export function GridTable({
                   />
                 </th>
               ))}
+              <SortableContext
+                items={orderedTaskKeys}
+                strategy={horizontalListSortingStrategy}
+              >
+                {orderedTaskKeys.map((key, i) => (
+                  <SortableHeaderCell
+                    key={key}
+                    id={key}
+                    className={headerClass}
+                    style={{ position: "relative" }}
+                    extras={
+                      <ColumnResizer
+                        columnIndex={i + PROJECT_ICICLE_KEYS.length}
+                        currentWidth={params.columnWidths[key]}
+                        onResize={(w) => setColumnWidth(key, w)}
+                      />
+                    }
+                  >
+                    {HEADER_LABELS[key]}
+                  </SortableHeaderCell>
+                ))}
+              </SortableContext>
             </tr>
           </thead>
           <tbody>
             <tr aria-hidden="true">
               <td
-                colSpan={COLUMN_KEYS.length}
+                colSpan={columnKeys.length}
                 style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
               />
             </tr>
-            <NewProjectRow colSpan={COLUMN_KEYS.length} />
+            <NewProjectRow colSpan={columnKeys.length} />
             <tr aria-hidden="true">
               <td
-                colSpan={COLUMN_KEYS.length}
+                colSpan={columnKeys.length}
                 style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
               />
             </tr>
@@ -241,7 +309,7 @@ export function GridTable({
               {tickleChanged && (
                 <tr aria-hidden="true">
                   <td
-                    colSpan={COLUMN_KEYS.length}
+                    colSpan={columnKeys.length}
                     style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
                   />
                 </tr>
@@ -340,44 +408,59 @@ export function GridTable({
                   );
                 })()}
 
-                {/* Task */}
-                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]">
-                  <EditableTextWrap
-                    value={row.task}
-                    onSave={(v) => updateTaskField(row.id, "name", v)}
-                  />
-                </td>
-
-                {/* Task Status (pill select) */}
-                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm">
-                  <PillSelect
-                    value={row.task_status_id}
-                    options={taskStatuses}
-                    onSave={(v) =>
-                      updateTaskField(row.id, "status_id", v)
-                    }
-                  />
-                </td>
-
-                {/* Result */}
-                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]">
-                  <EditableText
-                    value={row.result ?? ""}
-                    onSave={(v) =>
-                      updateTaskField(row.id, "result", v || null)
-                    }
-                  />
-                </td>
-
-                {/* Notes */}
-                <td className="px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]">
-                  <EditableText
-                    value={row.task_notes ?? ""}
-                    onSave={(v) =>
-                      updateTaskField(row.id, "notes", v || null)
-                    }
-                  />
-                </td>
+                {/* Task-level columns (user-reorderable via orderedTaskKeys). */}
+                {orderedTaskKeys.map((key) => {
+                  const taskCellClass =
+                    "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]";
+                  if (key === "task") {
+                    return (
+                      <td key="task" className={taskCellClass}>
+                        <EditableTextWrap
+                          value={row.task}
+                          onSave={(v) => updateTaskField(row.id, "name", v)}
+                        />
+                      </td>
+                    );
+                  }
+                  if (key === "task_status") {
+                    return (
+                      <td key="task_status" className={`${taskCellClass} text-sm`}>
+                        <PillSelect
+                          value={row.task_status_id}
+                          options={taskStatuses}
+                          onSave={(v) =>
+                            updateTaskField(row.id, "status_id", v)
+                          }
+                        />
+                      </td>
+                    );
+                  }
+                  if (key === "result") {
+                    return (
+                      <td key="result" className={taskCellClass}>
+                        <EditableText
+                          value={row.result ?? ""}
+                          onSave={(v) =>
+                            updateTaskField(row.id, "result", v || null)
+                          }
+                        />
+                      </td>
+                    );
+                  }
+                  if (key === "notes") {
+                    return (
+                      <td key="notes" className={taskCellClass}>
+                        <EditableText
+                          value={row.task_notes ?? ""}
+                          onSave={(v) =>
+                            updateTaskField(row.id, "notes", v || null)
+                          }
+                        />
+                      </td>
+                    );
+                  }
+                  return null;
+                })}
                 </ContextMenuTrigger>
                 <ContextMenuContent>
                   <ContextMenuItem
@@ -401,6 +484,7 @@ export function GridTable({
             })}
           </tbody>
         </table>
+        </DndContext>
       </div>
     </>
   );
