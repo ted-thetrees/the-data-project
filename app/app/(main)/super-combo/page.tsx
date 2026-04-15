@@ -55,7 +55,7 @@ export default async function SuperComboPage() {
         </section>
         <section className="flex-1 min-w-0">
           <h2 className="text-lg font-semibold mb-3">
-            Projects | Main{" "}
+            Projects{" "}
             <span className="text-sm font-normal text-muted-foreground">
               ({gridData.length.toLocaleString()} rows)
             </span>

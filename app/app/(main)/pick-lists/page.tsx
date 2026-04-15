@@ -174,7 +174,7 @@ export default async function PickListsPage() {
           />
         </PickListSection>
 
-        <PickListSection title="Uber Projects" usedBy="Projects | Main">
+        <PickListSection title="Uber Projects" usedBy="Projects">
           <PicklistStatusTable
             source="uber_projects"
             rows={uberProjects}

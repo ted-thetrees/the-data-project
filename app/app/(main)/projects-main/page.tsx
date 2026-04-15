@@ -7,7 +7,7 @@ import {
   getUberProjects,
 } from "./data";
 
-export const metadata = { title: "Projects | Main" };
+export const metadata = { title: "Projects" };
 export const dynamic = "force-dynamic";
 
 export interface TaskRow {

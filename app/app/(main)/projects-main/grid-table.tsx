@@ -133,7 +133,7 @@ export function GridTable({
   projectStatuses,
   uberProjects,
   wrapped = true,
-  title = "Projects | Main",
+  title = "Projects",
 }: {
   data: TaskRow[];
   taskStatuses: StatusOption[];
