@@ -145,6 +145,7 @@
 .themed-new-row-cell:hover {
   border-color: var(--ring);
   color: var(--link-hover-color);
+  text-decoration: underline;
 }
 
 :root {
