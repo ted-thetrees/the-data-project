@@ -49,7 +49,7 @@ export default async function PeoplePage() {
     getLookupOptions("people_familiarity_levels"),
     getLookupOptions("people_teller_statuses"),
     getLookupOptions("people_org_fill_statuses"),
-    getLookupOptions("people_metro_areas"),
+    getLookupOptions("people_metro_areas", "ORDER BY name"),
   ]);
 
   return (
