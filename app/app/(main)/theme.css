@@ -133,7 +133,7 @@
 }
 
 .themed-new-row-cell {
-  background: var(--cell-bg);
+  background: var(--new-row-bg);
   border: 1px var(--new-row-border-style) var(--border);
   color: var(--link-color);
   font-size: var(--new-row-placeholder-font-size);
@@ -269,6 +269,7 @@
   --pending-opacity: 0.5;
 
   /* ── New row ── */
+  --new-row-bg: #f5f5f3;
   --new-row-border-style: dashed;
   --new-row-placeholder-font-size: 13px;
 
