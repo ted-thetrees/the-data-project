@@ -158,12 +158,10 @@ export function PillSelect({
   value,
   options,
   onSave,
-  createSlot,
 }: {
   value: string;
   options: PillOption[];
   onSave: (v: string) => void | Promise<void>;
-  createSlot?: (close: () => void) => React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -218,12 +216,6 @@ export function PillSelect({
             );
           })}
         </div>
-        {createSlot && (
-          <>
-            <div className="my-2 h-px bg-border" />
-            {createSlot(() => setOpen(false))}
-          </>
-        )}
       </PopoverContent>
     </Popover>
   );
