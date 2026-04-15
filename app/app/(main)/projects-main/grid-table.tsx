@@ -412,9 +412,18 @@ export function GridTable({
                 {orderedTaskKeys.map((key) => {
                   const taskCellClass =
                     "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]";
+                  const isDone = row.task_status === "Done";
                   if (key === "task") {
                     return (
-                      <td key="task" className={taskCellClass}>
+                      <td
+                        key="task"
+                        className={taskCellClass}
+                        style={
+                          isDone
+                            ? { textDecoration: "line-through", opacity: 0.5 }
+                            : undefined
+                        }
+                      >
                         <EditableTextWrap
                           value={row.task}
                           onSave={(v) => updateTaskField(row.id, "name", v)}
@@ -614,6 +623,7 @@ function EditableTextWrap({
         wordBreak: "break-word",
         lineHeight: "1.4",
         display: "block",
+        textDecoration: "inherit",
       }}
     />
   );
