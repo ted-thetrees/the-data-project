@@ -12,6 +12,11 @@ const SOURCE_TABLES: Record<string, string> = {
   talent_areas: "talent_areas",
   user_story_roles: "user_story_roles",
   user_story_categories: "user_story_categories",
+  people_familiarity_levels: "people_familiarity_levels",
+  people_genders: "people_genders",
+  people_teller_statuses: "people_teller_statuses",
+  people_org_fill_statuses: "people_org_fill_statuses",
+  people_metro_areas: "people_metro_areas",
 };
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;

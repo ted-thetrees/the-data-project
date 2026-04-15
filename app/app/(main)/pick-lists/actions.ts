@@ -13,15 +13,26 @@ const SOURCE_TABLES: Record<string, { table: string; hasSortOrder: boolean }> = 
   talent_areas: { table: "talent_areas", hasSortOrder: true },
   user_story_roles: { table: "user_story_roles", hasSortOrder: true },
   user_story_categories: { table: "user_story_categories", hasSortOrder: true },
+  people_familiarity_levels: { table: "people_familiarity_levels", hasSortOrder: true },
+  people_genders: { table: "people_genders", hasSortOrder: true },
+  people_teller_statuses: { table: "people_teller_statuses", hasSortOrder: true },
+  people_org_fill_statuses: { table: "people_org_fill_statuses", hasSortOrder: true },
+  people_metro_areas: { table: "people_metro_areas", hasSortOrder: true },
 };
 
 function revalidate() {
   revalidatePath("/pick-lists");
+  revalidatePath("/pick-lists/projects");
+  revalidatePath("/pick-lists/talent");
+  revalidatePath("/pick-lists/user-stories");
+  revalidatePath("/pick-lists/people");
+  revalidatePath("/pick-lists/crime-series");
   revalidatePath("/projects-main");
   revalidatePath("/series");
   revalidatePath("/series-sort");
   revalidatePath("/talent");
   revalidatePath("/user-stories");
+  revalidatePath("/people");
 }
 
 export async function createPicklistOption(source: string) {
