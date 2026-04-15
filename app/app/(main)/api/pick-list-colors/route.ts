@@ -10,6 +10,8 @@ const SOURCE_TABLES: Record<string, string> = {
   talent_categories: "talent_categories",
   talent_rating_levels: "talent_rating_levels",
   talent_areas: "talent_areas",
+  user_story_roles: "user_story_roles",
+  user_story_categories: "user_story_categories",
 };
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;

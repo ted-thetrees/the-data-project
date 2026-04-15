@@ -70,6 +70,20 @@ async function getTalentAreas(): Promise<Status[]> {
   return result.rows;
 }
 
+async function getUserStoryRoles(): Promise<Status[]> {
+  const result = await poolV002.query(
+    `SELECT id::text, name, COALESCE(color, '') as color FROM user_story_roles ORDER BY sort_order NULLS LAST, name`
+  );
+  return result.rows;
+}
+
+async function getUserStoryCategories(): Promise<Status[]> {
+  const result = await poolV002.query(
+    `SELECT id::text, name, COALESCE(color, '') as color FROM user_story_categories ORDER BY sort_order NULLS LAST, name`
+  );
+  return result.rows;
+}
+
 async function getPalettes(): Promise<PaletteForPicker[]> {
   const result = await poolV002.query(
     `SELECT id::text, name, ${COLOR_COLUMNS.join(", ")} FROM color_palettes ORDER BY created_at DESC`
@@ -109,6 +123,8 @@ export default async function PickListsPage() {
     talentCategories,
     talentRatingLevels,
     talentAreas,
+    userStoryRoles,
+    userStoryCategories,
     palettes,
   ] = await Promise.all([
     getPicklistColors(),
@@ -119,6 +135,8 @@ export default async function PickListsPage() {
     getTalentCategories(),
     getTalentRatingLevels(),
     getTalentAreas(),
+    getUserStoryRoles(),
+    getUserStoryCategories(),
     getPalettes(),
   ]);
 
@@ -142,6 +160,8 @@ export default async function PickListsPage() {
           "talent_categories",
           "talent_rating_levels",
           "talent_areas",
+          "user_story_roles",
+          "user_story_categories",
           "color_palettes",
         ]}
       />
@@ -207,6 +227,24 @@ export default async function PickListsPage() {
             rows={talentAreas}
             palettes={palettes}
             storageKey="pick-lists:talent_areas"
+          />
+        </PickListSection>
+
+        <PickListSection title="User Story Roles" usedBy="User Stories">
+          <PicklistStatusTable
+            source="user_story_roles"
+            rows={userStoryRoles}
+            palettes={palettes}
+            storageKey="pick-lists:user_story_roles"
+          />
+        </PickListSection>
+
+        <PickListSection title="User Story Categories" usedBy="User Stories">
+          <PicklistStatusTable
+            source="user_story_categories"
+            rows={userStoryCategories}
+            palettes={palettes}
+            storageKey="pick-lists:user_story_categories"
           />
         </PickListSection>
 

@@ -11,6 +11,8 @@ const SOURCE_TABLES: Record<string, { table: string; hasSortOrder: boolean }> = 
   talent_categories: { table: "talent_categories", hasSortOrder: true },
   talent_rating_levels: { table: "talent_rating_levels", hasSortOrder: true },
   talent_areas: { table: "talent_areas", hasSortOrder: true },
+  user_story_roles: { table: "user_story_roles", hasSortOrder: true },
+  user_story_categories: { table: "user_story_categories", hasSortOrder: true },
 };
 
 function revalidate() {
@@ -19,6 +21,7 @@ function revalidate() {
   revalidatePath("/series");
   revalidatePath("/series-sort");
   revalidatePath("/talent");
+  revalidatePath("/user-stories");
 }
 
 export async function createPicklistOption(source: string) {
