@@ -12,7 +12,6 @@ export async function deleteRecord(recordId: string) {
 
   await removePassphrase(recordId);
   revalidatePath("/inbox");
-  revalidatePath("/super-combo");
 }
 
 async function ensureMigratedUber(): Promise<string> {
@@ -74,6 +73,5 @@ export async function migrateRecord(recordId: string) {
 
   revalidatePath("/inbox");
   revalidatePath("/projects-main");
-  revalidatePath("/super-combo");
 }
 

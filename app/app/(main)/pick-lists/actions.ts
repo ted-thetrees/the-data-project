@@ -15,7 +15,6 @@ const SOURCE_TABLES: Record<string, { table: string; hasSortOrder: boolean }> = 
 
 function revalidate() {
   revalidatePath("/pick-lists");
-  revalidatePath("/super-combo");
   revalidatePath("/projects-main");
   revalidatePath("/series");
   revalidatePath("/series-sort");

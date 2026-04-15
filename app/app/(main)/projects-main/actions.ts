@@ -24,7 +24,6 @@ export async function updateTaskField(
     id,
   ]);
   revalidatePath("/projects-main");
-  revalidatePath("/super-combo");
 }
 
 export async function updateProjectField(
@@ -39,7 +38,6 @@ export async function updateProjectField(
     id,
   ]);
   revalidatePath("/projects-main");
-  revalidatePath("/super-combo");
 }
 
 export async function updateUberField(
@@ -53,7 +51,6 @@ export async function updateUberField(
     [value, id]
   );
   revalidatePath("/projects-main");
-  revalidatePath("/super-combo");
 }
 
 export async function finalizeProject(id: string) {
@@ -62,7 +59,6 @@ export async function finalizeProject(id: string) {
     [id]
   );
   revalidatePath("/projects-main");
-  revalidatePath("/super-combo");
 }
 
 export async function deleteTask(id: string) {
@@ -71,7 +67,6 @@ export async function deleteTask(id: string) {
     [id],
   );
   revalidatePath("/projects-main");
-  revalidatePath("/super-combo");
 }
 
 export async function createTask(projectId: string) {
@@ -84,7 +79,6 @@ export async function createTask(projectId: string) {
     ["", projectId, status.rows[0].id]
   );
   revalidatePath("/projects-main");
-  revalidatePath("/super-combo");
 }
 
 export async function createProject() {
@@ -108,5 +102,4 @@ export async function createProject() {
     [project.rows[0].id, taskStatus.rows[0].id],
   );
   revalidatePath("/projects-main");
-  revalidatePath("/super-combo");
 }
