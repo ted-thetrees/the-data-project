@@ -50,8 +50,22 @@ export async function createPicklistOption(source: string) {
   const config = SOURCE_TABLES[source];
   if (!config) throw new Error(`Invalid picklist source: ${source}`);
 
+  // Pick a unique "New option" name — several picklist tables have UNIQUE(name)
+  // (and some, like people_metro_areas, also UNIQUE(full_name)), so reusing
+  // the literal string would fail on the second click.
+  const existing = await poolV002.query(
+    `SELECT name FROM ${config.table} WHERE name LIKE 'New option%'`,
+  );
+  const taken = new Set<string>(
+    existing.rows.map((r: { name: string }) => r.name),
+  );
+  let candidate = "New option";
+  let n = 2;
+  while (taken.has(candidate)) candidate = `New option ${n++}`;
+  const quoted = `'${candidate.replace(/'/g, "''")}'`;
+
   const columns: string[] = ["name", "color"];
-  const values: string[] = ["'New option'", "'#727272'"];
+  const values: string[] = [quoted, "'#727272'"];
 
   if (config.hasSortOrder) {
     columns.push("sort_order");
@@ -62,7 +76,8 @@ export async function createPicklistOption(source: string) {
 
   for (const [col, val] of Object.entries(config.extraInsertDefaults ?? {})) {
     columns.push(col);
-    values.push(`'${val.replace(/'/g, "''")}'`);
+    const actual = val === "New option" ? candidate : val;
+    values.push(`'${actual.replace(/'/g, "''")}'`);
   }
 
   await poolV002.query(
