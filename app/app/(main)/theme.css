@@ -46,8 +46,8 @@
   --contrast-dark: #4a4639;
 
   /* ── Links ── */
-  --link-color: #2563eb;
-  --link-hover-color: #1d4ed8;
+  --link-color: #da4f34;
+  --link-hover-color: #d04c3c;
 }
 
 .themed-link {
@@ -135,17 +135,18 @@
 .themed-new-row-cell {
   background: var(--cell-bg);
   border: 1px var(--new-row-border-style) var(--border);
-  color: var(--muted-foreground);
+  color: var(--link-color);
   font-size: var(--new-row-placeholder-font-size);
   opacity: var(--new-row-opacity);
   cursor: pointer;
   text-align: left;
   padding: var(--cell-padding-y) var(--cell-padding-x);
-  transition: opacity var(--transition-fast), border-color var(--transition-fast);
+  transition: opacity var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 .themed-new-row-cell:hover {
   opacity: var(--new-row-hover-opacity);
   border-color: var(--ring);
+  color: var(--link-hover-color);
 }
 
 :root {
