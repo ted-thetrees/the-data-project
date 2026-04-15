@@ -3,7 +3,14 @@
 import { poolV002 } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
-const SOURCE_TABLES: Record<string, { table: string; hasSortOrder: boolean }> = {
+type SourceConfig = {
+  table: string;
+  hasSortOrder: boolean;
+  // Extra NOT NULL columns that need defaults on insert
+  extraInsertDefaults?: Record<string, string>;
+};
+
+const SOURCE_TABLES: Record<string, SourceConfig> = {
   project_statuses: { table: "project_statuses", hasSortOrder: false },
   task_statuses: { table: "task_statuses", hasSortOrder: false },
   crime_series_statuses: { table: "crime_series_statuses", hasSortOrder: true },
@@ -17,7 +24,11 @@ const SOURCE_TABLES: Record<string, { table: string; hasSortOrder: boolean }> = 
   people_genders: { table: "people_genders", hasSortOrder: true },
   people_teller_statuses: { table: "people_teller_statuses", hasSortOrder: true },
   people_org_fill_statuses: { table: "people_org_fill_statuses", hasSortOrder: true },
-  people_metro_areas: { table: "people_metro_areas", hasSortOrder: true },
+  people_metro_areas: {
+    table: "people_metro_areas",
+    hasSortOrder: true,
+    extraInsertDefaults: { full_name: "New option" },
+  },
 };
 
 function revalidate() {
@@ -39,16 +50,23 @@ export async function createPicklistOption(source: string) {
   const config = SOURCE_TABLES[source];
   if (!config) throw new Error(`Invalid picklist source: ${source}`);
 
-  // Placeholder name ensures new rows are visible and clickable to rename
-  const sortClause = config.hasSortOrder
-    ? `, sort_order`
-    : "";
-  const sortValue = config.hasSortOrder
-    ? `, COALESCE((SELECT MAX(sort_order) + 1 FROM ${config.table}), 1)`
-    : "";
+  const columns: string[] = ["name", "color"];
+  const values: string[] = ["'New option'", "'#727272'"];
+
+  if (config.hasSortOrder) {
+    columns.push("sort_order");
+    values.push(
+      `COALESCE((SELECT MAX(sort_order) + 1 FROM ${config.table}), 1)`,
+    );
+  }
+
+  for (const [col, val] of Object.entries(config.extraInsertDefaults ?? {})) {
+    columns.push(col);
+    values.push(`'${val.replace(/'/g, "''")}'`);
+  }
+
   await poolV002.query(
-    `INSERT INTO ${config.table} (name, color${sortClause})
-     VALUES ('New option', '#727272'${sortValue})`,
+    `INSERT INTO ${config.table} (${columns.join(", ")}) VALUES (${values.join(", ")})`,
   );
   revalidate();
 }
