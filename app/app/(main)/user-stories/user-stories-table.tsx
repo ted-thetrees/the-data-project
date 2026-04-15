@@ -1,7 +1,7 @@
 "use client";
 
 import { DataTable, type Column } from "@/components/data-table";
-import { Tag } from "@/components/tag";
+import { Pill } from "@/components/pill";
 import { Empty } from "@/components/empty";
 
 export interface UserStoryRow {
@@ -11,6 +11,19 @@ export interface UserStoryRow {
   roles: string[];
   category: string | null;
 }
+
+const ROLE_COLORS: Record<string, string> = {
+  "the founder": "#c96442",
+  "an invitee": "#e6a87c",
+  "a storyteller": "#7a8b5c",
+  "a subscriber": "#6b8ca3",
+  "a public listener": "#a890a8",
+  "a story subject": "#c9a875",
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  "Basic human need": "#8a8680",
+};
 
 export function UserStoriesTable({ rows }: { rows: UserStoryRow[] }) {
   const columns: Column<UserStoryRow>[] = [
@@ -23,7 +36,9 @@ export function UserStoriesTable({ rows }: { rows: UserStoryRow[] }) {
         return (
           <div className="flex flex-wrap gap-1">
             {row.roles.map((role) => (
-              <Tag key={role}>{role}</Tag>
+              <Pill key={role} color={ROLE_COLORS[role]}>
+                {role}
+              </Pill>
             ))}
           </div>
         );
@@ -53,7 +68,7 @@ export function UserStoriesTable({ rows }: { rows: UserStoryRow[] }) {
       width: 180,
       render: (row) => {
         if (!row.category) return <Empty />;
-        return <Tag>{row.category}</Tag>;
+        return <Pill color={CATEGORY_COLORS[row.category]}>{row.category}</Pill>;
       },
     },
   ];
