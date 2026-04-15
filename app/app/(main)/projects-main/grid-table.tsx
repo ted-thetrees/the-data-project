@@ -420,7 +420,11 @@ export function GridTable({
                         className={taskCellClass}
                         style={
                           isDone
-                            ? { textDecoration: "line-through", opacity: 0.5 }
+                            ? {
+                                textDecoration: "line-through",
+                                color:
+                                  "color-mix(in srgb, var(--foreground) 50%, transparent)",
+                              }
                             : undefined
                         }
                       >
