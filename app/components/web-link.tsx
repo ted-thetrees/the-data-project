@@ -1,12 +1,6 @@
 import { Empty } from "@/components/empty";
 
-export function WebLink({
-  url,
-  className = "",
-}: {
-  url: string | null | undefined;
-  className?: string;
-}) {
+export function WebLink({ url }: { url: string | null | undefined }) {
   if (!url) return <Empty />;
   const display = url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
   return (
@@ -15,7 +9,7 @@ export function WebLink({
       target="_blank"
       rel="noopener noreferrer"
       title={url}
-      className={`themed-link truncate block ${className}`}
+      className="themed-link truncate block"
     >
       {display}
     </a>

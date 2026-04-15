@@ -365,12 +365,12 @@ export function TalentTable({
     ),
     website: (row) => (
       <td key="website" className={cellClass}>
-        <WebLink url={row.website} className="max-w-[180px]" />
+        <WebLink url={row.website} />
       </td>
     ),
     instagram: (row) => (
       <td key="instagram" className={cellClass}>
-        <WebLink url={row.instagram} className="max-w-[180px]" />
+        <WebLink url={row.instagram} />
       </td>
     ),
     areas: (row) => (
