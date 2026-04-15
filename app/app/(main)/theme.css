@@ -137,14 +137,12 @@
   border: 1px var(--new-row-border-style) var(--border);
   color: var(--link-color);
   font-size: var(--new-row-placeholder-font-size);
-  opacity: var(--new-row-opacity);
   cursor: pointer;
   text-align: left;
   padding: var(--cell-padding-y) var(--cell-padding-x);
-  transition: opacity var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  transition: border-color var(--transition-fast), color var(--transition-fast);
 }
 .themed-new-row-cell:hover {
-  opacity: var(--new-row-hover-opacity);
   border-color: var(--ring);
   color: var(--link-hover-color);
 }
@@ -270,8 +268,6 @@
   --pending-opacity: 0.5;
 
   /* ── New row ── */
-  --new-row-opacity: 0.6;
-  --new-row-hover-opacity: 1;
   --new-row-border-style: dashed;
   --new-row-placeholder-font-size: 13px;
 
