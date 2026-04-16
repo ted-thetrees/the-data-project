@@ -5,6 +5,7 @@ import { MigrateLink } from "./migrate-button";
 import { ExternalLink } from "./external-link";
 import { format as timeago } from "timeago.js";
 import { LinkifiedText } from "./linkified-text";
+import { MasonryGrid } from "./masonry-grid";
 
 type Row = Record<string, unknown>;
 
@@ -78,7 +79,7 @@ async function InboxCard({ row }: { row: Row }) {
   const isUrl = type !== "text";
 
   return (
-    <div className="mb-[10px] flex w-full break-inside-avoid flex-col gap-[2px]">
+    <div className="flex w-full flex-col gap-[2px]">
       <div className={metaBg}>
         <div className="flex items-center justify-between gap-3">
           <span className={metaText}>{date}</span>
@@ -124,11 +125,9 @@ async function InboxCard({ row }: { row: Row }) {
 }
 
 export async function InboxList({ records }: { records: Row[] }) {
-  return (
-    <div className="columns-1 gap-[20px] md:columns-2 xl:columns-3">
-      {records.map((row) => (
-        <InboxCard key={row.id as string} row={row} />
-      ))}
-    </div>
-  );
+  const items = records.map((row) => ({
+    id: row.id as string,
+    element: <InboxCard row={row} />,
+  }));
+  return <MasonryGrid items={items} />;
 }
