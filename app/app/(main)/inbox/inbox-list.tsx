@@ -11,6 +11,7 @@ type Row = Record<string, unknown>;
 
 const DUMMY_HREF = "#";
 const stripe = "px-[23px] py-[19px]";
+const frameInset = "px-[20px] pb-[20px]";
 const metaBgDefault = `${stripe} bg-[var(--contrast-light)]`;
 const contentBg = `${stripe} bg-[var(--cell-bg)]`;
 const metaTextDefault = "text-[13px] text-[color:var(--card-foreground)] leading-none";
@@ -18,12 +19,12 @@ const actionText =
   "text-[13px] text-[color:var(--primary)] leading-none hover:underline cursor-pointer";
 
 const whiteText = "text-[13px] text-white leading-none";
-const SOURCE_META: Record<string, { bg: string; text: string }> = {
-  youtube: { bg: `${stripe} bg-[#FF0000]`, text: whiteText },
-  "x-post": { bg: `${stripe} bg-black`, text: whiteText },
-  bluesky: { bg: `${stripe} bg-[#0085FF]`, text: whiteText },
-  instagram: { bg: `${stripe} bg-[#E34076]`, text: whiteText },
-  text: { bg: `${stripe} bg-[#A1C730]`, text: whiteText },
+const SOURCE_META: Record<string, { frame: string; text: string }> = {
+  youtube: { frame: "bg-[#FF0000]", text: whiteText },
+  "x-post": { frame: "bg-black", text: whiteText },
+  bluesky: { frame: "bg-[#0085FF]", text: whiteText },
+  instagram: { frame: "bg-[#E34076]", text: whiteText },
+  text: { frame: "bg-[#A1C730]", text: whiteText },
 };
 
 async function getYouTubeThumbnail(ytId: string): Promise<string> {
@@ -88,15 +89,15 @@ async function InboxCard({ row }: { row: Row }) {
   const isUrl = type !== "text";
 
   const source = SOURCE_META[type];
-  const metaBg = source?.bg ?? metaBgDefault;
+  const frameBg = source?.frame ?? "bg-[var(--contrast-light)]";
   const metaText = source?.text ?? metaTextDefault;
   const deleteClass = source
     ? `${source.text} underline cursor-pointer hover:opacity-80`
     : `${actionText} underline`;
 
   return (
-    <div className="flex w-full flex-col border-b-[6px] border-l-[6px] border-r-[6px] border-[var(--background)]">
-      <div className={metaBg}>
+    <div className={`flex w-full flex-col ${frameBg} ${frameInset}`}>
+      <div className={`-mx-[20px] ${stripe}`}>
         <div className="flex items-center justify-between gap-3">
           <span className={metaText}>{date}</span>
           {passphrase ? (
