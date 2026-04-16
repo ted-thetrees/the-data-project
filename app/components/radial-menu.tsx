@@ -57,15 +57,14 @@ const NAV: Branch[] = [
   ] },
 ];
 
-const ORIGIN_INSET = 64;
-const EDGE_MARGIN = 24;
-const PREFERRED_NODE_R = 34;
-const MIN_NODE_R = 18;
+const EDGE_MARGIN = 32;
+const PREFERRED_NODE_R = 36;
+const MIN_NODE_R = 20;
 const LABEL_PAD = 10;
-const INNER_RING_RATIO = 0.55;
-const SEP_BUMP = 0.6;
-const SWEEP_START = -Math.PI / 2 - 0.2;
-const SWEEP = Math.PI / 2 + 0.4;
+const INNER_RING_RATIO = 0.5;
+const SEP_BUMP = 0.3;
+const SWEEP_START = -Math.PI / 2;
+const SWEEP = 2 * Math.PI;
 
 type Layout = {
   outerR: number;
@@ -82,17 +81,14 @@ type Layout = {
 function computeLayout(vw: number, vh: number): Layout {
   const leafCount = NAV.reduce((s, b) => s + b.children.length, 0);
   const branchCount = NAV.length;
-  const effectiveSlots =
-    leafCount - 1 + (branchCount - 1) * SEP_BUMP;
+  const effectiveSlots = leafCount + (branchCount - 1) * SEP_BUMP;
   const anglePerSlot = SWEEP / effectiveSlots;
 
   const slotHalfWidth = PREFERRED_NODE_R + LABEL_PAD;
   const requiredR = slotHalfWidth / Math.sin(anglePerSlot / 2);
 
-  const availableR = Math.min(
-    vw - ORIGIN_INSET - EDGE_MARGIN - PREFERRED_NODE_R,
-    vh - ORIGIN_INSET - EDGE_MARGIN - PREFERRED_NODE_R
-  );
+  const availableR =
+    Math.min(vw, vh) / 2 - EDGE_MARGIN - PREFERRED_NODE_R - LABEL_PAD;
 
   const outerR = Math.max(MIN_NODE_R * 4, Math.min(requiredR, availableR));
   const shrinkFactor = outerR < requiredR ? outerR / requiredR : 1;
@@ -101,10 +97,10 @@ function computeLayout(vw: number, vh: number): Layout {
     Math.floor(PREFERRED_NODE_R * shrinkFactor)
   );
   const innerR = outerR * INNER_RING_RATIO;
-  const centerR = nodeR + 6;
+  const centerR = nodeR + 8;
   const iconSize = Math.max(12, Math.round(nodeR * 0.6));
   const labelFont = Math.max(9, Math.round(nodeR * 0.32));
-  const canvas = outerR + nodeR + LABEL_PAD + EDGE_MARGIN;
+  const canvas = (outerR + nodeR + LABEL_PAD + EDGE_MARGIN) * 2;
 
   return { outerR, innerR, nodeR, centerR, iconSize, labelFont, canvas, vw, vh };
 }
@@ -128,132 +124,30 @@ type Placed = {
   y: number;
 };
 
-type SimNode = d3.SimulationNodeDatum & {
-  id: string;
-  depth: 0 | 1 | 2;
-  data: Root | Branch | Leaf;
-  targetX: number;
-  targetY: number;
-};
-type SimLink = d3.SimulationLinkDatum<SimNode>;
-
 function usePlacements(layout: Layout): Placed[] {
   return useMemo(() => {
     const rootData: Root = { kind: "root", children: NAV };
-    const hroot = d3.hierarchy<NavNode>(rootData, (d) =>
+    const root = d3.hierarchy<NavNode>(rootData, (d) =>
       d.kind === "leaf" ? undefined : d.children
     );
     d3
       .tree<NavNode>()
       .size([SWEEP, 1])
-      .separation((a, b) => (a.parent === b.parent ? 1 : 1 + SEP_BUMP))(hroot);
+      .separation((a, b) => (a.parent === b.parent ? 1 : 1 + SEP_BUMP))(root);
 
-    const nodes: SimNode[] = [];
-    const links: SimLink[] = [];
-    const idOf = (h: d3.HierarchyNode<NavNode>): string => {
-      if (h.depth === 0) return "root";
-      if (h.depth === 1) return (h.data as Branch).label;
-      return `${(h.parent!.data as Branch).label}/${(h.data as Leaf).label}`;
-    };
-
-    hroot.each((h) => {
-      const angle = SWEEP_START + (h as unknown as { x: number }).x;
-      const targetR =
-        h.depth === 0 ? 0 : h.depth === 1 ? layout.innerR : layout.outerR;
-      const tx = Math.cos(angle) * targetR;
-      const ty = Math.sin(angle) * targetR;
-      const id = idOf(h);
-      const node: SimNode = {
-        id,
-        depth: h.depth as 0 | 1 | 2,
-        data: h.data,
-        targetX: tx,
-        targetY: ty,
-        x: tx,
-        y: ty,
-      };
-      if (h.depth === 0) {
-        node.fx = 0;
-        node.fy = 0;
-      }
-      nodes.push(node);
-      if (h.parent) {
-        links.push({ source: idOf(h.parent), target: id });
-      }
-    });
-
-    const maxX = layout.vw - ORIGIN_INSET - EDGE_MARGIN - layout.nodeR - 16;
-    const minX = -(ORIGIN_INSET - EDGE_MARGIN - layout.nodeR);
-    const maxY = ORIGIN_INSET - EDGE_MARGIN - layout.nodeR;
-    const minY = -(layout.vh - ORIGIN_INSET - EDGE_MARGIN - layout.nodeR - 16);
-
-    let boundaryNodes: SimNode[] = [];
-    const boundary: d3.Force<SimNode, SimLink> = () => {
-      for (const n of boundaryNodes) {
-        if (n.fx != null) continue;
-        if (n.x != null) {
-          if (n.x > maxX) {
-            n.x = maxX;
-            n.vx = 0;
-          } else if (n.x < minX) {
-            n.x = minX;
-            n.vx = 0;
-          }
-        }
-        if (n.y != null) {
-          if (n.y > maxY) {
-            n.y = maxY;
-            n.vy = 0;
-          } else if (n.y < minY) {
-            n.y = minY;
-            n.vy = 0;
-          }
-        }
-      }
-    };
-    boundary.initialize = (ns: SimNode[]) => {
-      boundaryNodes = ns;
-    };
-
-    const sim = d3
-      .forceSimulation<SimNode, SimLink>(nodes)
-      .force(
-        "x",
-        d3
-          .forceX<SimNode>((d) => d.targetX)
-          .strength((d) => (d.depth === 0 ? 0 : 0.35))
-      )
-      .force(
-        "y",
-        d3
-          .forceY<SimNode>((d) => d.targetY)
-          .strength((d) => (d.depth === 0 ? 0 : 0.35))
-      )
-      .force(
-        "collide",
-        d3
-          .forceCollide<SimNode>(layout.nodeR + LABEL_PAD / 2)
-          .strength(1)
-          .iterations(4)
-      )
-      .force("boundary", boundary)
-      .alphaDecay(0.04)
-      .stop();
-
-    void links;
-    for (let i = 0; i < 500; i++) sim.tick();
-
-    const placed: Placed[] = [];
-    for (const n of nodes) {
-      if (n.depth === 0) continue;
-      placed.push({
-        kind: n.depth === 1 ? "branch" : "leaf",
+    const out: Placed[] = [];
+    root.each((n) => {
+      if (n.depth === 0) return;
+      const angle = SWEEP_START + (n as unknown as { x: number }).x;
+      const r = n.depth === 1 ? layout.innerR : layout.outerR;
+      out.push({
+        kind: n.data.kind === "branch" ? "branch" : "leaf",
         node: n.data as Branch | Leaf,
-        x: n.x ?? 0,
-        y: n.y ?? 0,
+        x: Math.cos(angle) * r,
+        y: Math.sin(angle) * r,
       });
-    }
-    return placed;
+    });
+    return out;
   }, [layout]);
 }
 
@@ -316,16 +210,17 @@ export function RadialMenu() {
       <div
         className="fixed z-50 pointer-events-none"
         style={{
-          bottom: 16,
-          left: 16,
+          top: "50%",
+          left: "50%",
           width: layout.canvas,
           height: layout.canvas,
+          transform: "translate(-50%, -50%)",
         }}
       >
         <svg
           width={layout.canvas}
           height={layout.canvas}
-          viewBox={`${-ORIGIN_INSET} ${-(layout.canvas - ORIGIN_INSET)} ${layout.canvas} ${layout.canvas}`}
+          viewBox={`${-layout.canvas / 2} ${-layout.canvas / 2} ${layout.canvas} ${layout.canvas}`}
           className="pointer-events-auto"
           style={{ overflow: "visible" }}
         >
