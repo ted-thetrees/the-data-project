@@ -14,6 +14,7 @@ import {
   Film,
   Palette,
   Apple,
+  ListTodo,
   Command,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -48,6 +49,10 @@ const NAV: Branch[] = [
   { kind: "branch", label: "Series", icon: Film, children: [
     { kind: "leaf", label: "Status", path: "/series", key: "s", icon: Film },
     { kind: "leaf", label: "Pick Lists", path: "/pick-lists/crime-series", key: "S", icon: List },
+  ] },
+  { kind: "branch", label: "Backlog", icon: ListTodo, children: [
+    { kind: "leaf", label: "Priority", path: "/backlog", key: "b", icon: ListTodo },
+    { kind: "leaf", label: "Pick Lists", path: "/pick-lists/backlog", key: "B", icon: List },
   ] },
   { kind: "branch", label: "Color Palettes", icon: Palette, children: [
     { kind: "leaf", label: "All", path: "/color-palettes", key: "c", icon: Palette },
