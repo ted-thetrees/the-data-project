@@ -350,7 +350,7 @@ export function RadialMenu() {
                   height={(layout.nodeR - 6) * 2}
                   style={{ overflow: "visible" }}
                 >
-                  <div className="flex h-full w-full flex-col items-center justify-center text-white" style={{ gap: 1 }}>
+                  <div className="flex h-full w-full flex-col items-center justify-center text-white" style={{ gap: 3 }}>
                     <Icon size={layout.iconSize} />
                     <span
                       className="text-center"
