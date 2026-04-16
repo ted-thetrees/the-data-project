@@ -20,6 +20,7 @@ import { useTableViews, resolveColumnOrder } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
+import { handleGridKeyDown } from "@/components/grid-keyboard-nav";
 import {
   updatePersonName,
   updatePersonKnownAs,
@@ -267,6 +268,7 @@ export function PeopleTable({
               borderSpacing: "var(--row-gap)",
               width: totalWidth,
             }}
+            onKeyDown={handleGridKeyDown}
           >
             <colgroup>
               {orderedKeys.map((key) => (

@@ -11,6 +11,7 @@ interface EditableTextProps {
 
 export function EditableText({ value, onSave, placeholder, className }: EditableTextProps) {
   const [v, setV] = useState(value);
+  const [focused, setFocused] = useState(false);
   const [isPending, startTransition] = useTransition();
   useEffect(() => setV(value), [value]);
   return (
@@ -19,7 +20,9 @@ export function EditableText({ value, onSave, placeholder, className }: Editable
       value={v}
       placeholder={placeholder}
       onChange={(e) => setV(e.target.value)}
+      onFocus={() => setFocused(true)}
       onBlur={() => {
+        setFocused(false);
         if (v !== value) {
           startTransition(() => {
             onSave(v);
@@ -42,6 +45,10 @@ export function EditableText({ value, onSave, placeholder, className }: Editable
         font: "inherit",
         width: "100%",
         outline: "none",
+        boxShadow: focused
+          ? "0 0 0 2px color-mix(in srgb, var(--foreground) 60%, transparent)"
+          : undefined,
+        borderRadius: focused ? 2 : undefined,
         opacity: isPending ? 0.6 : 1,
       }}
     />

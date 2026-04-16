@@ -145,7 +145,7 @@ export function MultiPillSelect({
       }}
     >
       <PopoverTrigger
-        className="flex flex-wrap gap-1 cursor-pointer items-center text-left"
+        className="flex flex-wrap gap-1 cursor-pointer items-center text-left rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 focus-visible:ring-offset-1"
         style={{ opacity: isPending ? 0.6 : 1 }}
         title="Edit tags"
       >
@@ -284,7 +284,7 @@ export function PillSelect({
       }}
     >
       <PopoverTrigger
-        className={`${PILL_CLASS} cursor-pointer`}
+        className={`${PILL_CLASS} cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 focus-visible:ring-offset-1`}
         style={{
           ...PILL_STYLE,
           backgroundColor: bg,
