@@ -93,8 +93,8 @@ async function InboxCard({ row }: { row: Row }) {
   const frameBg = source?.frame ?? "bg-[var(--contrast-light)]";
   const metaText = source?.text ?? metaTextDefault;
   const deleteClass = source
-    ? `${source.text} underline cursor-pointer hover:opacity-80`
-    : `${actionText} underline`;
+    ? `${source.text} cursor-pointer hover:underline`
+    : actionText;
 
   return (
     <div className={`flex w-full flex-col ${frameBg} ${frameInset}`}>
