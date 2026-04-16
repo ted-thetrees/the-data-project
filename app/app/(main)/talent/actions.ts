@@ -37,6 +37,22 @@ export async function updateTalentName(talentId: string, name: string) {
   revalidateTalentPages();
 }
 
+export async function updateTalentWebsite(talentId: string, url: string | null) {
+  await poolV002.query(
+    `UPDATE talent SET website = $1 WHERE id = $2`,
+    [url, talentId],
+  );
+  revalidateTalentPages();
+}
+
+export async function updateTalentInstagram(talentId: string, url: string | null) {
+  await poolV002.query(
+    `UPDATE talent SET instagram = $1 WHERE id = $2`,
+    [url, talentId],
+  );
+  revalidateTalentPages();
+}
+
 export async function createTalent(
   category: string | null,
   rating: string | null,

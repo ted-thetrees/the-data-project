@@ -17,7 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { PageShell } from "@/components/page-shell";
 import { Empty } from "@/components/empty";
-import { WebLink } from "@/components/web-link";
+import { EditableLink } from "@/components/editable-link";
 import {
   Pill,
   PillSelect,
@@ -34,6 +34,8 @@ import {
   updateTalentCategory,
   updateTalentOverallRating,
   updateTalentName,
+  updateTalentWebsite,
+  updateTalentInstagram,
   createTalent,
   createTalentInArea,
   addTalentArea,
@@ -376,12 +378,18 @@ export function TalentTable({
     ),
     website: (row) => (
       <td key="website" className={cellClass}>
-        <WebLink url={row.website} />
+        <EditableLink
+          value={row.website}
+          onSave={(v) => updateTalentWebsite(row.record_id, v)}
+        />
       </td>
     ),
     instagram: (row) => (
       <td key="instagram" className={cellClass}>
-        <WebLink url={row.instagram} />
+        <EditableLink
+          value={row.instagram}
+          onSave={(v) => updateTalentInstagram(row.record_id, v)}
+        />
       </td>
     ),
     areas: (row) => (
