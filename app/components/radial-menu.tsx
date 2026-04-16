@@ -122,6 +122,7 @@ type Placed = {
   node: Branch | Leaf;
   x: number;
   y: number;
+  parentIdx: number;
 };
 
 type SimNode = d3.SimulationNodeDatum & {
@@ -129,6 +130,7 @@ type SimNode = d3.SimulationNodeDatum & {
   data: Branch | Leaf;
   tx: number;
   ty: number;
+  parentIdx: number;
 };
 
 function usePlacements(layout: Layout): Placed[] {
@@ -143,12 +145,21 @@ function usePlacements(layout: Layout): Placed[] {
       .separation((a, b) => (a.parent === b.parent ? 1 : 1 + SEP_BUMP))(root);
 
     const sim: SimNode[] = [];
+    const branchIdxByLabel = new Map<string, number>();
     root.each((n) => {
       if (n.depth === 0) return;
       const angle = SWEEP_START + (n as unknown as { x: number }).x;
       const r = n.depth === 1 ? layout.innerR : layout.outerR;
       const tx = Math.cos(angle) * r;
       const ty = Math.sin(angle) * r;
+      const parentIdx =
+        n.depth === 1
+          ? -1
+          : branchIdxByLabel.get((n.parent!.data as Branch).label) ?? -1;
+      const idx = sim.length;
+      if (n.depth === 1) {
+        branchIdxByLabel.set((n.data as Branch).label, idx);
+      }
       sim.push({
         depth: n.depth as 1 | 2,
         data: n.data as Branch | Leaf,
@@ -156,6 +167,7 @@ function usePlacements(layout: Layout): Placed[] {
         ty,
         x: tx,
         y: ty,
+        parentIdx,
       });
     });
 
@@ -178,6 +190,7 @@ function usePlacements(layout: Layout): Placed[] {
       node: n.data,
       x: n.x ?? n.tx,
       y: n.y ?? n.ty,
+      parentIdx: n.parentIdx,
     }));
   }, [layout]);
 }
@@ -255,17 +268,22 @@ export function RadialMenu() {
           className="pointer-events-auto"
           style={{ overflow: "visible" }}
         >
-          {placements.map((p, i) => (
-            <line
-              key={`spoke-${i}`}
-              x1={0}
-              y1={0}
-              x2={p.x}
-              y2={p.y}
-              stroke="rgba(0,0,0,0.1)"
-              strokeWidth={1}
-            />
-          ))}
+          {placements.map((p, i) => {
+            const parent =
+              p.parentIdx === -1 ? { x: 0, y: 0 } : placements[p.parentIdx];
+            return (
+              <line
+                key={`spoke-${i}`}
+                x1={parent.x}
+                y1={parent.y}
+                x2={p.x}
+                y2={p.y}
+                stroke="rgba(0,0,0,0.25)"
+                strokeWidth={3}
+                strokeLinecap="round"
+              />
+            );
+          })}
 
           <g>
             <circle r={layout.centerR} fill="#111" />
