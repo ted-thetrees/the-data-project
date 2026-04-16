@@ -20,7 +20,7 @@ const actionText =
 
 const whiteText = "text-[13px] text-white leading-none";
 const SOURCE_META: Record<string, { frame: string; text: string }> = {
-  youtube: { frame: "bg-[#FF0000]", text: whiteText },
+  youtube: { frame: "bg-[#DF0100]", text: whiteText },
   "x-post": { frame: "bg-black", text: whiteText },
   bluesky: { frame: "bg-[#0085FF]", text: whiteText },
   instagram: { frame: "bg-[#E34076]", text: whiteText },
