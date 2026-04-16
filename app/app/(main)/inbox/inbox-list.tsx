@@ -11,11 +11,18 @@ type Row = Record<string, unknown>;
 
 const DUMMY_HREF = "#";
 const stripe = "px-[23px] py-[19px]";
-const metaBg = `${stripe} bg-[var(--contrast-light)]`;
+const metaBgDefault = `${stripe} bg-[var(--contrast-light)]`;
 const contentBg = `${stripe} bg-[var(--cell-bg)]`;
-const metaText = "text-[13px] text-[color:var(--card-foreground)] leading-none";
+const metaTextDefault = "text-[13px] text-[color:var(--card-foreground)] leading-none";
 const actionText =
   "text-[13px] text-[color:var(--primary)] leading-none hover:underline cursor-pointer";
+
+const SOURCE_META: Record<string, { bg: string; text: string }> = {
+  youtube: {
+    bg: `${stripe} bg-[#FF0000]`,
+    text: "text-[13px] text-white leading-none",
+  },
+};
 
 async function getYouTubeThumbnail(ytId: string): Promise<string> {
   const maxres = `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`;
@@ -78,6 +85,13 @@ async function InboxCard({ row }: { row: Row }) {
   const recordId = row.id as string;
   const isUrl = type !== "text";
 
+  const source = SOURCE_META[type];
+  const metaBg = source?.bg ?? metaBgDefault;
+  const metaText = source?.text ?? metaTextDefault;
+  const deleteClass = source
+    ? `${source.text} underline cursor-pointer hover:opacity-80`
+    : `${actionText} underline`;
+
   return (
     <div className="flex w-full flex-col gap-[2px]">
       <div className={metaBg}>
@@ -97,10 +111,7 @@ async function InboxCard({ row }: { row: Row }) {
           ) : (
             <span />
           )}
-          <DeleteLink
-            recordId={recordId}
-            className={`${actionText} underline`}
-          />
+          <DeleteLink recordId={recordId} className={deleteClass} />
         </div>
       </div>
 
@@ -109,7 +120,7 @@ async function InboxCard({ row }: { row: Row }) {
           <UrlContent url={content} />
         ) : (
           <p
-            className={`${metaText} whitespace-pre-wrap break-words`}
+            className={`${metaTextDefault} whitespace-pre-wrap break-words`}
             style={{ lineHeight: 1.5 }}
           >
             <LinkifiedText text={content} />
@@ -117,7 +128,7 @@ async function InboxCard({ row }: { row: Row }) {
         )}
       </div>
 
-      <div className={metaBg}>
+      <div className={metaBgDefault}>
         <ActionBar recordId={recordId} />
       </div>
     </div>
