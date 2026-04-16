@@ -27,7 +27,7 @@ export function MasonryGrid({ items }: { items: Item[] }) {
   return (
     <div className="flex items-start gap-[20px]">
       {columns.map((col, c) => (
-        <div key={c} className="flex min-w-0 flex-1 flex-col gap-[10px]">
+        <div key={c} className="flex min-w-0 flex-1 flex-col gap-[20px]">
           {col.map((item) => (
             <div key={item.id}>{item.element}</div>
           ))}
