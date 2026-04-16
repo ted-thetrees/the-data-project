@@ -46,7 +46,7 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col">
         <TooltipProvider>
           {!isDesktopShell && <NavShortcuts />}
-          {isDesktopShell && <RadialMenu />}
+          <RadialMenu />
           <main className="flex-1">{children}</main>
         </TooltipProvider>
       </body>
