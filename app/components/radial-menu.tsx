@@ -67,8 +67,8 @@ const SWEEP_START = -Math.PI / 2;
 const SWEEP = 2 * Math.PI;
 
 const PALETTE_HUES = [210, 262, 300, 340, 20, 50, 150, 185];
-const groupFill = (i: number) => `hsl(${PALETTE_HUES[i % PALETTE_HUES.length]}, 70%, 90%)`;
-const groupStroke = (i: number) => `hsl(${PALETTE_HUES[i % PALETTE_HUES.length]}, 50%, 45%)`;
+const groupFill = (i: number) => `hsl(${PALETTE_HUES[i % PALETTE_HUES.length]}, 55%, 32%)`;
+const groupStroke = (i: number) => `hsl(${PALETTE_HUES[i % PALETTE_HUES.length]}, 70%, 60%)`;
 
 type Layout = {
   outerR: number;
@@ -318,6 +318,9 @@ export function RadialMenu() {
           {placements.map((p, i) => {
             const isLeaf = p.kind === "leaf";
             const Icon = p.node.icon;
+            const pr = Math.hypot(p.x, p.y);
+            const ux = pr === 0 ? 0 : p.x / pr;
+            const uy = pr === 0 ? 0 : p.y / pr;
             return (
               <g
                 key={`n-${i}`}
@@ -343,7 +346,7 @@ export function RadialMenu() {
                   width={layout.iconSize}
                   height={layout.iconSize}
                 >
-                  <div className="flex h-full w-full items-center justify-center text-neutral-900">
+                  <div className="flex h-full w-full items-center justify-center text-white">
                     <Icon size={layout.iconSize} />
                   </div>
                 </foreignObject>
@@ -352,20 +355,23 @@ export function RadialMenu() {
                   textAnchor="middle"
                   dominantBaseline="central"
                   fontSize={layout.labelFont}
-                  fontWeight={500}
-                  fill="#111"
+                  fontWeight={600}
+                  fill="white"
                 >
                   {p.node.label}
                 </text>
                 {isLeaf && (
-                  <g
-                    transform={`translate(${layout.nodeR - 4}, ${-layout.nodeR + 4})`}
-                  >
-                    <circle r={Math.max(9, layout.nodeR * 0.32)} fill="#111" />
+                  <g transform={`translate(${ux * layout.nodeR}, ${uy * layout.nodeR})`}>
+                    <circle
+                      r={Math.max(9, layout.nodeR * 0.32)}
+                      fill="white"
+                      stroke={groupStroke(p.groupIdx)}
+                      strokeWidth={1.5}
+                    />
                     <text
                       textAnchor="middle"
                       dominantBaseline="central"
-                      fill="white"
+                      fill={groupFill(p.groupIdx)}
                       fontSize={Math.max(10, layout.nodeR * 0.36)}
                       fontWeight={700}
                       fontFamily="ui-monospace, SFMono-Regular, monospace"
