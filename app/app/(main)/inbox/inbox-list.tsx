@@ -62,7 +62,7 @@ async function UrlContent({ url }: { url: string }) {
   return (
     <div className="flex flex-col gap-[19px]">
       {ogImage && (
-        <ExternalLink url={url} className="block">
+        <ExternalLink url={url} className="-mx-[23px] -mt-[19px] block">
           <div className="aspect-video w-full overflow-hidden">
             <img
               src={ogImage}
