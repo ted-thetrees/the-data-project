@@ -57,20 +57,76 @@ const NAV: Branch[] = [
   ] },
 ];
 
-const SWEEP_START = -Math.PI / 2 - 0.45;
-const SWEEP = Math.PI / 2 + 0.9;
-const INNER_R = 180;
-const OUTER_R = 330;
-const NODE_R = 34;
-const CENTER_R = 40;
-const ICON_SIZE = 20;
-const LABEL_FONT = 11;
-const CANVAS = 560;
-const ORIGIN_INSET = 60;
+const ORIGIN_INSET = 64;
+const EDGE_MARGIN = 24;
+const PREFERRED_NODE_R = 34;
+const MIN_NODE_R = 18;
+const LABEL_PAD = 10;
+const INNER_RING_RATIO = 0.55;
+const SEP_BUMP = 0.6;
+const SWEEP_START = -Math.PI / 2 - 0.2;
+const SWEEP = Math.PI / 2 + 0.4;
 
-type Placed = { kind: "branch" | "leaf"; node: Branch | Leaf; x: number; y: number };
+type Layout = {
+  outerR: number;
+  innerR: number;
+  nodeR: number;
+  centerR: number;
+  iconSize: number;
+  labelFont: number;
+  canvas: number;
+};
 
-function usePlacements(): Placed[] {
+function computeLayout(vw: number, vh: number): Layout {
+  const leafCount = NAV.reduce((s, b) => s + b.children.length, 0);
+  const branchCount = NAV.length;
+  const effectiveSlots =
+    leafCount - 1 + (branchCount - 1) * SEP_BUMP;
+  const anglePerSlot = SWEEP / effectiveSlots;
+
+  const slotHalfWidth = PREFERRED_NODE_R + LABEL_PAD;
+  const requiredR = slotHalfWidth / Math.sin(anglePerSlot / 2);
+
+  const availableR = Math.min(
+    vw - ORIGIN_INSET - EDGE_MARGIN - PREFERRED_NODE_R,
+    vh - ORIGIN_INSET - EDGE_MARGIN - PREFERRED_NODE_R
+  );
+
+  const outerR = Math.max(MIN_NODE_R * 4, Math.min(requiredR, availableR));
+  const shrinkFactor = outerR < requiredR ? outerR / requiredR : 1;
+  const nodeR = Math.max(
+    MIN_NODE_R,
+    Math.floor(PREFERRED_NODE_R * shrinkFactor)
+  );
+  const innerR = outerR * INNER_RING_RATIO;
+  const centerR = nodeR + 6;
+  const iconSize = Math.max(12, Math.round(nodeR * 0.6));
+  const labelFont = Math.max(9, Math.round(nodeR * 0.32));
+  const canvas = outerR + nodeR + LABEL_PAD + EDGE_MARGIN;
+
+  return { outerR, innerR, nodeR, centerR, iconSize, labelFont, canvas };
+}
+
+function useLayout(): Layout {
+  const [size, setSize] = useState({ w: 1400, h: 900 });
+  useEffect(() => {
+    const onResize = () =>
+      setSize({ w: window.innerWidth, h: window.innerHeight });
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  return useMemo(() => computeLayout(size.w, size.h), [size]);
+}
+
+type Placed = {
+  kind: "branch" | "leaf";
+  node: Branch | Leaf;
+  x: number;
+  y: number;
+};
+
+function usePlacements(layout: Layout): Placed[] {
   return useMemo(() => {
     const rootData: Root = { kind: "root", children: NAV };
     const root = d3.hierarchy<NavNode>(rootData, (d) =>
@@ -79,13 +135,13 @@ function usePlacements(): Placed[] {
     d3
       .tree<NavNode>()
       .size([SWEEP, 1])
-      .separation((a, b) => (a.parent === b.parent ? 1 : 1.8))(root);
+      .separation((a, b) => (a.parent === b.parent ? 1 : 1 + SEP_BUMP))(root);
 
     const out: Placed[] = [];
     root.each((n) => {
       if (n.depth === 0) return;
       const angle = SWEEP_START + (n as unknown as { x: number }).x;
-      const r = n.depth === 1 ? INNER_R : OUTER_R;
+      const r = n.depth === 1 ? layout.innerR : layout.outerR;
       out.push({
         kind: n.data.kind === "branch" ? "branch" : "leaf",
         node: n.data as Branch | Leaf,
@@ -94,13 +150,14 @@ function usePlacements(): Placed[] {
       });
     });
     return out;
-  }, []);
+  }, [layout]);
 }
 
 export function RadialMenu() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const placements = usePlacements();
+  const layout = useLayout();
+  const placements = usePlacements(layout);
 
   const keyMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -154,12 +211,17 @@ export function RadialMenu() {
       />
       <div
         className="fixed z-50 pointer-events-none"
-        style={{ bottom: 16, left: 16, width: CANVAS, height: CANVAS }}
+        style={{
+          bottom: 16,
+          left: 16,
+          width: layout.canvas,
+          height: layout.canvas,
+        }}
       >
         <svg
-          width={CANVAS}
-          height={CANVAS}
-          viewBox={`${-ORIGIN_INSET} ${-(CANVAS - ORIGIN_INSET)} ${CANVAS} ${CANVAS}`}
+          width={layout.canvas}
+          height={layout.canvas}
+          viewBox={`${-ORIGIN_INSET} ${-(layout.canvas - ORIGIN_INSET)} ${layout.canvas} ${layout.canvas}`}
           className="pointer-events-auto"
           style={{ overflow: "visible" }}
         >
@@ -176,10 +238,15 @@ export function RadialMenu() {
           ))}
 
           <g>
-            <circle r={CENTER_R} fill="#111" />
-            <foreignObject x={-CENTER_R / 2} y={-CENTER_R / 2} width={CENTER_R} height={CENTER_R}>
+            <circle r={layout.centerR} fill="#111" />
+            <foreignObject
+              x={-layout.centerR / 2}
+              y={-layout.centerR / 2}
+              width={layout.centerR}
+              height={layout.centerR}
+            >
               <div className="flex h-full w-full items-center justify-center text-white">
-                <Command size={22} />
+                <Command size={Math.round(layout.iconSize * 1.1)} />
               </div>
             </foreignObject>
           </g>
@@ -201,39 +268,41 @@ export function RadialMenu() {
               >
                 <title>{p.node.label}</title>
                 <circle
-                  r={NODE_R}
+                  r={layout.nodeR}
                   fill={isLeaf ? "white" : "#f5f5f5"}
                   stroke="#111"
                   strokeWidth={isLeaf ? 1.5 : 1}
                 />
                 <foreignObject
-                  x={-ICON_SIZE / 2}
-                  y={-ICON_SIZE / 2 - 6}
-                  width={ICON_SIZE}
-                  height={ICON_SIZE}
+                  x={-layout.iconSize / 2}
+                  y={-layout.iconSize / 2 - layout.nodeR * 0.2}
+                  width={layout.iconSize}
+                  height={layout.iconSize}
                 >
                   <div className="flex h-full w-full items-center justify-center text-neutral-900">
-                    <Icon size={ICON_SIZE} />
+                    <Icon size={layout.iconSize} />
                   </div>
                 </foreignObject>
                 <text
-                  y={NODE_R / 2 + 2}
+                  y={layout.nodeR / 2 + 2}
                   textAnchor="middle"
                   dominantBaseline="central"
-                  fontSize={LABEL_FONT}
+                  fontSize={layout.labelFont}
                   fontWeight={500}
                   fill="#111"
                 >
                   {p.node.label}
                 </text>
                 {isLeaf && (
-                  <g transform={`translate(${NODE_R - 4}, ${-NODE_R + 4})`}>
-                    <circle r={11} fill="#111" />
+                  <g
+                    transform={`translate(${layout.nodeR - 4}, ${-layout.nodeR + 4})`}
+                  >
+                    <circle r={Math.max(9, layout.nodeR * 0.32)} fill="#111" />
                     <text
                       textAnchor="middle"
                       dominantBaseline="central"
                       fill="white"
-                      fontSize={12}
+                      fontSize={Math.max(10, layout.nodeR * 0.36)}
                       fontWeight={700}
                       fontFamily="ui-monospace, SFMono-Regular, monospace"
                     >
