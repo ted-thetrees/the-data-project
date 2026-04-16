@@ -98,7 +98,7 @@ async function InboxCard({ row }: { row: Row }) {
 
   return (
     <div className={`flex w-full flex-col ${frameBg} ${frameInset}`}>
-      <div className={`-mx-[6px] ${stripe}`}>
+      <div className="-mx-[6px] px-[29px] py-[19px]">
         <div className="flex items-center justify-between gap-3">
           <span className={metaText}>{date}</span>
           {passphrase ? (
