@@ -13,7 +13,7 @@ export default async function Home() {
   ]);
 
   return (
-    <PageShell title="Inbox" count={count} maxWidth="max-w-2xl">
+    <PageShell title="Inbox" count={count} maxWidth="max-w-7xl">
       <InboxRealtime />
       <InboxList records={records} />
     </PageShell>
