@@ -58,8 +58,8 @@ const NAV: Branch[] = [
 ];
 
 const EDGE_MARGIN = 32;
-const PREFERRED_NODE_R = 36;
-const MIN_NODE_R = 20;
+const PREFERRED_NODE_R = 47;
+const MIN_NODE_R = 24;
 const LABEL_PAD = 10;
 const INNER_RING_RATIO = 0.5;
 const SEP_BUMP = 0.3;
@@ -124,6 +124,13 @@ type Placed = {
   y: number;
 };
 
+type SimNode = d3.SimulationNodeDatum & {
+  depth: 1 | 2;
+  data: Branch | Leaf;
+  tx: number;
+  ty: number;
+};
+
 function usePlacements(layout: Layout): Placed[] {
   return useMemo(() => {
     const rootData: Root = { kind: "root", children: NAV };
@@ -135,19 +142,43 @@ function usePlacements(layout: Layout): Placed[] {
       .size([SWEEP, 1])
       .separation((a, b) => (a.parent === b.parent ? 1 : 1 + SEP_BUMP))(root);
 
-    const out: Placed[] = [];
+    const sim: SimNode[] = [];
     root.each((n) => {
       if (n.depth === 0) return;
       const angle = SWEEP_START + (n as unknown as { x: number }).x;
       const r = n.depth === 1 ? layout.innerR : layout.outerR;
-      out.push({
-        kind: n.data.kind === "branch" ? "branch" : "leaf",
-        node: n.data as Branch | Leaf,
-        x: Math.cos(angle) * r,
-        y: Math.sin(angle) * r,
+      const tx = Math.cos(angle) * r;
+      const ty = Math.sin(angle) * r;
+      sim.push({
+        depth: n.depth as 1 | 2,
+        data: n.data as Branch | Leaf,
+        tx,
+        ty,
+        x: tx,
+        y: ty,
       });
     });
-    return out;
+
+    d3.forceSimulation<SimNode>(sim)
+      .force("x", d3.forceX<SimNode>((d) => d.tx).strength(0.45))
+      .force("y", d3.forceY<SimNode>((d) => d.ty).strength(0.45))
+      .force(
+        "collide",
+        d3
+          .forceCollide<SimNode>(layout.nodeR + 4)
+          .strength(1)
+          .iterations(6)
+      )
+      .alphaDecay(0.035)
+      .stop()
+      .tick(400);
+
+    return sim.map((n) => ({
+      kind: n.depth === 1 ? "branch" : "leaf",
+      node: n.data,
+      x: n.x ?? n.tx,
+      y: n.y ?? n.ty,
+    }));
   }, [layout]);
 }
 
@@ -205,7 +236,7 @@ export function RadialMenu() {
     <>
       <div
         onClick={() => setOpen(false)}
-        className="fixed inset-0 z-40 bg-black/25"
+        className="fixed inset-0 z-40 bg-black/25 backdrop-blur-md"
       />
       <div
         className="fixed z-50 pointer-events-none"
@@ -283,7 +314,7 @@ export function RadialMenu() {
                   </div>
                 </foreignObject>
                 <text
-                  y={layout.nodeR / 2 + 2}
+                  y={layout.nodeR / 2 - 1}
                   textAnchor="middle"
                   dominantBaseline="central"
                   fontSize={layout.labelFont}
