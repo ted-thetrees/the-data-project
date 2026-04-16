@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { NavShortcuts } from "@/components/nav-shortcuts";
+import { RadialMenu } from "@/components/radial-menu";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const outfit = Outfit({
@@ -49,6 +50,7 @@ export default async function RootLayout({
           <SidebarProvider defaultOpen={false}>
             {!isDesktopShell && <AppSidebar />}
             {!isDesktopShell && <NavShortcuts />}
+            {isDesktopShell && <RadialMenu />}
             <SidebarInset>{children}</SidebarInset>
           </SidebarProvider>
         </TooltipProvider>
