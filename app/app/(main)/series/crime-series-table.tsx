@@ -18,7 +18,7 @@ import { PageShell } from "@/components/page-shell";
 import type { SeriesRow } from "./page";
 import { Pill, PillSelect, type PillOption } from "@/components/pill";
 import { Empty } from "@/components/empty";
-import { WebLink } from "@/components/web-link";
+import { EditableLink } from "@/components/editable-link";
 import { Subtitle } from "@/components/subtitle";
 import { EditableText } from "@/components/editable-text";
 import { useTableViews, resolveColumnOrder } from "@/components/table-views";
@@ -29,6 +29,7 @@ import { handleGridKeyDown } from "@/components/grid-keyboard-nav";
 import {
   updateCrimeSeriesStatus,
   updateCrimeSeriesTitle,
+  updateCrimeSeriesTrailer,
   createCrimeSeries,
 } from "./actions";
 import { createPicklistOptionNamed } from "../pick-lists/actions";
@@ -358,7 +359,10 @@ export function CrimeSeriesTable({
                           style={{ border: "none" }}
                         />
                       ) : (
-                        <WebLink url={row.youtube_trailer} />
+                        <EditableLink
+                          value={row.youtube_trailer}
+                          onSave={(v) => updateCrimeSeriesTrailer(row.id, v)}
+                        />
                       )}
                     </td>
                   );

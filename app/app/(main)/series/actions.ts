@@ -30,6 +30,17 @@ export async function updateCrimeSeriesTitle(
   revalidate();
 }
 
+export async function updateCrimeSeriesTrailer(
+  seriesId: string,
+  url: string | null,
+) {
+  await poolV002.query(
+    `UPDATE crime_series SET youtube_trailer = $1 WHERE id = $2`,
+    [url, seriesId],
+  );
+  revalidate();
+}
+
 export async function createCrimeSeries(statusId: string | null) {
   await poolV002.query(
     `INSERT INTO crime_series (title, status_id) VALUES ('Untitled', $1)`,

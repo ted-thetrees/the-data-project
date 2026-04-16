@@ -16,7 +16,7 @@ import {
 } from "@dnd-kit/sortable";
 import { PageShell } from "@/components/page-shell";
 import { Empty } from "@/components/empty";
-import { WebLink } from "@/components/web-link";
+import { EditableLink } from "@/components/editable-link";
 import { Subtitle } from "@/components/subtitle";
 import { EditableText } from "@/components/editable-text";
 import { useTableViews, resolveColumnOrder } from "@/components/table-views";
@@ -24,7 +24,7 @@ import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
 import type { SortRow } from "./page";
-import { updateCrimeSeriesTitle, createCrimeSeries } from "../series/actions";
+import { updateCrimeSeriesTitle, updateCrimeSeriesTrailer, createCrimeSeries } from "../series/actions";
 
 const PRE_EVAL_STATUS_ID = "e5dc627e-c7e7-474e-b097-c23850c1906c";
 
@@ -133,7 +133,10 @@ export function SortTable({ data }: { data: SortRow[] }) {
               style={{ border: "none" }}
             />
           ) : (
-            <WebLink url={row.youtube_trailer} />
+            <EditableLink
+              value={row.youtube_trailer}
+              onSave={(v) => updateCrimeSeriesTrailer(row.id, v)}
+            />
           )}
         </td>
       );

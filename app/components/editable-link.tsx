@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
-import { Empty } from "@/components/empty";
+import { useEffect, useState, useTransition } from "react";
+import { ExternalLink as ExternalLinkIcon } from "lucide-react";
 
 interface EditableLinkProps {
   value: string | null | undefined;
@@ -9,39 +9,33 @@ interface EditableLinkProps {
   placeholder?: string;
 }
 
-function displayText(url: string): string {
-  return url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
+function normalize(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
 }
 
-export function EditableLink({ value, onSave, placeholder }: EditableLinkProps) {
-  const [editing, setEditing] = useState(false);
+export function EditableLink({ value, onSave, placeholder = "Add link" }: EditableLinkProps) {
   const [draft, setDraft] = useState(value ?? "");
   const [focused, setFocused] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => setDraft(value ?? ""), [value]);
 
-  useEffect(() => {
-    if (editing) inputRef.current?.select();
-  }, [editing]);
-
   function commit() {
-    const next = draft.trim();
-    const normalized = next === "" ? null : next;
+    const next = normalize(draft);
     const previous = (value ?? "").trim() || null;
-    if (normalized !== previous) {
+    if (next !== previous) {
       startTransition(() => {
-        onSave(normalized);
+        onSave(next);
       });
     }
-    setEditing(false);
   }
 
-  if (editing) {
-    return (
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, width: "100%" }}>
       <input
-        ref={inputRef}
         type="text"
         value={draft}
         placeholder={placeholder}
@@ -52,21 +46,20 @@ export function EditableLink({ value, onSave, placeholder }: EditableLinkProps) 
           commit();
         }}
         onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            (e.currentTarget as HTMLInputElement).blur();
-          } else if (e.key === "Escape") {
+          if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
+          if (e.key === "Escape") {
             setDraft(value ?? "");
-            setEditing(false);
+            (e.currentTarget as HTMLInputElement).blur();
           }
         }}
-        autoFocus
         style={{
+          flex: 1,
+          minWidth: 0,
           background: "transparent",
           color: "inherit",
           border: 0,
           padding: 0,
           font: "inherit",
-          width: "100%",
           outline: "none",
           boxShadow: focused
             ? "0 0 0 2px color-mix(in srgb, var(--foreground) 60%, transparent)"
@@ -75,35 +68,22 @@ export function EditableLink({ value, onSave, placeholder }: EditableLinkProps) 
           opacity: isPending ? 0.6 : 1,
         }}
       />
-    );
-  }
-
-  if (!value) {
-    return (
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        className="block w-full cursor-text text-left"
-        style={{ background: "transparent", border: 0, padding: 0, font: "inherit" }}
-      >
-        <Empty />
-      </button>
-    );
-  }
-
-  return (
-    <a
-      href={value}
-      target="_blank"
-      rel="noopener noreferrer"
-      title={`${value} — double-click to edit`}
-      onDoubleClick={(e) => {
-        e.preventDefault();
-        setEditing(true);
-      }}
-      className="themed-link block truncate"
-    >
-      {displayText(value)}
-    </a>
+      {value ? (
+        <a
+          href={value}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Open link in new tab"
+          title={value}
+          style={{
+            color: "var(--link-color)",
+            display: "inline-flex",
+            flexShrink: 0,
+          }}
+        >
+          <ExternalLinkIcon size={13} />
+        </a>
+      ) : null}
+    </div>
   );
 }
