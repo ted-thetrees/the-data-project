@@ -25,6 +25,7 @@ const SOURCE_META: Record<string, { frame: string; text: string }> = {
   bluesky: { frame: "bg-[#0085FF]", text: whiteText },
   instagram: { frame: "bg-[#E34076]", text: whiteText },
   text: { frame: "bg-[#A1C730]", text: whiteText },
+  url: { frame: "bg-[#A72DBC]", text: whiteText },
 };
 
 async function getYouTubeThumbnail(ytId: string): Promise<string> {
