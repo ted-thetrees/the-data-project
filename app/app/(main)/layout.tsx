@@ -3,8 +3,6 @@ import { headers } from "next/headers";
 import { Outfit, Source_Sans_3, Nunito } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
 import { NavShortcuts } from "@/components/nav-shortcuts";
 import { RadialMenu } from "@/components/radial-menu";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -47,12 +45,9 @@ export default async function RootLayout({
     <html lang="en" className={cn("h-full", "antialiased", outfit.variable, sourceSans.variable, nunito.variable)}>
       <body className="min-h-full flex flex-col">
         <TooltipProvider>
-          <SidebarProvider defaultOpen={false}>
-            {!isDesktopShell && <AppSidebar />}
-            {!isDesktopShell && <NavShortcuts />}
-            {isDesktopShell && <RadialMenu />}
-            <SidebarInset>{children}</SidebarInset>
-          </SidebarProvider>
+          {!isDesktopShell && <NavShortcuts />}
+          {isDesktopShell && <RadialMenu />}
+          <main className="flex-1">{children}</main>
         </TooltipProvider>
       </body>
     </html>
