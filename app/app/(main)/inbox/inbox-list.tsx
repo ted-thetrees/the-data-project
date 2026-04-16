@@ -16,7 +16,7 @@ const metaBgDefault = `${stripe} bg-[#f8f8f8cc]`;
 const contentBg = `${stripe} bg-[#ffffffcc]`;
 const metaTextDefault = "text-[13px] text-[color:var(--card-foreground)] leading-none";
 const actionText =
-  "text-[13px] text-[color:var(--primary)] leading-none hover:underline cursor-pointer";
+  "text-[13px] text-black leading-none hover:underline cursor-pointer";
 
 const whiteText = "text-[13px] text-white leading-none";
 const SOURCE_META: Record<string, { frame: string; text: string }> = {
