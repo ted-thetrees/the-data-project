@@ -88,6 +88,39 @@ export function getPeopleOrgFillStatuses() {
   );
 }
 
+export function getBacklogPriorities() {
+  return getStatusesByName("backlog_priorities", "ORDER BY sort_order NULLS LAST, name");
+}
+
+export function getBacklogCategories() {
+  return getStatusesByName("backlog_categories", "ORDER BY sort_order NULLS LAST, name");
+}
+
+export function getBacklogYesOrNotYet() {
+  return getStatusesByName(
+    "backlog_yes_or_not_yet",
+    "ORDER BY sort_order NULLS LAST, name",
+  );
+}
+
+export function getBacklogDesignParadigms() {
+  return getStatusesByName(
+    "backlog_design_paradigms",
+    "ORDER BY sort_order NULLS LAST, name",
+  );
+}
+
+export function getBacklogStatuses() {
+  return getStatusesByName("backlog_statuses", "ORDER BY sort_order NULLS LAST, name");
+}
+
+export function getBacklogPrototypeStages() {
+  return getStatusesByName(
+    "backlog_prototype_stages",
+    "ORDER BY sort_order NULLS LAST, name",
+  );
+}
+
 export async function getPeopleMetroAreas(): Promise<Status[]> {
   const result = await poolV002.query(
     `SELECT id::text, name, full_name, COALESCE(color, '') as color

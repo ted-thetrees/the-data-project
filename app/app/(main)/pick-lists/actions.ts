@@ -29,6 +29,12 @@ const SOURCE_TABLES: Record<string, SourceConfig> = {
     hasSortOrder: true,
     extraInsertDefaults: { full_name: "New option" },
   },
+  backlog_priorities: { table: "backlog_priorities", hasSortOrder: true },
+  backlog_categories: { table: "backlog_categories", hasSortOrder: true },
+  backlog_yes_or_not_yet: { table: "backlog_yes_or_not_yet", hasSortOrder: true },
+  backlog_design_paradigms: { table: "backlog_design_paradigms", hasSortOrder: true },
+  backlog_statuses: { table: "backlog_statuses", hasSortOrder: true },
+  backlog_prototype_stages: { table: "backlog_prototype_stages", hasSortOrder: true },
 };
 
 function revalidate() {
@@ -38,6 +44,8 @@ function revalidate() {
   revalidatePath("/pick-lists/user-stories");
   revalidatePath("/pick-lists/people");
   revalidatePath("/pick-lists/crime-series");
+  revalidatePath("/pick-lists/backlog");
+  revalidatePath("/backlog");
   revalidatePath("/projects-main");
   revalidatePath("/series");
   revalidatePath("/series-sort");
