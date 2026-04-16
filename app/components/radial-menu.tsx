@@ -66,6 +66,10 @@ const SEP_BUMP = 0.3;
 const SWEEP_START = -Math.PI / 2;
 const SWEEP = 2 * Math.PI;
 
+const PALETTE_HUES = [210, 262, 300, 340, 20, 50, 150, 185];
+const groupFill = (i: number) => `hsl(${PALETTE_HUES[i % PALETTE_HUES.length]}, 70%, 90%)`;
+const groupStroke = (i: number) => `hsl(${PALETTE_HUES[i % PALETTE_HUES.length]}, 50%, 45%)`;
+
 type Layout = {
   outerR: number;
   innerR: number;
@@ -99,7 +103,7 @@ function computeLayout(vw: number, vh: number): Layout {
   const innerR = outerR * INNER_RING_RATIO;
   const centerR = nodeR + 8;
   const iconSize = Math.max(12, Math.round(nodeR * 0.6));
-  const labelFont = Math.max(9, Math.round(nodeR * 0.32));
+  const labelFont = Math.max(9, Math.round(nodeR * 0.255));
   const canvas = (outerR + nodeR + LABEL_PAD + EDGE_MARGIN) * 2;
 
   return { outerR, innerR, nodeR, centerR, iconSize, labelFont, canvas, vw, vh };
@@ -123,6 +127,7 @@ type Placed = {
   x: number;
   y: number;
   parentIdx: number;
+  groupIdx: number;
 };
 
 type SimNode = d3.SimulationNodeDatum & {
@@ -131,6 +136,7 @@ type SimNode = d3.SimulationNodeDatum & {
   tx: number;
   ty: number;
   parentIdx: number;
+  groupIdx: number;
 };
 
 function usePlacements(layout: Layout): Placed[] {
@@ -146,6 +152,7 @@ function usePlacements(layout: Layout): Placed[] {
 
     const sim: SimNode[] = [];
     const branchIdxByLabel = new Map<string, number>();
+    const groupByBranchIdx = new Map<number, number>();
     root.each((n) => {
       if (n.depth === 0) return;
       const angle = SWEEP_START + (n as unknown as { x: number }).x;
@@ -157,8 +164,15 @@ function usePlacements(layout: Layout): Placed[] {
           ? -1
           : branchIdxByLabel.get((n.parent!.data as Branch).label) ?? -1;
       const idx = sim.length;
+      let groupIdx: number;
       if (n.depth === 1) {
+        groupIdx = NAV.findIndex(
+          (b) => b.label === (n.data as Branch).label
+        );
         branchIdxByLabel.set((n.data as Branch).label, idx);
+        groupByBranchIdx.set(idx, groupIdx);
+      } else {
+        groupIdx = groupByBranchIdx.get(parentIdx) ?? 0;
       }
       sim.push({
         depth: n.depth as 1 | 2,
@@ -168,6 +182,7 @@ function usePlacements(layout: Layout): Placed[] {
         x: tx,
         y: ty,
         parentIdx,
+        groupIdx,
       });
     });
 
@@ -191,6 +206,7 @@ function usePlacements(layout: Layout): Placed[] {
       x: n.x ?? n.tx,
       y: n.y ?? n.ty,
       parentIdx: n.parentIdx,
+      groupIdx: n.groupIdx,
     }));
   }, [layout]);
 }
@@ -317,9 +333,9 @@ export function RadialMenu() {
                 <title>{p.node.label}</title>
                 <circle
                   r={layout.nodeR}
-                  fill={isLeaf ? "white" : "#f5f5f5"}
-                  stroke="#111"
-                  strokeWidth={isLeaf ? 1.5 : 1}
+                  fill={groupFill(p.groupIdx)}
+                  stroke={groupStroke(p.groupIdx)}
+                  strokeWidth={isLeaf ? 1.5 : 2}
                 />
                 <foreignObject
                   x={-layout.iconSize / 2}
