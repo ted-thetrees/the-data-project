@@ -83,9 +83,12 @@ function tagColors(color: string | null | undefined) {
  * callbacks receive option ids, not display_ids. The caller is responsible
  * for mutating the canonical record (typically keyed off `row.record_id`).
  */
-// Sentinel value for the "Create '…'" item so it can never collide with a
-// real option id. Keywords carry the search term so cmdk keeps it visible.
-const CREATE_VALUE = "__pill_create__";
+// Simple case-insensitive substring filter. We disable cmdk's built-in
+// filter (shouldFilter={false}) because it ignores the keywords prop and
+// only matches against the item value (which is a numeric id).
+function matchesSearch(name: string, search: string): boolean {
+  return !search || name.toLowerCase().includes(search.toLowerCase());
+}
 
 // Focus the cmdk input after the popover portal mounts.
 // Base UI popover doesn't auto-focus portal content, so without this
@@ -191,7 +194,7 @@ export function MultiPillSelect({
         align="start"
         className="w-[260px] p-0 !rounded-md"
       >
-        <Command className="!rounded-md" loop>
+        <Command className="!rounded-md" loop shouldFilter={false}>
           <CommandInput
             value={search}
             onValueChange={setSearch}
@@ -206,31 +209,30 @@ export function MultiPillSelect({
             }}
           />
           <CommandList>
-            <CommandEmpty>{showCreate ? null : "No matches."}</CommandEmpty>
             <CommandGroup>
-              {options.map((opt) => {
-                const isSel = selected.has(opt.id);
-                return (
-                  <CommandItem
-                    key={opt.id}
-                    value={opt.id}
-                    keywords={[opt.name]}
-                    onSelect={() => toggle(opt)}
-                    data-checked={isSel || undefined}
-                  >
-                    <span
-                      className={PILL_CLASS}
-                      style={{ ...PILL_STYLE, ...tagColors(opt.color) }}
+              {options
+                .filter((opt) => matchesSearch(opt.name, trimmed))
+                .map((opt) => {
+                  const isSel = selected.has(opt.id);
+                  return (
+                    <CommandItem
+                      key={opt.id}
+                      value={opt.id}
+                      onSelect={() => toggle(opt)}
+                      data-checked={isSel || undefined}
                     >
-                      {opt.name}
-                    </span>
-                  </CommandItem>
-                );
-              })}
+                      <span
+                        className={PILL_CLASS}
+                        style={{ ...PILL_STYLE, ...tagColors(opt.color) }}
+                      >
+                        {opt.name}
+                      </span>
+                    </CommandItem>
+                  );
+                })}
               {showCreate && (
                 <CommandItem
-                  value={CREATE_VALUE}
-                  keywords={[trimmed]}
+                  value="__create__"
                   onSelect={handleCreate}
                 >
                   <span className="text-muted-foreground">Create</span>
@@ -238,6 +240,11 @@ export function MultiPillSelect({
                 </CommandItem>
               )}
             </CommandGroup>
+            {!showCreate &&
+              trimmed &&
+              options.every((o) => !matchesSearch(o.name, trimmed)) && (
+                <CommandEmpty>No matches.</CommandEmpty>
+              )}
           </CommandList>
         </Command>
       </PopoverContent>
@@ -316,7 +323,7 @@ export function PillSelect({
         align="start"
         className="w-[260px] p-0 !rounded-md"
       >
-        <Command className="!rounded-md" loop>
+        <Command className="!rounded-md" loop shouldFilter={false}>
           <CommandInput
             value={search}
             onValueChange={setSearch}
@@ -331,28 +338,28 @@ export function PillSelect({
             }}
           />
           <CommandList>
-            <CommandEmpty>{showCreate ? null : "No matches."}</CommandEmpty>
             <CommandGroup>
-              {options.map((opt) => {
-                const obg = opt.color || DEFAULT_COLOR;
-                const ofg = contrastTextColor(opt.color ?? null);
-                const isSel = opt.id === value;
-                return (
-                  <CommandItem
-                    key={opt.id}
-                    value={opt.id}
-                    keywords={[opt.name]}
-                    onSelect={() => handleSelect(opt.id)}
-                    data-checked={isSel || undefined}
-                  >
-                    <span
-                      className={PILL_CLASS}
-                      style={{
-                        ...PILL_STYLE,
-                        backgroundColor: obg,
-                        color: ofg,
-                      }}
+              {options
+                .filter((opt) => matchesSearch(opt.name, trimmed))
+                .map((opt) => {
+                  const obg = opt.color || DEFAULT_COLOR;
+                  const ofg = contrastTextColor(opt.color ?? null);
+                  const isSel = opt.id === value;
+                  return (
+                    <CommandItem
+                      key={opt.id}
+                      value={opt.id}
+                      onSelect={() => handleSelect(opt.id)}
+                      data-checked={isSel || undefined}
                     >
+                      <span
+                        className={PILL_CLASS}
+                        style={{
+                          ...PILL_STYLE,
+                          backgroundColor: obg,
+                          color: ofg,
+                        }}
+                      >
                       {opt.name}
                     </span>
                   </CommandItem>
@@ -360,8 +367,7 @@ export function PillSelect({
               })}
               {showCreate && (
                 <CommandItem
-                  value={CREATE_VALUE}
-                  keywords={[trimmed]}
+                  value="__create__"
                   onSelect={handleCreate}
                 >
                   <span className="text-muted-foreground">Create</span>
@@ -369,6 +375,11 @@ export function PillSelect({
                 </CommandItem>
               )}
             </CommandGroup>
+            {!showCreate &&
+              trimmed &&
+              options.every((o) => !matchesSearch(o.name, trimmed)) && (
+                <CommandEmpty>No matches.</CommandEmpty>
+              )}
           </CommandList>
         </Command>
       </PopoverContent>
