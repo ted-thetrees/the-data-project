@@ -95,7 +95,7 @@ async function InboxCard({ row }: { row: Row }) {
     : `${actionText} underline`;
 
   return (
-    <div className="flex w-full flex-col gap-[2px]">
+    <div className="flex w-full flex-col border-b-[6px] border-l-[6px] border-r-[6px] border-[var(--background)]">
       <div className={metaBg}>
         <div className="flex items-center justify-between gap-3">
           <span className={metaText}>{date}</span>
