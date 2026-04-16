@@ -73,7 +73,7 @@ async function UrlContent({ url }: { url: string }) {
           </div>
         </ExternalLink>
       )}
-      <ExternalLink url={url} className={`${actionText} break-all underline`}>
+      <ExternalLink url={url} className={`${actionText} break-all`}>
         {url}
       </ExternalLink>
     </div>
