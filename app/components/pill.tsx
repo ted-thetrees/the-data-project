@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   Popover,
   PopoverContent,
@@ -87,6 +87,21 @@ function tagColors(color: string | null | undefined) {
 // real option id. Keywords carry the search term so cmdk keeps it visible.
 const CREATE_VALUE = "__pill_create__";
 
+// Focus the cmdk input after the popover portal mounts.
+// Base UI popover doesn't auto-focus portal content, so without this
+// keystrokes go to the trigger button instead of the search field.
+function useFocusCmdkInput(open: boolean) {
+  useEffect(() => {
+    if (!open) return;
+    const id = requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLInputElement>('[data-slot="command-input"]')
+        ?.focus();
+    });
+    return () => cancelAnimationFrame(id);
+  }, [open]);
+}
+
 export function MultiPillSelect({
   value,
   options,
@@ -103,6 +118,7 @@ export function MultiPillSelect({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [isPending, startTransition] = useTransition();
+  useFocusCmdkInput(open);
   const selected = new Set(value);
   const selectedOptions = value
     .map((id) => options.find((o) => o.id === id))
@@ -243,6 +259,7 @@ export function PillSelect({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [isPending, startTransition] = useTransition();
+  useFocusCmdkInput(open);
   const current = options.find((o) => o.id === value);
   const bg = current?.color || DEFAULT_COLOR;
   const fg = contrastTextColor(current?.color ?? null);
