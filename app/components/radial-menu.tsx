@@ -75,6 +75,8 @@ type Layout = {
   iconSize: number;
   labelFont: number;
   canvas: number;
+  vw: number;
+  vh: number;
 };
 
 function computeLayout(vw: number, vh: number): Layout {
@@ -104,7 +106,7 @@ function computeLayout(vw: number, vh: number): Layout {
   const labelFont = Math.max(9, Math.round(nodeR * 0.32));
   const canvas = outerR + nodeR + LABEL_PAD + EDGE_MARGIN;
 
-  return { outerR, innerR, nodeR, centerR, iconSize, labelFont, canvas };
+  return { outerR, innerR, nodeR, centerR, iconSize, labelFont, canvas, vw, vh };
 }
 
 function useLayout(): Layout {
@@ -126,30 +128,129 @@ type Placed = {
   y: number;
 };
 
+type SimNode = d3.SimulationNodeDatum & {
+  id: string;
+  depth: 0 | 1 | 2;
+  data: Root | Branch | Leaf;
+  targetR: number;
+};
+type SimLink = d3.SimulationLinkDatum<SimNode>;
+
 function usePlacements(layout: Layout): Placed[] {
   return useMemo(() => {
     const rootData: Root = { kind: "root", children: NAV };
-    const root = d3.hierarchy<NavNode>(rootData, (d) =>
+    const hroot = d3.hierarchy<NavNode>(rootData, (d) =>
       d.kind === "leaf" ? undefined : d.children
     );
     d3
       .tree<NavNode>()
       .size([SWEEP, 1])
-      .separation((a, b) => (a.parent === b.parent ? 1 : 1 + SEP_BUMP))(root);
+      .separation((a, b) => (a.parent === b.parent ? 1 : 1 + SEP_BUMP))(hroot);
 
-    const out: Placed[] = [];
-    root.each((n) => {
-      if (n.depth === 0) return;
-      const angle = SWEEP_START + (n as unknown as { x: number }).x;
-      const r = n.depth === 1 ? layout.innerR : layout.outerR;
-      out.push({
-        kind: n.data.kind === "branch" ? "branch" : "leaf",
-        node: n.data as Branch | Leaf,
-        x: Math.cos(angle) * r,
-        y: Math.sin(angle) * r,
-      });
+    const nodes: SimNode[] = [];
+    const links: SimLink[] = [];
+    const idOf = (h: d3.HierarchyNode<NavNode>): string => {
+      if (h.depth === 0) return "root";
+      if (h.depth === 1) return (h.data as Branch).label;
+      return `${(h.parent!.data as Branch).label}/${(h.data as Leaf).label}`;
+    };
+
+    hroot.each((h) => {
+      const angle = SWEEP_START + (h as unknown as { x: number }).x;
+      const targetR =
+        h.depth === 0 ? 0 : h.depth === 1 ? layout.innerR : layout.outerR;
+      const id = idOf(h);
+      const node: SimNode = {
+        id,
+        depth: h.depth as 0 | 1 | 2,
+        data: h.data,
+        targetR,
+        x: Math.cos(angle) * targetR,
+        y: Math.sin(angle) * targetR,
+      };
+      if (h.depth === 0) {
+        node.fx = 0;
+        node.fy = 0;
+      }
+      nodes.push(node);
+      if (h.parent) {
+        links.push({ source: idOf(h.parent), target: id });
+      }
     });
-    return out;
+
+    const maxX = layout.vw - ORIGIN_INSET - EDGE_MARGIN - layout.nodeR - 16;
+    const minX = -(ORIGIN_INSET - EDGE_MARGIN - layout.nodeR);
+    const maxY = ORIGIN_INSET - EDGE_MARGIN - layout.nodeR;
+    const minY = -(layout.vh - ORIGIN_INSET - EDGE_MARGIN - layout.nodeR - 16);
+
+    let boundaryNodes: SimNode[] = [];
+    const boundary: d3.Force<SimNode, SimLink> = () => {
+      for (const n of boundaryNodes) {
+        if (n.fx != null) continue;
+        if (n.x != null) {
+          if (n.x > maxX) {
+            n.x = maxX;
+            n.vx = 0;
+          } else if (n.x < minX) {
+            n.x = minX;
+            n.vx = 0;
+          }
+        }
+        if (n.y != null) {
+          if (n.y > maxY) {
+            n.y = maxY;
+            n.vy = 0;
+          } else if (n.y < minY) {
+            n.y = minY;
+            n.vy = 0;
+          }
+        }
+      }
+    };
+    boundary.initialize = (ns: SimNode[]) => {
+      boundaryNodes = ns;
+    };
+
+    const sim = d3
+      .forceSimulation<SimNode, SimLink>(nodes)
+      .force(
+        "radial",
+        d3
+          .forceRadial<SimNode>((d) => d.targetR, 0, 0)
+          .strength((d) => (d.depth === 0 ? 0 : 0.9))
+      )
+      .force(
+        "link",
+        d3
+          .forceLink<SimNode, SimLink>(links)
+          .id((d) => d.id)
+          .distance(layout.outerR - layout.innerR)
+          .strength(0.2)
+      )
+      .force(
+        "collide",
+        d3
+          .forceCollide<SimNode>(layout.nodeR + LABEL_PAD / 2)
+          .strength(1)
+          .iterations(4)
+      )
+      .force("boundary", boundary)
+      .alphaDecay(0.04)
+      .stop();
+
+    for (let i = 0; i < 500; i++) sim.tick();
+
+    const placed: Placed[] = [];
+    for (const n of nodes) {
+      if (n.depth === 0) continue;
+      placed.push({
+        kind: n.depth === 1 ? "branch" : "leaf",
+        node: n.data as Branch | Leaf,
+        x: n.x ?? 0,
+        y: n.y ?? 0,
+      });
+    }
+    return placed;
   }, [layout]);
 }
 
