@@ -132,7 +132,8 @@ type SimNode = d3.SimulationNodeDatum & {
   id: string;
   depth: 0 | 1 | 2;
   data: Root | Branch | Leaf;
-  targetR: number;
+  targetX: number;
+  targetY: number;
 };
 type SimLink = d3.SimulationLinkDatum<SimNode>;
 
@@ -159,14 +160,17 @@ function usePlacements(layout: Layout): Placed[] {
       const angle = SWEEP_START + (h as unknown as { x: number }).x;
       const targetR =
         h.depth === 0 ? 0 : h.depth === 1 ? layout.innerR : layout.outerR;
+      const tx = Math.cos(angle) * targetR;
+      const ty = Math.sin(angle) * targetR;
       const id = idOf(h);
       const node: SimNode = {
         id,
         depth: h.depth as 0 | 1 | 2,
         data: h.data,
-        targetR,
-        x: Math.cos(angle) * targetR,
-        y: Math.sin(angle) * targetR,
+        targetX: tx,
+        targetY: ty,
+        x: tx,
+        y: ty,
       };
       if (h.depth === 0) {
         node.fx = 0;
@@ -214,18 +218,16 @@ function usePlacements(layout: Layout): Placed[] {
     const sim = d3
       .forceSimulation<SimNode, SimLink>(nodes)
       .force(
-        "radial",
+        "x",
         d3
-          .forceRadial<SimNode>((d) => d.targetR, 0, 0)
-          .strength((d) => (d.depth === 0 ? 0 : 0.9))
+          .forceX<SimNode>((d) => d.targetX)
+          .strength((d) => (d.depth === 0 ? 0 : 0.35))
       )
       .force(
-        "link",
+        "y",
         d3
-          .forceLink<SimNode, SimLink>(links)
-          .id((d) => d.id)
-          .distance(layout.outerR - layout.innerR)
-          .strength(0.2)
+          .forceY<SimNode>((d) => d.targetY)
+          .strength((d) => (d.depth === 0 ? 0 : 0.35))
       )
       .force(
         "collide",
@@ -238,6 +240,7 @@ function usePlacements(layout: Layout): Placed[] {
       .alphaDecay(0.04)
       .stop();
 
+    void links;
     for (let i = 0; i < 500; i++) sim.tick();
 
     const placed: Placed[] = [];
