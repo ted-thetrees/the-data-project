@@ -58,8 +58,10 @@ const NAV: Branch[] = [
 ];
 
 const EDGE_MARGIN = 32;
-const PREFERRED_NODE_R = 47;
-const MIN_NODE_R = 24;
+const PREFERRED_NODE_R = 56;
+const MIN_NODE_R = 28;
+const BASE_ICON_SIZE = 28;
+const BASE_LABEL_FONT = 12;
 const LABEL_PAD = 10;
 const INNER_RING_RATIO = 0.5;
 const SEP_BUMP = 0.3;
@@ -102,8 +104,9 @@ function computeLayout(vw: number, vh: number): Layout {
   );
   const innerR = outerR * INNER_RING_RATIO;
   const centerR = nodeR + 8;
-  const iconSize = Math.max(12, Math.round(nodeR * 0.6));
-  const labelFont = Math.max(9, Math.round(nodeR * 0.255));
+  const scale = nodeR / PREFERRED_NODE_R;
+  const iconSize = Math.max(14, Math.round(BASE_ICON_SIZE * scale));
+  const labelFont = Math.max(9, Math.round(BASE_LABEL_FONT * scale));
   const canvas = (outerR + nodeR + LABEL_PAD + EDGE_MARGIN) * 2;
 
   return { outerR, innerR, nodeR, centerR, iconSize, labelFont, canvas, vw, vh };
@@ -341,25 +344,31 @@ export function RadialMenu() {
                   strokeWidth={isLeaf ? 1.5 : 2}
                 />
                 <foreignObject
-                  x={-layout.iconSize / 2}
-                  y={-layout.iconSize / 2 - layout.nodeR * 0.2}
-                  width={layout.iconSize}
-                  height={layout.iconSize}
+                  x={-(layout.nodeR - 6)}
+                  y={-(layout.nodeR - 6)}
+                  width={(layout.nodeR - 6) * 2}
+                  height={(layout.nodeR - 6) * 2}
+                  style={{ overflow: "visible" }}
                 >
-                  <div className="flex h-full w-full items-center justify-center text-white">
+                  <div className="flex h-full w-full flex-col items-center justify-center text-white" style={{ gap: 1 }}>
                     <Icon size={layout.iconSize} />
+                    <span
+                      className="text-center"
+                      style={{
+                        fontSize: layout.labelFont,
+                        fontWeight: 600,
+                        lineHeight: 1.05,
+                        wordBreak: "break-word",
+                        overflowWrap: "anywhere",
+                        hyphens: "auto",
+                        maxWidth: "100%",
+                        padding: "0 2px",
+                      }}
+                    >
+                      {p.node.label}
+                    </span>
                   </div>
                 </foreignObject>
-                <text
-                  y={layout.nodeR / 2 - 1}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fontSize={layout.labelFont}
-                  fontWeight={600}
-                  fill="white"
-                >
-                  {p.node.label}
-                </text>
                 {isLeaf && (
                   <g transform={`translate(${ux * layout.nodeR}, ${uy * layout.nodeR})`}>
                     <circle
