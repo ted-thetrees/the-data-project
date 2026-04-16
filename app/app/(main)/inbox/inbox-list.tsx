@@ -11,7 +11,7 @@ type Row = Record<string, unknown>;
 
 const DUMMY_HREF = "#";
 const stripe = "px-[23px] py-[19px]";
-const frameInset = "px-[20px] pb-[20px]";
+const frameInset = "px-[6px] pb-[6px]";
 const metaBgDefault = `${stripe} bg-[var(--contrast-light)]`;
 const contentBg = `${stripe} bg-[var(--cell-bg)]`;
 const metaTextDefault = "text-[13px] text-[color:var(--card-foreground)] leading-none";
@@ -97,7 +97,7 @@ async function InboxCard({ row }: { row: Row }) {
 
   return (
     <div className={`flex w-full flex-col ${frameBg} ${frameInset}`}>
-      <div className={`-mx-[20px] ${stripe}`}>
+      <div className={`-mx-[6px] ${stripe}`}>
         <div className="flex items-center justify-between gap-3">
           <span className={metaText}>{date}</span>
           {passphrase ? (
