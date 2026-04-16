@@ -12,8 +12,8 @@ type Row = Record<string, unknown>;
 const DUMMY_HREF = "#";
 const stripe = "px-[23px] py-[19px]";
 const frameInset = "px-[6px] pb-[6px]";
-const metaBgDefault = `${stripe} bg-[var(--contrast-light)]`;
-const contentBg = `${stripe} bg-[var(--cell-bg)]`;
+const metaBgDefault = `${stripe} bg-[#f8f8f8cc]`;
+const contentBg = `${stripe} bg-[#ffffffcc]`;
 const metaTextDefault = "text-[13px] text-[color:var(--card-foreground)] leading-none";
 const actionText =
   "text-[13px] text-[color:var(--primary)] leading-none hover:underline cursor-pointer";
