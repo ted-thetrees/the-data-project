@@ -17,6 +17,12 @@ const SOURCE_TABLES: Record<string, string> = {
   people_teller_statuses: "people_teller_statuses",
   people_org_fill_statuses: "people_org_fill_statuses",
   people_metro_areas: "people_metro_areas",
+  backlog_priorities: "backlog_priorities",
+  backlog_categories: "backlog_categories",
+  backlog_yes_or_not_yet: "backlog_yes_or_not_yet",
+  backlog_design_paradigms: "backlog_design_paradigms",
+  backlog_statuses: "backlog_statuses",
+  backlog_prototype_stages: "backlog_prototype_stages",
 };
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
