@@ -17,11 +17,13 @@ const metaTextDefault = "text-[13px] text-[color:var(--card-foreground)] leading
 const actionText =
   "text-[13px] text-[color:var(--primary)] leading-none hover:underline cursor-pointer";
 
+const whiteText = "text-[13px] text-white leading-none";
 const SOURCE_META: Record<string, { bg: string; text: string }> = {
-  youtube: {
-    bg: `${stripe} bg-[#FF0000]`,
-    text: "text-[13px] text-white leading-none",
-  },
+  youtube: { bg: `${stripe} bg-[#FF0000]`, text: whiteText },
+  "x-post": { bg: `${stripe} bg-black`, text: whiteText },
+  bluesky: { bg: `${stripe} bg-[#0085FF]`, text: whiteText },
+  instagram: { bg: `${stripe} bg-[#E34076]`, text: whiteText },
+  text: { bg: `${stripe} bg-[#A1C730]`, text: whiteText },
 };
 
 async function getYouTubeThumbnail(ytId: string): Promise<string> {

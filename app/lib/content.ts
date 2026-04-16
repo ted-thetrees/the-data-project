@@ -1,4 +1,4 @@
-export type ContentType = "youtube" | "x-post" | "url" | "text";
+export type ContentType = "youtube" | "x-post" | "bluesky" | "instagram" | "url" | "text";
 
 export function detectContentType(content: string): ContentType {
   if (!content) return "text";
@@ -14,6 +14,14 @@ export function detectContentType(content: string): ContentType {
 
   if (/^https?:\/\/(www\.)?(twitter\.com|x\.com)\/\w+\/status\//.test(trimmed)) {
     return "x-post";
+  }
+
+  if (/^https?:\/\/(www\.)?bsky\.app\//.test(trimmed)) {
+    return "bluesky";
+  }
+
+  if (/^https?:\/\/(www\.)?instagram\.com\//.test(trimmed)) {
+    return "instagram";
   }
 
   if (/^https?:\/\//.test(trimmed)) {
