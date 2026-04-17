@@ -82,14 +82,14 @@ async function ensureMigratedUber(): Promise<string> {
   return uberRes.rows[0].id as string;
 }
 
-export async function migrateRecord(recordId: string) {
+export async function migrateRecord(recordId: string): Promise<string | null> {
   const inboxRes = await pool.query(
     `SELECT id::text, title FROM inbox
      WHERE id = $1 AND migrated_at IS NULL`,
     [recordId]
   );
   const inbox = inboxRes.rows[0];
-  if (!inbox) return;
+  if (!inbox) return null;
 
   const uberId = await ensureMigratedUber();
 
@@ -125,5 +125,6 @@ export async function migrateRecord(recordId: string) {
 
   revalidatePath("/inbox");
   revalidatePath("/projects-main");
+  return projectId;
 }
 
