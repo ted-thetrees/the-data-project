@@ -3,6 +3,41 @@
 import { revalidatePath } from "next/cache";
 import { removePassphrase } from "@/lib/passphrase";
 import { pool } from "@/lib/db";
+import { capturePreviewForInbox } from "@/lib/preview-service";
+
+export async function countPendingPreviews(): Promise<number> {
+  const res = await pool.query(
+    `SELECT count(*)::int AS n
+       FROM inbox
+      WHERE migrated_at IS NULL
+        AND preview_fetched_at IS NULL
+        AND title ~* '^https?://'`,
+  );
+  return res.rows[0]?.n ?? 0;
+}
+
+export async function backfillOneInboxPreview(): Promise<{
+  processed: boolean;
+  remaining: number;
+  recordId: string | null;
+}> {
+  const pick = await pool.query(
+    `SELECT id::text AS id, title
+       FROM inbox
+      WHERE migrated_at IS NULL
+        AND preview_fetched_at IS NULL
+        AND title ~* '^https?://'
+      ORDER BY created_at DESC
+      LIMIT 1`,
+  );
+  const row = pick.rows[0];
+  if (!row) return { processed: false, remaining: 0, recordId: null };
+
+  await capturePreviewForInbox(row.id, row.title);
+  const remaining = await countPendingPreviews();
+  revalidatePath("/inbox");
+  return { processed: true, remaining, recordId: row.id };
+}
 
 export async function deleteRecord(recordId: string) {
   await pool.query(

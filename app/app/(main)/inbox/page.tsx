@@ -1,20 +1,27 @@
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 export const metadata = { title: "Inbox" };
 
 import { getInboxRecords, getInboxCount } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { InboxList } from "./inbox-list";
 import { InboxRealtime } from "./inbox-realtime";
+import { BackfillPreviewsButton } from "./backfill-button";
+import { countPendingPreviews } from "./actions";
 
 export default async function Home() {
-  const [records, count] = await Promise.all([
+  const [records, count, pendingPreviews] = await Promise.all([
     getInboxRecords(50),
     getInboxCount(),
+    countPendingPreviews(),
   ]);
 
   return (
     <PageShell title="Inbox" count={count} maxWidth="">
       <InboxRealtime />
+      <div className="mb-4">
+        <BackfillPreviewsButton initialPending={pendingPreviews} />
+      </div>
       <InboxList records={records} />
     </PageShell>
   );
