@@ -161,13 +161,21 @@ export function GridTable({
   const prevProjectIdsRef = useRef<Set<string> | null>(null);
 
   const commitProject = (projectId: string) => {
+    const isDraft = data.some(
+      (r) => r.project_id === projectId && r.project_is_draft,
+    );
     dirtyTaskOrderRef.current.delete(projectId);
     setDirtyProjectIds((prev) => prev.filter((id) => id !== projectId));
+    if (isDraft) void finalizeProject(projectId);
   };
 
   const commitAll = () => {
+    const draftIds = dirtyProjectIds.filter((id) =>
+      data.some((r) => r.project_id === id && r.project_is_draft),
+    );
     dirtyTaskOrderRef.current.clear();
     setDirtyProjectIds([]);
+    for (const id of draftIds) void finalizeProject(id);
   };
 
   // Detect newly-appeared project ids (and any inbox-promoted ids saved
@@ -491,19 +499,18 @@ export function GridTable({
                         </div>
                         {(isDraft || isDirty) && (
                           <div className="flex flex-col items-end gap-1 shrink-0">
-                            {isDraft && (
-                              <FinalizeButton projectId={row.project_id} />
-                            )}
-                            {isDirty && (
-                              <button
-                                type="button"
-                                onClick={() => commitProject(row.project_id)}
-                                title="Commit this project into its sorted position"
-                                className="themed-button-sm themed-button-primary"
-                              >
-                                Commit
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => commitProject(row.project_id)}
+                              title={
+                                isDraft
+                                  ? "Commit: promote this draft into the corpus and leave the tray"
+                                  : "Commit this project into its sorted position"
+                              }
+                              className="themed-button-sm themed-button-primary"
+                            >
+                              Commit
+                            </button>
                           </div>
                         )}
                       </div>
@@ -677,21 +684,6 @@ export function GridTable({
     <PageShell title={title} count={orderedData.length} maxWidth="">
       {body}
     </PageShell>
-  );
-}
-
-function FinalizeButton({ projectId }: { projectId: string }) {
-  const [pending, startTransition] = useTransition();
-  return (
-    <button
-      type="button"
-      onClick={() => startTransition(() => finalizeProject(projectId))}
-      disabled={pending}
-      title="Finalize draft — let this project sort into the corpus"
-      className="themed-button-sm themed-button-success shrink-0"
-    >
-      {pending ? "…" : "Finalize"}
-    </button>
   );
 }
 
