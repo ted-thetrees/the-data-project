@@ -9,8 +9,22 @@
 # Optional parameters:
 # @raycast.icon 📁
 
-ENDPOINT="https://data.ifnotfor.com/api/projects/quick-create"
+set -e
 
-curl -s -X POST "$ENDPOINT" \
+API_BASE="https://data.ifnotfor.com"
+TEXT="$1"
+
+UBERS=$(curl -s "$API_BASE/api/projects/uber-list" | jq -r '.names | join(", ")')
+
+PROMPT="Extract a concise project title (2-8 words, imperative) and pick the best-fitting uber project. The uber_project MUST be exactly one of: $UBERS.
+
+Respond with ONLY a raw JSON object, no markdown fences, no commentary. Shape: {\"title\": \"...\", \"uber_project\": \"...\"}
+
+Sentence: $TEXT"
+
+RAW=$(claude -p "$PROMPT" --output-format json --model haiku | jq -r '.result')
+JSON=$(printf '%s' "$RAW" | sed -E 's/^```json//;s/^```//;s/```$//' | jq -c .)
+
+curl -s -X POST "$API_BASE/api/projects/quick-create" \
   -H "Content-Type: application/json" \
-  --data "$(jq -n --arg text "$1" '{text: $text}')" > /dev/null 2>&1
+  --data "$JSON" > /dev/null
