@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { removePassphrase } from "@/lib/passphrase";
-import { pool, getInboxRecords } from "@/lib/db";
+import { pool, getInboxRecords, getNotesRecords } from "@/lib/db";
 import { capturePreviewForInbox } from "@/lib/preview-service";
 import { resolveInboxCards, type CardData } from "./card-data";
 
@@ -11,6 +11,14 @@ export async function loadMoreInboxCards(
   limit = 50,
 ): Promise<CardData[]> {
   const rows = await getInboxRecords(limit, offset);
+  return resolveInboxCards(rows);
+}
+
+export async function loadMoreNotesCards(
+  offset: number,
+  limit = 50,
+): Promise<CardData[]> {
+  const rows = await getNotesRecords(limit, offset);
   return resolveInboxCards(rows);
 }
 

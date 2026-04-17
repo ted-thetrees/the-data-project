@@ -8,6 +8,7 @@ import { InboxRealtime } from "./inbox-realtime";
 import { BackfillPreviewsButton } from "./backfill-button";
 import { countPendingPreviews } from "./actions";
 import { InfiniteInbox } from "./infinite-inbox";
+import { loadMoreInboxCards } from "./actions";
 import { resolveInboxCards } from "./card-data";
 
 export default async function Home() {
@@ -24,7 +25,7 @@ export default async function Home() {
       <div className="mb-4">
         <BackfillPreviewsButton initialPending={pendingPreviews} />
       </div>
-      <InfiniteInbox initial={initial} />
+      <InfiniteInbox initial={initial} loader={loadMoreInboxCards} />
     </PageShell>
   );
 }

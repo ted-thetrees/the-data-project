@@ -3,12 +3,21 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { MasonryGrid } from "./masonry-grid";
 import { InboxCard } from "./inbox-list";
-import { loadMoreInboxCards } from "./actions";
 import type { CardData } from "./card-data";
 
 const PAGE_SIZE = 50;
 
-export function InfiniteInbox({ initial }: { initial: CardData[] }) {
+type Loader = (offset: number, limit: number) => Promise<CardData[]>;
+
+export function InfiniteInbox({
+  initial,
+  loader,
+  emptyLabel = "End of inbox",
+}: {
+  initial: CardData[];
+  loader: Loader;
+  emptyLabel?: string;
+}) {
   const [cards, setCards] = useState<CardData[]>(initial);
   const [done, setDone] = useState(initial.length < PAGE_SIZE);
   const [pending, startTransition] = useTransition();
@@ -28,7 +37,7 @@ export function InfiniteInbox({ initial }: { initial: CardData[] }) {
         loadingRef.current = true;
         startTransition(async () => {
           try {
-            const next = await loadMoreInboxCards(cards.length, PAGE_SIZE);
+            const next = await loader(cards.length, PAGE_SIZE);
             const fresh = next.filter((c) => !seenIds.current.has(c.id));
             for (const c of fresh) seenIds.current.add(c.id);
             setCards((prev) => [...prev, ...fresh]);
@@ -63,7 +72,7 @@ export function InfiniteInbox({ initial }: { initial: CardData[] }) {
       )}
       {done && cards.length > 0 && (
         <div className="py-6 text-center text-[13px] text-[color:var(--muted-foreground)]">
-          End of inbox · {cards.length} items
+          {emptyLabel} · {cards.length} items
         </div>
       )}
     </>

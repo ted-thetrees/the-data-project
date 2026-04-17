@@ -27,6 +27,7 @@ type NavNode = Root | Branch | Leaf;
 const NAV: Branch[] = [
   { kind: "branch", label: "Inbox", icon: InboxIcon, children: [
     { kind: "leaf", label: "Chrono", path: "/inbox", key: "i", icon: InboxIcon },
+    { kind: "leaf", label: "Notes", path: "/notes", key: "N", icon: InboxIcon },
     { kind: "leaf", label: "Pick Lists", path: "/pick-lists", key: "I", icon: List },
   ] },
   { kind: "branch", label: "Projects", icon: Target, children: [
