@@ -153,10 +153,82 @@ export function GridTable({
 }) {
   const projectAccessor = (r: TaskRow) => r.project;
 
+  // Freeze row order until the user explicitly re-sorts. Without this,
+  // every edit triggers revalidatePath() → server refetch → SQL ORDER BY
+  // → rows jump to new positions mid-edit.
+  const orderSnapshot = useRef<{
+    projectIds: string[];
+    projectTaskIds: Map<string, string[]>;
+  } | null>(null);
+  const [resortCounter, setResortCounter] = useState(0);
+
+  const frozenData = useMemo(() => {
+    if (!orderSnapshot.current) {
+      const projectIds: string[] = [];
+      const projectTaskIds = new Map<string, string[]>();
+      const seenProjects = new Set<string>();
+      for (const row of data) {
+        if (!seenProjects.has(row.project_id)) {
+          seenProjects.add(row.project_id);
+          projectIds.push(row.project_id);
+          projectTaskIds.set(row.project_id, []);
+        }
+        projectTaskIds.get(row.project_id)!.push(row.id);
+      }
+      orderSnapshot.current = { projectIds, projectTaskIds };
+      return data;
+    }
+
+    const snap = orderSnapshot.current;
+    const byProject = new Map<string, TaskRow[]>();
+    for (const row of data) {
+      if (!byProject.has(row.project_id)) byProject.set(row.project_id, []);
+      byProject.get(row.project_id)!.push(row);
+    }
+
+    const orderedProjectIds: string[] = [];
+    const addedProjects = new Set<string>();
+    for (const pid of snap.projectIds) {
+      if (byProject.has(pid)) {
+        orderedProjectIds.push(pid);
+        addedProjects.add(pid);
+      }
+    }
+    for (const row of data) {
+      if (!addedProjects.has(row.project_id)) {
+        orderedProjectIds.push(row.project_id);
+        addedProjects.add(row.project_id);
+      }
+    }
+
+    const result: TaskRow[] = [];
+    for (const pid of orderedProjectIds) {
+      const rows = byProject.get(pid) ?? [];
+      const snapshotTaskIds = snap.projectTaskIds.get(pid) ?? [];
+      const taskIndex = new Map(snapshotTaskIds.map((id, i) => [id, i]));
+      const known: Array<{ idx: number; row: TaskRow }> = [];
+      const fresh: TaskRow[] = [];
+      for (const row of rows) {
+        const idx = taskIndex.get(row.id);
+        if (idx !== undefined) known.push({ idx, row });
+        else fresh.push(row);
+      }
+      known.sort((a, b) => a.idx - b.idx);
+      for (const { row } of known) result.push(row);
+      for (const row of fresh) result.push(row);
+    }
+    return result;
+  }, [data, resortCounter]);
+
+  const handleResort = () => {
+    orderSnapshot.current = null;
+    setResortCounter((c) => c + 1);
+  };
+
   const projectSpans = useMemo(
     () =>
       computeGroupSpans(
-        data,
+        frozenData,
         projectAccessor,
         (r) => r.project_color,
         (r) => ({
@@ -166,7 +238,7 @@ export function GridTable({
           project_id: r.project_id,
         })
       ),
-    [data]
+    [frozenData]
   );
 
   const projectStartSet = new Set(projectSpans.map((s) => s.startIndex));
@@ -230,6 +302,16 @@ export function GridTable({
         onDelete={deleteView}
       >
         Active projects &middot; click any field to edit &middot; drag column edges to resize
+        {" "}&middot;{" "}
+        <button
+          type="button"
+          onClick={handleResort}
+          className="themed-button-sm"
+          title="Re-sort rows into their current sorted positions"
+          style={{ marginLeft: 4 }}
+        >
+          Re-sort
+        </button>
       </ViewSwitcher>
 
       <div className="overflow-x-auto">
@@ -310,8 +392,8 @@ export function GridTable({
                 style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
               />
             </tr>
-            {data.map((row, i) => {
-              const prev = i > 0 ? data[i - 1] : null;
+            {frozenData.map((row, i) => {
+              const prev = i > 0 ? frozenData[i - 1] : null;
               const tickleChanged =
                 prev !== null && prev.tickle_date !== row.tickle_date;
               return (
