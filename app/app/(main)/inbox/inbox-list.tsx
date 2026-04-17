@@ -58,7 +58,11 @@ function UrlContent({ card }: { card: CardData }) {
           </div>
         </ExternalLink>
       )}
-      <ExternalLink url={card.content} className={`${actionText} break-words`}>
+      <ExternalLink
+        url={card.content}
+        title={card.content}
+        className={`${actionText} break-words`}
+      >
         {label}
       </ExternalLink>
     </div>
