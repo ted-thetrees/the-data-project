@@ -18,12 +18,16 @@ export function InfiniteInbox({
   loader: Loader;
   emptyLabel?: string;
 }) {
-  const [cards, setCards] = useState<CardData[]>(initial);
+  const [extra, setExtra] = useState<CardData[]>([]);
   const [done, setDone] = useState(initial.length < PAGE_SIZE);
   const [pending, startTransition] = useTransition();
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const seenIds = useRef<Set<string>>(new Set(initial.map((c) => c.id)));
   const loadingRef = useRef(false);
+
+  const cards = useMemo(() => {
+    const initialIds = new Set(initial.map((c) => c.id));
+    return [...initial, ...extra.filter((c) => !initialIds.has(c.id))];
+  }, [initial, extra]);
 
   useEffect(() => {
     if (done) return;
@@ -38,9 +42,9 @@ export function InfiniteInbox({
         startTransition(async () => {
           try {
             const next = await loader(cards.length, PAGE_SIZE);
-            const fresh = next.filter((c) => !seenIds.current.has(c.id));
-            for (const c of fresh) seenIds.current.add(c.id);
-            setCards((prev) => [...prev, ...fresh]);
+            const seen = new Set(cards.map((c) => c.id));
+            const fresh = next.filter((c) => !seen.has(c.id));
+            setExtra((prev) => [...prev, ...fresh]);
             if (next.length < PAGE_SIZE) setDone(true);
           } finally {
             loadingRef.current = false;
@@ -51,7 +55,7 @@ export function InfiniteInbox({
     );
     io.observe(node);
     return () => io.disconnect();
-  }, [cards.length, done]);
+  }, [cards, done, loader]);
 
   const items = useMemo(
     () => cards.map((card) => ({ id: card.id, element: <InboxCard card={card} /> })),
