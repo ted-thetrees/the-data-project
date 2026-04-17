@@ -1,5 +1,5 @@
 import { detectContentType, extractYouTubeId, cleanUrl } from "@/lib/content";
-import { fetchOgImage } from "@/lib/og";
+import { fetchOgMeta } from "@/lib/og";
 import { DeleteLink } from "./delete-button";
 import { MigrateLink } from "./migrate-button";
 import { ExternalLink } from "./external-link";
@@ -55,9 +55,9 @@ function ActionBar({ recordId }: { recordId: string }) {
 
 async function UrlContent({ url }: { url: string }) {
   const ytId = extractYouTubeId(url);
-  const ogImage = ytId
-    ? await getYouTubeThumbnail(ytId)
-    : await fetchOgImage(url.split("?")[0]);
+  const meta = await fetchOgMeta(ytId ? url : url.split("?")[0]);
+  const ogImage = meta.image ?? (ytId ? await getYouTubeThumbnail(ytId) : null);
+  const label = meta.title?.trim() || url;
 
   return (
     <div className="flex flex-col gap-[19px]">
@@ -73,8 +73,8 @@ async function UrlContent({ url }: { url: string }) {
           </div>
         </ExternalLink>
       )}
-      <ExternalLink url={url} className={`${actionText} break-all`}>
-        {url}
+      <ExternalLink url={url} className={`${actionText} break-words`}>
+        {label}
       </ExternalLink>
     </div>
   );
