@@ -160,6 +160,27 @@ export function GridTable({
   const dirtyTaskOrderRef = useRef<Map<string, string[]>>(new Map());
   const prevProjectIdsRef = useRef<Set<string> | null>(null);
 
+  const markProjectDirty = (projectId: string) => {
+    if (!dirtyTaskOrderRef.current.has(projectId)) {
+      const tasks = data
+        .filter((r) => r.project_id === projectId)
+        .map((r) => r.id);
+      dirtyTaskOrderRef.current.set(projectId, tasks);
+    }
+    setDirtyProjectIds((prev) =>
+      prev.includes(projectId) ? prev : [projectId, ...prev],
+    );
+  };
+
+  const updateProjectFieldDirty = (
+    projectId: string,
+    field: Parameters<typeof updateProjectField>[1],
+    value: Parameters<typeof updateProjectField>[2],
+  ) => {
+    markProjectDirty(projectId);
+    return updateProjectField(projectId, field, value);
+  };
+
   const commitProject = (projectId: string) => {
     const isDraft = data.some(
       (r) => r.project_id === projectId && r.project_is_draft,
@@ -493,7 +514,7 @@ export function GridTable({
                           <EditableTextWrap
                             value={span.value}
                             onSave={(v) =>
-                              updateProjectField(row.project_id, "name", v)
+                              updateProjectFieldDirty(row.project_id, "name", v)
                             }
                           />
                         </div>
@@ -529,7 +550,7 @@ export function GridTable({
                       <EditableDate
                         value={(span.extra?.tickle as string) ?? ""}
                         onSave={(v) =>
-                          updateProjectField(
+                          updateProjectFieldDirty(
                             row.project_id,
                             "tickle_date",
                             v,
@@ -552,7 +573,7 @@ export function GridTable({
                         value={row.uber_project_id}
                         options={uberProjects}
                         onSave={(v) =>
-                          updateProjectField(
+                          updateProjectFieldDirty(
                             row.project_id,
                             "uber_project_id",
                             v,
@@ -576,7 +597,7 @@ export function GridTable({
                         value={row.project_status_id}
                         options={projectStatuses}
                         onSave={(v) =>
-                          updateProjectField(row.project_id, "status_id", v)
+                          updateProjectFieldDirty(row.project_id, "status_id", v)
                         }
                         onCreate={createProjectStatusOption}
                       />
