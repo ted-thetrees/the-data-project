@@ -19,8 +19,7 @@ export async function getProjectsMainData(): Promise<TaskRow[]> {
     JOIN project_statuses ps ON p.status_id = ps.id
     JOIN uber_projects up ON p.uber_project_id = up.id
     JOIN task_statuses ts ON t.status_id = ts.id
-    WHERE ps.name = 'Active'
-      AND t.deleted_at IS NULL
+    WHERE t.deleted_at IS NULL
     ORDER BY
       CASE WHEN p.is_draft THEN 0 ELSE 1 END,
       p.tickle_date ASC NULLS LAST, p.name,

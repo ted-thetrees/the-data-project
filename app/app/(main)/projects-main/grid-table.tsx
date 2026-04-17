@@ -219,9 +219,16 @@ export function GridTable({
   );
 
   const orderedData = useMemo(() => {
-    if (dirtyProjectIds.length === 0) return data;
+    // Server now returns all projects regardless of status; hide non-Active
+    // projects on the client UNLESS they're dirty (so setting a project's
+    // status to Abandoned doesn't yank it from view before Commit).
+    const visible = data.filter(
+      (row) =>
+        row.project_status === "Active" || dirtySet.has(row.project_id),
+    );
+    if (dirtyProjectIds.length === 0) return visible;
     const byProject = new Map<string, TaskRow[]>();
-    for (const row of data) {
+    for (const row of visible) {
       if (!byProject.has(row.project_id)) byProject.set(row.project_id, []);
       byProject.get(row.project_id)!.push(row);
     }
@@ -241,7 +248,7 @@ export function GridTable({
       for (const { row } of known) result.push(row);
       for (const row of fresh) result.push(row);
     }
-    for (const row of data) {
+    for (const row of visible) {
       if (!dirtySet.has(row.project_id)) result.push(row);
     }
     return result;
@@ -670,7 +677,7 @@ export function GridTable({
 
   if (!wrapped) return body;
   return (
-    <PageShell title={title} count={data.length} maxWidth="">
+    <PageShell title={title} count={orderedData.length} maxWidth="">
       {body}
     </PageShell>
   );
