@@ -1,8 +1,18 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 
 type Item = { id: string; element: ReactNode };
+
+const GAP = 20;
 
 function pickCols(width: number): number {
   if (width >= 1280) return 3;
@@ -10,8 +20,15 @@ function pickCols(width: number): number {
   return 1;
 }
 
+type Pos = { top: number; left: number; width: number };
+
 export function MasonryGrid({ items }: { items: Item[] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [cols, setCols] = useState(3);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [positions, setPositions] = useState<Record<string, Pos>>({});
+  const [height, setHeight] = useState(0);
 
   useEffect(() => {
     const update = () => setCols(pickCols(window.innerWidth));
@@ -20,19 +37,80 @@ export function MasonryGrid({ items }: { items: Item[] }) {
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  const columns = Array.from({ length: cols }, (_, c) =>
-    items.filter((_, i) => i % cols === c)
-  );
+  const colWidth = containerWidth
+    ? (containerWidth - GAP * (cols - 1)) / cols
+    : 0;
+
+  const recompute = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const cw = container.clientWidth;
+    setContainerWidth((prev) => (prev === cw ? prev : cw));
+    if (!cw) return;
+    const w = (cw - GAP * (cols - 1)) / cols;
+    const colHeights: number[] = new Array(cols).fill(0);
+    const next: Record<string, Pos> = {};
+    for (const item of items) {
+      const el = itemRefs.current.get(item.id);
+      const h = el ? el.offsetHeight : 0;
+      let minIdx = 0;
+      for (let c = 1; c < cols; c++) {
+        if (colHeights[c] < colHeights[minIdx]) minIdx = c;
+      }
+      next[item.id] = {
+        top: colHeights[minIdx],
+        left: minIdx * (w + GAP),
+        width: w,
+      };
+      colHeights[minIdx] += h + GAP;
+    }
+    setPositions(next);
+    setHeight(
+      colHeights.length ? Math.max(0, ...colHeights.map((x) => x - GAP)) : 0
+    );
+  }, [items, cols]);
+
+  useLayoutEffect(() => {
+    recompute();
+  }, [recompute]);
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const ro = new ResizeObserver(() => recompute());
+    ro.observe(container);
+    for (const el of itemRefs.current.values()) ro.observe(el);
+    return () => ro.disconnect();
+  }, [items, recompute]);
 
   return (
-    <div className="flex items-start gap-[20px]">
-      {columns.map((col, c) => (
-        <div key={c} className="flex min-w-0 flex-1 flex-col gap-[20px]">
-          {col.map((item) => (
-            <div key={item.id}>{item.element}</div>
-          ))}
-        </div>
-      ))}
+    <div
+      ref={containerRef}
+      className="relative w-full"
+      style={{ height: height || undefined }}
+    >
+      {items.map((item) => {
+        const pos = positions[item.id];
+        const style: CSSProperties = {
+          position: "absolute",
+          top: pos?.top ?? 0,
+          left: pos?.left ?? 0,
+          width: pos?.width ?? colWidth ?? undefined,
+          visibility: pos ? "visible" : "hidden",
+        };
+        return (
+          <div
+            key={item.id}
+            ref={(el) => {
+              if (el) itemRefs.current.set(item.id, el);
+              else itemRefs.current.delete(item.id);
+            }}
+            style={style}
+          >
+            {item.element}
+          </div>
+        );
+      })}
     </div>
   );
 }
