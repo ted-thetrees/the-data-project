@@ -1,13 +1,10 @@
-import { detectContentType, extractYouTubeId, cleanUrl } from "@/lib/content";
-import { fetchOgMeta } from "@/lib/og";
+"use client";
+
 import { DeleteLink } from "./delete-button";
 import { MigrateLink } from "./migrate-button";
 import { ExternalLink } from "./external-link";
-import { format as timeago } from "timeago.js";
 import { LinkifiedText } from "./linkified-text";
-import { MasonryGrid } from "./masonry-grid";
-
-type Row = Record<string, unknown>;
+import type { CardData } from "./card-data";
 
 const DUMMY_HREF = "#";
 const stripe = "px-[23px] py-[19px]";
@@ -28,15 +25,6 @@ const SOURCE_META: Record<string, { frame: string; text: string }> = {
   url: { frame: "bg-[#A72DBC]", text: whiteText },
 };
 
-async function getYouTubeThumbnail(ytId: string): Promise<string> {
-  const maxres = `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`;
-  try {
-    const res = await fetch(maxres, { method: "HEAD" });
-    if (res.ok) return maxres;
-  } catch {}
-  return `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`;
-}
-
 function ActionBar({ recordId }: { recordId: string }) {
   return (
     <div className="flex flex-wrap items-center gap-y-[10px] gap-x-[18px]">
@@ -53,25 +41,13 @@ function ActionBar({ recordId }: { recordId: string }) {
   );
 }
 
-async function UrlContent({
-  url,
-  previewImage,
-}: {
-  url: string;
-  previewImage: string | null;
-}) {
-  const ytId = extractYouTubeId(url);
-  const meta = await fetchOgMeta(ytId ? url : url.split("?")[0]);
-  const ogImage =
-    meta.image ??
-    (ytId ? await getYouTubeThumbnail(ytId) : null) ??
-    previewImage;
-  const label = meta.title?.trim() || url;
-
+function UrlContent({ card }: { card: CardData }) {
+  const ogImage = card.ogImage;
+  const label = card.ogTitle?.trim() || card.content;
   return (
     <div className="flex flex-col gap-[19px]">
       {ogImage && (
-        <ExternalLink url={url} className="-mx-[23px] -mt-[19px] block">
+        <ExternalLink url={card.content} className="-mx-[23px] -mt-[19px] block">
           <div className="aspect-video w-full overflow-hidden">
             <img
               src={ogImage}
@@ -82,22 +58,16 @@ async function UrlContent({
           </div>
         </ExternalLink>
       )}
-      <ExternalLink url={url} className={`${actionText} break-words`}>
+      <ExternalLink url={card.content} className={`${actionText} break-words`}>
         {label}
       </ExternalLink>
     </div>
   );
 }
 
-async function InboxCard({ row }: { row: Row }) {
-  const rawContent = (row.content as string) || "";
-  const content = cleanUrl(rawContent);
-  const type = detectContentType(content);
-  const date = row.created_date ? timeago(row.created_date as string) : "just now";
-  const passphrase = (row.passphrase as string | null) ?? null;
-  const recordId = row.id as string;
+export function InboxCard({ card }: { card: CardData }) {
+  const { id: recordId, content, type, date, passphrase } = card;
   const isUrl = type !== "text";
-
   const source = SOURCE_META[type];
   const frameBg = source?.frame ?? "bg-[var(--contrast-light)]";
   const metaText = source?.text ?? metaTextDefault;
@@ -130,7 +100,7 @@ async function InboxCard({ row }: { row: Row }) {
 
       <div className={contentBg}>
         {isUrl ? (
-          <UrlContent url={content} previewImage={(row.preview_image_url as string | null) ?? null} />
+          <UrlContent card={card} />
         ) : (
           <p
             className={`${metaTextDefault} whitespace-pre-wrap break-words`}
@@ -146,12 +116,4 @@ async function InboxCard({ row }: { row: Row }) {
       </div>
     </div>
   );
-}
-
-export async function InboxList({ records }: { records: Row[] }) {
-  const items = records.map((row) => ({
-    id: row.id as string,
-    element: <InboxCard row={row} />,
-  }));
-  return <MasonryGrid items={items} />;
 }

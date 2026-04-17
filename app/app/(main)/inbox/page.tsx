@@ -4,10 +4,11 @@ export const metadata = { title: "Inbox" };
 
 import { getInboxRecords, getInboxCount } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
-import { InboxList } from "./inbox-list";
 import { InboxRealtime } from "./inbox-realtime";
 import { BackfillPreviewsButton } from "./backfill-button";
 import { countPendingPreviews } from "./actions";
+import { InfiniteInbox } from "./infinite-inbox";
+import { resolveInboxCards } from "./card-data";
 
 export default async function Home() {
   const [records, count, pendingPreviews] = await Promise.all([
@@ -15,6 +16,7 @@ export default async function Home() {
     getInboxCount(),
     countPendingPreviews(),
   ]);
+  const initial = await resolveInboxCards(records);
 
   return (
     <PageShell title="Inbox" count={count} maxWidth="">
@@ -22,7 +24,7 @@ export default async function Home() {
       <div className="mb-4">
         <BackfillPreviewsButton initialPending={pendingPreviews} />
       </div>
-      <InboxList records={records} />
+      <InfiniteInbox initial={initial} />
     </PageShell>
   );
 }
