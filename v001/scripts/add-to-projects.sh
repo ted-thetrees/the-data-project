@@ -11,20 +11,28 @@
 
 set -e
 
+CLAUDE="/Users/tedpearlman/.local/bin/claude"
+JQ="/usr/bin/jq"
+CURL="/usr/bin/curl"
 API_BASE="https://data.ifnotfor.com"
 TEXT="$1"
 
-UBERS=$(curl -s "$API_BASE/api/projects/uber-list" | jq -r '.names | join(", ")')
+UBERS=$("$CURL" -s "$API_BASE/api/projects/uber-list" | "$JQ" -r '.names | join(", ")')
 
-PROMPT="Extract a concise project title (2-8 words, imperative) and pick the best-fitting uber project. The uber_project MUST be exactly one of: $UBERS.
+SYSTEM="Extract a concise project title (2-8 words, imperative) and pick the best-fitting uber_project. uber_project MUST be exactly one of the allowed names. Respond with ONLY a raw JSON object, no markdown fences. Shape: {\"title\":\"...\",\"uber_project\":\"...\"}"
 
-Respond with ONLY a raw JSON object, no markdown fences, no commentary. Shape: {\"title\": \"...\", \"uber_project\": \"...\"}
+PROMPT="Sentence: $TEXT
+Allowed uber_projects: $UBERS"
 
-Sentence: $TEXT"
+RAW=$("$CLAUDE" -p "$PROMPT" \
+  --model haiku \
+  --output-format json \
+  --tools "" \
+  --no-session-persistence \
+  --system-prompt "$SYSTEM" | "$JQ" -r '.result')
 
-RAW=$(claude -p "$PROMPT" --output-format json --model haiku | jq -r '.result')
-JSON=$(printf '%s' "$RAW" | sed -E 's/^```json//;s/^```//;s/```$//' | jq -c .)
+JSON=$(printf '%s' "$RAW" | sed -E 's/^```json//;s/^```//;s/```$//' | "$JQ" -c .)
 
-curl -s -X POST "$API_BASE/api/projects/quick-create" \
+"$CURL" -s -X POST "$API_BASE/api/projects/quick-create" \
   -H "Content-Type: application/json" \
   --data "$JSON" > /dev/null
