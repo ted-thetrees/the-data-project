@@ -172,13 +172,10 @@ export function GridTable({
     );
   };
 
-  const updateProjectFieldDirty = (
-    projectId: string,
-    field: Parameters<typeof updateProjectField>[1],
-    value: Parameters<typeof updateProjectField>[2],
-  ) => {
-    markProjectDirty(projectId);
-    return updateProjectField(projectId, field, value);
+  const changeProjectStatus = (projectId: string, statusId: string) => {
+    const next = projectStatuses.find((s) => s.id === statusId);
+    if (next && next.name !== "Active") markProjectDirty(projectId);
+    return updateProjectField(projectId, "status_id", statusId);
   };
 
   const commitProject = (projectId: string) => {
@@ -514,7 +511,7 @@ export function GridTable({
                           <EditableTextWrap
                             value={span.value}
                             onSave={(v) =>
-                              updateProjectFieldDirty(row.project_id, "name", v)
+                              updateProjectField(row.project_id, "name", v)
                             }
                           />
                         </div>
@@ -550,7 +547,7 @@ export function GridTable({
                       <EditableDate
                         value={(span.extra?.tickle as string) ?? ""}
                         onSave={(v) =>
-                          updateProjectFieldDirty(
+                          updateProjectField(
                             row.project_id,
                             "tickle_date",
                             v,
@@ -573,7 +570,7 @@ export function GridTable({
                         value={row.uber_project_id}
                         options={uberProjects}
                         onSave={(v) =>
-                          updateProjectFieldDirty(
+                          updateProjectField(
                             row.project_id,
                             "uber_project_id",
                             v,
@@ -597,7 +594,7 @@ export function GridTable({
                         value={row.project_status_id}
                         options={projectStatuses}
                         onSave={(v) =>
-                          updateProjectFieldDirty(row.project_id, "status_id", v)
+                          changeProjectStatus(row.project_id, v)
                         }
                         onCreate={createProjectStatusOption}
                       />
