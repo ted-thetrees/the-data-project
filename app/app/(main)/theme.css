@@ -111,6 +111,15 @@
   background-color: color-mix(in srgb, var(--success) 85%, black);
 }
 
+.themed-button-primary {
+  color: var(--primary-foreground);
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+.themed-button-primary:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--primary) 85%, black);
+}
+
 .themed-button-danger {
   color: var(--destructive-foreground);
   background-color: var(--destructive);

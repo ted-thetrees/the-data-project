@@ -479,7 +479,7 @@ export function GridTable({
                                 type="button"
                                 onClick={() => commitProject(row.project_id)}
                                 title="Commit this project into its sorted position"
-                                className="themed-button-sm"
+                                className="themed-button-sm themed-button-primary"
                               >
                                 Commit
                               </button>
