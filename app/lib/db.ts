@@ -17,6 +17,8 @@ export async function getInboxRecords(limit = 100, offset = 0) {
       i.title as content,
       i.record_type,
       i.created_at as created_date,
+      i.preview_image_url,
+      i.preview_fetched_at,
       p.passphrase
     FROM inbox i
     LEFT JOIN passphrases p

@@ -53,10 +53,19 @@ function ActionBar({ recordId }: { recordId: string }) {
   );
 }
 
-async function UrlContent({ url }: { url: string }) {
+async function UrlContent({
+  url,
+  previewImage,
+}: {
+  url: string;
+  previewImage: string | null;
+}) {
   const ytId = extractYouTubeId(url);
   const meta = await fetchOgMeta(ytId ? url : url.split("?")[0]);
-  const ogImage = meta.image ?? (ytId ? await getYouTubeThumbnail(ytId) : null);
+  const ogImage =
+    meta.image ??
+    (ytId ? await getYouTubeThumbnail(ytId) : null) ??
+    previewImage;
   const label = meta.title?.trim() || url;
 
   return (
@@ -121,7 +130,7 @@ async function InboxCard({ row }: { row: Row }) {
 
       <div className={contentBg}>
         {isUrl ? (
-          <UrlContent url={content} />
+          <UrlContent url={content} previewImage={(row.preview_image_url as string | null) ?? null} />
         ) : (
           <p
             className={`${metaTextDefault} whitespace-pre-wrap break-words`}
