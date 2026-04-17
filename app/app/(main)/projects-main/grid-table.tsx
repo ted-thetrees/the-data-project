@@ -153,58 +153,82 @@ export function GridTable({
 }) {
   const projectAccessor = (r: TaskRow) => r.project;
 
-  // Freeze row order until the user explicitly re-sorts. Without this,
-  // every edit triggers revalidatePath() → server refetch → SQL ORDER BY
-  // → rows jump to new positions mid-edit.
-  const orderSnapshot = useRef<{
-    projectIds: string[];
-    projectTaskIds: Map<string, string[]>;
-  } | null>(null);
-  const [resortCounter, setResortCounter] = useState(0);
+  // Per-project "dirty" tray: projects you've edited (or just created) float
+  // to the top in the order they became dirty and stay put until committed.
+  // Committed projects render in normal SQL order below.
+  const [dirtyProjectIds, setDirtyProjectIds] = useState<string[]>([]);
+  const dirtyTaskOrderRef = useRef<Map<string, string[]>>(new Map());
+  const prevProjectIdsRef = useRef<Set<string> | null>(null);
 
-  const frozenData = useMemo(() => {
-    if (!orderSnapshot.current) {
-      const projectIds: string[] = [];
-      const projectTaskIds = new Map<string, string[]>();
-      const seenProjects = new Set<string>();
-      for (const row of data) {
-        if (!seenProjects.has(row.project_id)) {
-          seenProjects.add(row.project_id);
-          projectIds.push(row.project_id);
-          projectTaskIds.set(row.project_id, []);
-        }
-        projectTaskIds.get(row.project_id)!.push(row.id);
+  const markDirty = (projectId: string) => {
+    setDirtyProjectIds((prev) => {
+      if (prev.includes(projectId)) return prev;
+      if (!dirtyTaskOrderRef.current.has(projectId)) {
+        const tasks = data
+          .filter((r) => r.project_id === projectId)
+          .map((r) => r.id);
+        dirtyTaskOrderRef.current.set(projectId, tasks);
       }
-      orderSnapshot.current = { projectIds, projectTaskIds };
-      return data;
-    }
+      return [projectId, ...prev];
+    });
+  };
 
-    const snap = orderSnapshot.current;
+  const commitProject = (projectId: string) => {
+    dirtyTaskOrderRef.current.delete(projectId);
+    setDirtyProjectIds((prev) => prev.filter((id) => id !== projectId));
+  };
+
+  const commitAll = () => {
+    dirtyTaskOrderRef.current.clear();
+    setDirtyProjectIds([]);
+  };
+
+  // Detect newly-appeared project ids and auto-mark them dirty so they
+  // land in the tray instead of wherever SQL would sort them.
+  useLayoutEffect(() => {
+    const currentIds = new Set(data.map((r) => r.project_id));
+    if (prevProjectIdsRef.current === null) {
+      prevProjectIdsRef.current = currentIds;
+      return;
+    }
+    const newIds: string[] = [];
+    for (const id of currentIds) {
+      if (!prevProjectIdsRef.current.has(id)) newIds.push(id);
+    }
+    prevProjectIdsRef.current = currentIds;
+    if (newIds.length === 0) return;
+    for (const pid of newIds) {
+      if (!dirtyTaskOrderRef.current.has(pid)) {
+        const tasks = data
+          .filter((r) => r.project_id === pid)
+          .map((r) => r.id);
+        dirtyTaskOrderRef.current.set(pid, tasks);
+      }
+    }
+    setDirtyProjectIds((prev) => {
+      const existing = new Set(prev);
+      const toAdd = newIds.filter((id) => !existing.has(id));
+      if (toAdd.length === 0) return prev;
+      return [...toAdd, ...prev];
+    });
+  }, [data]);
+
+  const dirtySet = useMemo(
+    () => new Set(dirtyProjectIds),
+    [dirtyProjectIds],
+  );
+
+  const orderedData = useMemo(() => {
+    if (dirtyProjectIds.length === 0) return data;
     const byProject = new Map<string, TaskRow[]>();
     for (const row of data) {
       if (!byProject.has(row.project_id)) byProject.set(row.project_id, []);
       byProject.get(row.project_id)!.push(row);
     }
-
-    const orderedProjectIds: string[] = [];
-    const addedProjects = new Set<string>();
-    for (const pid of snap.projectIds) {
-      if (byProject.has(pid)) {
-        orderedProjectIds.push(pid);
-        addedProjects.add(pid);
-      }
-    }
-    for (const row of data) {
-      if (!addedProjects.has(row.project_id)) {
-        orderedProjectIds.push(row.project_id);
-        addedProjects.add(row.project_id);
-      }
-    }
-
     const result: TaskRow[] = [];
-    for (const pid of orderedProjectIds) {
+    for (const pid of dirtyProjectIds) {
       const rows = byProject.get(pid) ?? [];
-      const snapshotTaskIds = snap.projectTaskIds.get(pid) ?? [];
+      const snapshotTaskIds = dirtyTaskOrderRef.current.get(pid) ?? [];
       const taskIndex = new Map(snapshotTaskIds.map((id, i) => [id, i]));
       const known: Array<{ idx: number; row: TaskRow }> = [];
       const fresh: TaskRow[] = [];
@@ -217,18 +241,16 @@ export function GridTable({
       for (const { row } of known) result.push(row);
       for (const row of fresh) result.push(row);
     }
+    for (const row of data) {
+      if (!dirtySet.has(row.project_id)) result.push(row);
+    }
     return result;
-  }, [data, resortCounter]);
-
-  const handleResort = () => {
-    orderSnapshot.current = null;
-    setResortCounter((c) => c + 1);
-  };
+  }, [data, dirtyProjectIds, dirtySet]);
 
   const projectSpans = useMemo(
     () =>
       computeGroupSpans(
-        frozenData,
+        orderedData,
         projectAccessor,
         (r) => r.project_color,
         (r) => ({
@@ -238,7 +260,7 @@ export function GridTable({
           project_id: r.project_id,
         })
       ),
-    [frozenData]
+    [orderedData]
   );
 
   const projectStartSet = new Set(projectSpans.map((s) => s.startIndex));
@@ -302,16 +324,24 @@ export function GridTable({
         onDelete={deleteView}
       >
         Active projects &middot; click any field to edit &middot; drag column edges to resize
-        {" "}&middot;{" "}
-        <button
-          type="button"
-          onClick={handleResort}
-          className="themed-button-sm"
-          title="Re-sort rows into their current sorted positions"
-          style={{ marginLeft: 4 }}
-        >
-          Re-sort
-        </button>
+        {dirtyProjectIds.length > 0 && (
+          <>
+            {" "}&middot;{" "}
+            <span>
+              {dirtyProjectIds.length} uncommitted
+            </span>
+            {" "}
+            <button
+              type="button"
+              onClick={commitAll}
+              className="themed-button-sm"
+              title="Commit every uncommitted project into its sorted position"
+              style={{ marginLeft: 4 }}
+            >
+              Commit all
+            </button>
+          </>
+        )}
       </ViewSwitcher>
 
       <div className="overflow-x-auto">
@@ -392,8 +422,8 @@ export function GridTable({
                 style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
               />
             </tr>
-            {frozenData.map((row, i) => {
-              const prev = i > 0 ? frozenData[i - 1] : null;
+            {orderedData.map((row, i) => {
+              const prev = i > 0 ? orderedData[i - 1] : null;
               const tickleChanged =
                 prev !== null && prev.tickle_date !== row.tickle_date;
               return (
@@ -412,6 +442,7 @@ export function GridTable({
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
                   const isDraft = Boolean(span.extra?.is_draft);
+                  const isDirty = dirtySet.has(row.project_id);
                   return (
                     <td
                       rowSpan={span.rowSpan + 1}
@@ -421,14 +452,31 @@ export function GridTable({
                         <div className="flex-1 min-w-0">
                           <EditableTextWrap
                             value={span.value}
-                            onSave={(v) =>
-                              updateProjectField(row.project_id, "name", v)
-                            }
+                            onSave={(v) => {
+                              markDirty(row.project_id);
+                              return updateProjectField(
+                                row.project_id,
+                                "name",
+                                v,
+                              );
+                            }}
                           />
                         </div>
-                        {isDraft && (
+                        {(isDraft || isDirty) && (
                           <div className="flex flex-col items-end gap-1 shrink-0">
-                            <FinalizeButton projectId={row.project_id} />
+                            {isDraft && (
+                              <FinalizeButton projectId={row.project_id} />
+                            )}
+                            {isDirty && (
+                              <button
+                                type="button"
+                                onClick={() => commitProject(row.project_id)}
+                                title="Commit this project into its sorted position"
+                                className="themed-button-sm"
+                              >
+                                Commit
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -446,13 +494,14 @@ export function GridTable({
                     >
                       <EditableDate
                         value={(span.extra?.tickle as string) ?? ""}
-                        onSave={(v) =>
-                          updateProjectField(
+                        onSave={(v) => {
+                          markDirty(row.project_id);
+                          return updateProjectField(
                             row.project_id,
                             "tickle_date",
-                            v
-                          )
-                        }
+                            v,
+                          );
+                        }}
                       />
                     </td>
                   );
@@ -469,13 +518,14 @@ export function GridTable({
                       <PillSelect
                         value={row.uber_project_id}
                         options={uberProjects}
-                        onSave={(v) =>
-                          updateProjectField(
+                        onSave={(v) => {
+                          markDirty(row.project_id);
+                          return updateProjectField(
                             row.project_id,
                             "uber_project_id",
-                            v
-                          )
-                        }
+                            v,
+                          );
+                        }}
                         onCreate={createUberProjectOption}
                       />
                     </td>
@@ -493,9 +543,14 @@ export function GridTable({
                       <PillSelect
                         value={row.project_status_id}
                         options={projectStatuses}
-                        onSave={(v) =>
-                          updateProjectField(row.project_id, "status_id", v)
-                        }
+                        onSave={(v) => {
+                          markDirty(row.project_id);
+                          return updateProjectField(
+                            row.project_id,
+                            "status_id",
+                            v,
+                          );
+                        }}
                         onCreate={createProjectStatusOption}
                       />
                     </td>
@@ -524,7 +579,10 @@ export function GridTable({
                       >
                         <EditableTextWrap
                           value={row.task}
-                          onSave={(v) => updateTaskField(row.id, "name", v)}
+                          onSave={(v) => {
+                            markDirty(row.project_id);
+                            return updateTaskField(row.id, "name", v);
+                          }}
                         />
                       </td>
                     );
@@ -535,9 +593,10 @@ export function GridTable({
                         <PillSelect
                           value={row.task_status_id}
                           options={taskStatuses}
-                          onSave={(v) =>
-                            updateTaskField(row.id, "status_id", v)
-                          }
+                          onSave={(v) => {
+                            markDirty(row.project_id);
+                            return updateTaskField(row.id, "status_id", v);
+                          }}
                           onCreate={createTaskStatusOption}
                         />
                       </td>
@@ -548,9 +607,14 @@ export function GridTable({
                       <td key="result" className={taskCellClass}>
                         <EditableText
                           value={row.result ?? ""}
-                          onSave={(v) =>
-                            updateTaskField(row.id, "result", v || null)
-                          }
+                          onSave={(v) => {
+                            markDirty(row.project_id);
+                            return updateTaskField(
+                              row.id,
+                              "result",
+                              v || null,
+                            );
+                          }}
                         />
                       </td>
                     );
@@ -560,9 +624,14 @@ export function GridTable({
                       <td key="notes" className={taskCellClass}>
                         <EditableText
                           value={row.task_notes ?? ""}
-                          onSave={(v) =>
-                            updateTaskField(row.id, "notes", v || null)
-                          }
+                          onSave={(v) => {
+                            markDirty(row.project_id);
+                            return updateTaskField(
+                              row.id,
+                              "notes",
+                              v || null,
+                            );
+                          }}
                         />
                       </td>
                     );
@@ -573,6 +642,7 @@ export function GridTable({
                 <ContextMenuContent>
                   <ContextMenuItem
                     onClick={() => {
+                      markDirty(row.project_id);
                       void deleteTask(row.id);
                     }}
                     variant="destructive"
@@ -585,6 +655,7 @@ export function GridTable({
                 <AddTaskRow
                   projectId={projectEndToSpan[i].extra?.project_id as string ?? row.project_id}
                   colSpan={TASK_COL_COUNT}
+                  onBeforeCreate={markDirty}
                 />
               )}
             </Fragment>
@@ -623,9 +694,11 @@ function FinalizeButton({ projectId }: { projectId: string }) {
 function AddTaskRow({
   projectId,
   colSpan,
+  onBeforeCreate,
 }: {
   projectId: string;
   colSpan: number;
+  onBeforeCreate?: (projectId: string) => void;
 }) {
   const [pending, startTransition] = useTransition();
   return (
@@ -634,7 +707,9 @@ function AddTaskRow({
         colSpan={colSpan}
         className="themed-new-row-cell"
         onClick={() => {
-          if (!pending) startTransition(() => createTask(projectId));
+          if (pending) return;
+          onBeforeCreate?.(projectId);
+          startTransition(() => createTask(projectId));
         }}
         title="Add a blank task to this project"
       >
