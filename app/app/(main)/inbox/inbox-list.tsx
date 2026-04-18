@@ -106,12 +106,24 @@ export function InboxCard({ card }: { card: CardData }) {
         {isUrl ? (
           <UrlContent card={card} />
         ) : (
-          <p
-            className={`${metaTextDefault} whitespace-pre-wrap break-words`}
-            style={{ lineHeight: 1.5 }}
-          >
-            <LinkifiedText text={content} />
-          </p>
+          <div className="flex flex-col gap-[19px]">
+            {card.previewImage && (
+              <div className="-mx-[23px] -mt-[19px] aspect-video w-[calc(100%+46px)] overflow-hidden">
+                <img
+                  src={card.previewImage}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+            )}
+            <p
+              className={`${metaTextDefault} whitespace-pre-wrap break-words`}
+              style={{ lineHeight: 1.5 }}
+            >
+              <LinkifiedText text={content} />
+            </p>
+          </div>
         )}
       </div>
 
