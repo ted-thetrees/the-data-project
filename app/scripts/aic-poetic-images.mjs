@@ -31,6 +31,14 @@ Output format example: ["dissolution","membrane","skin","white"]`;
 
 const pool = new Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } });
 
+const usedUrls = new Set(
+  (await pool.query(
+    `SELECT preview_image_url FROM inbox
+     WHERE title !~* '^https?://' AND title !~* '^[a-z]+://'
+     ORDER BY created_at DESC LIMIT 100`,
+  )).rows.map((r) => r.preview_image_url).filter(Boolean),
+);
+
 const rows = (await pool.query(
   `SELECT id::text, title FROM inbox
    WHERE preview_image_url IS NULL
@@ -39,7 +47,7 @@ const rows = (await pool.query(
   [LIMIT],
 )).rows;
 
-console.log(`Processing ${rows.length} plaintext entries...`);
+console.log(`Processing ${rows.length} plaintext entries (${usedUrls.size} URLs reserved from recent 100)...`);
 
 function stripFences(s) {
   return s.replace(/^```json\n?/i, "").replace(/^```\n?/, "").replace(/```$/, "").trim();
@@ -66,17 +74,22 @@ function pickWords(title) {
   return arr.map((s) => String(s).toLowerCase().trim()).filter(Boolean);
 }
 
-async function searchAIC(word) {
+async function searchAIC(word, usedUrls) {
   const url = new URL(AIC_API);
   url.searchParams.set("q", word);
   url.searchParams.set("query[term][classification_title]", "photograph");
-  url.searchParams.set("limit", "3");
+  url.searchParams.set("limit", "10");
   url.searchParams.set("fields", "id,title,artist_display,image_id");
   const data = await fetch(url).then((r) => r.json());
-  const top = data.data?.[0];
-  if (!top || !top.image_id) return null;
-  if (FALLBACK_TRIAD.has(top.image_id)) return null;
-  return top;
+  const results = data.data ?? [];
+  if (!results[0]?.image_id || FALLBACK_TRIAD.has(results[0].image_id)) return null;
+  for (const item of results) {
+    if (!item.image_id || FALLBACK_TRIAD.has(item.image_id)) continue;
+    const imgUrl = `${IIIF_BASE}/${item.image_id}/full/843,/0/default.jpg`;
+    if (usedUrls.has(imgUrl)) continue;
+    return { ...item, imgUrl };
+  }
+  return null;
 }
 
 for (const [idx, row] of rows.entries()) {
@@ -95,7 +108,7 @@ for (const [idx, row] of rows.entries()) {
   let hit = null;
   let winning = null;
   for (const w of words) {
-    const result = await searchAIC(w);
+    const result = await searchAIC(w, usedUrls);
     if (result) { hit = result; winning = w; break; }
     console.log(`    miss: ${w}`);
   }
@@ -105,11 +118,11 @@ for (const [idx, row] of rows.entries()) {
     continue;
   }
 
-  const imgUrl = `${IIIF_BASE}/${hit.image_id}/full/843,/0/default.jpg`;
   await pool.query(
     `UPDATE inbox SET preview_image_url = $1, preview_fetched_at = now() WHERE id = $2`,
-    [imgUrl, row.id],
+    [hit.imgUrl, row.id],
   );
+  usedUrls.add(hit.imgUrl);
   console.log(`    ✓ "${winning}" → ${hit.title} — ${hit.artist_display}`);
 }
 
