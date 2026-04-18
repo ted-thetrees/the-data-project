@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { HexColorPicker, RgbColorPicker } from "react-colorful";
+import { HexColorPicker } from "react-colorful";
 import {
   Popover,
   PopoverContent,
@@ -104,15 +104,14 @@ export function EditableColorCell({
                 setHexInput(c);
                 setError(null);
               }}
-              style={{ width: 200, height: 160 }}
+              style={{ width: 200, height: 200 }}
             />
-            <RgbColorPicker
-              color={hexToRgb(HEX_RE.test(hexInput) ? hexInput : "#808080")}
+            <RgbSliders
+              color={HEX_RE.test(hexInput) ? hexInput : "#808080"}
               onChange={(rgb) => {
                 setHexInput(rgbToHex(rgb));
                 setError(null);
               }}
-              style={{ width: 200, height: 60 }}
             />
           </div>
           <div className="flex flex-col gap-2 flex-1">
@@ -175,5 +174,48 @@ export function EditableColorCell({
         </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+function RgbSliders({
+  color,
+  onChange,
+}: {
+  color: string;
+  onChange: (rgb: { r: number; g: number; b: number }) => void;
+}) {
+  const rgb = hexToRgb(color);
+  const set = (channel: "r" | "g" | "b", value: number) => {
+    onChange({ ...rgb, [channel]: value });
+  };
+  return (
+    <div className="flex flex-col gap-1 w-[200px]">
+      {(["r", "g", "b"] as const).map((ch) => (
+        <div key={ch} className="flex items-center gap-2">
+          <span className="text-[10px] font-mono uppercase w-3 text-muted-foreground">
+            {ch}
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={255}
+            value={rgb[ch]}
+            onChange={(e) => set(ch, Number(e.target.value))}
+            className="flex-1"
+          />
+          <input
+            type="number"
+            min={0}
+            max={255}
+            value={rgb[ch]}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              if (Number.isFinite(n)) set(ch, Math.max(0, Math.min(255, n)));
+            }}
+            className="w-12 border border-border rounded-sm px-1 py-0.5 font-mono text-[10px] text-right"
+          />
+        </div>
+      ))}
+    </div>
   );
 }
