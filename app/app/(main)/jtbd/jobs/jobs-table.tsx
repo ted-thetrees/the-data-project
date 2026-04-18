@@ -1,27 +1,42 @@
 "use client";
 
 import { DataTable, type Column } from "@/components/data-table";
+import { MultiPillSelect, type PillOption } from "@/components/pill";
 import {
   EditableColorCell,
   type PaletteForPicker,
 } from "@/components/editable-color-cell";
 import { EditableText, EditableTextWrap } from "@/components/editable-text";
-import { createJob, updateJobName, updateJobNotes } from "./actions";
+import {
+  addJobComponent,
+  addJobThinker,
+  createComponentOption,
+  createJob,
+  createThinkerOption,
+  removeJobComponent,
+  removeJobThinker,
+  updateJobName,
+  updateJobNotes,
+} from "./actions";
 
 export interface JobRow {
   id: string;
   name: string;
   color: string | null;
   notes: string | null;
-  thinker_count: number;
-  component_count: number;
+  thinker_ids: string[];
+  component_ids: string[];
 }
 
 export function JobsTable({
   rows,
+  thinkerOptions,
+  componentOptions,
   palettes,
 }: {
   rows: JobRow[];
+  thinkerOptions: PillOption[];
+  componentOptions: PillOption[];
   palettes: PaletteForPicker[];
 }) {
   const columns: Column<JobRow>[] = [
@@ -51,7 +66,7 @@ export function JobsTable({
     {
       key: "name",
       header: "Job",
-      width: 260,
+      width: 240,
       render: (row) => (
         <EditableText
           value={row.name}
@@ -60,21 +75,37 @@ export function JobsTable({
       ),
     },
     {
-      key: "thinker_count",
+      key: "thinkers",
       header: "Thinkers",
-      width: 90,
-      render: (row) => row.thinker_count,
+      width: 360,
+      render: (row) => (
+        <MultiPillSelect
+          value={row.thinker_ids}
+          options={thinkerOptions}
+          onAdd={(thinkerId) => addJobThinker(row.id, thinkerId)}
+          onRemove={(thinkerId) => removeJobThinker(row.id, thinkerId)}
+          onCreate={createThinkerOption}
+        />
+      ),
     },
     {
-      key: "component_count",
+      key: "components",
       header: "Components",
-      width: 110,
-      render: (row) => row.component_count,
+      width: 360,
+      render: (row) => (
+        <MultiPillSelect
+          value={row.component_ids}
+          options={componentOptions}
+          onAdd={(componentId) => addJobComponent(row.id, componentId)}
+          onRemove={(componentId) => removeJobComponent(row.id, componentId)}
+          onCreate={createComponentOption}
+        />
+      ),
     },
     {
       key: "notes",
       header: "Notes",
-      width: 420,
+      width: 360,
       render: (row) => (
         <EditableTextWrap
           value={row.notes ?? ""}
