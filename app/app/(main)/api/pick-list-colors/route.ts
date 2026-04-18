@@ -23,6 +23,9 @@ const SOURCE_TABLES: Record<string, string> = {
   backlog_design_paradigms: "backlog_design_paradigms",
   backlog_statuses: "backlog_statuses",
   backlog_prototype_stages: "backlog_prototype_stages",
+  jtbd_jobs: "jtbd_jobs",
+  jtbd_thinkers: "jtbd_thinkers",
+  jtbd_components: "jtbd_components",
 };
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;

@@ -3,6 +3,7 @@ import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
 import { Subtitle } from "@/components/subtitle";
 import type { PillOption } from "@/components/pill";
+import { getPalettes } from "../../pick-lists/lib";
 import { ThinkersTable, type ThinkerRow } from "./thinkers-table";
 
 export const metadata = { title: "JTBD — Thinkers" };
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 async function getThinkers(): Promise<ThinkerRow[]> {
   const result = await poolV002.query(`
-    SELECT t.id::text, t.name, t.notes,
+    SELECT t.id::text, t.name, t.color, t.notes,
            COALESCE(
              (SELECT json_agg(j.id::text ORDER BY j.sort_order NULLS LAST, j.name)
               FROM jtbd_thinker_jobs tj
@@ -37,9 +38,10 @@ async function getJobOptions(): Promise<PillOption[]> {
 }
 
 export default async function ThinkersPage() {
-  const [thinkers, jobOptions] = await Promise.all([
+  const [thinkers, jobOptions, palettes] = await Promise.all([
     getThinkers(),
     getJobOptions(),
+    getPalettes(),
   ]);
   return (
     <PageShell title="Thinkers" count={thinkers.length} maxWidth="">
@@ -48,12 +50,17 @@ export default async function ThinkersPage() {
           "jtbd_thinkers",
           "jtbd_jobs",
           "jtbd_thinker_jobs",
+          "color_palettes",
         ]}
       />
       <Subtitle>
         Writers and thinkers who espouse the importance of particular jobs.
       </Subtitle>
-      <ThinkersTable rows={thinkers} jobOptions={jobOptions} />
+      <ThinkersTable
+        rows={thinkers}
+        jobOptions={jobOptions}
+        palettes={palettes}
+      />
     </PageShell>
   );
 }

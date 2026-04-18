@@ -2,6 +2,10 @@
 
 import { DataTable, type Column } from "@/components/data-table";
 import { MultiPillSelect, type PillOption } from "@/components/pill";
+import {
+  EditableColorCell,
+  type PaletteForPicker,
+} from "@/components/editable-color-cell";
 import { EditableText, EditableTextWrap } from "@/components/editable-text";
 import {
   addThinkerJob,
@@ -15,6 +19,7 @@ import {
 export interface ThinkerRow {
   id: string;
   name: string;
+  color: string | null;
   notes: string | null;
   job_ids: string[];
 }
@@ -22,11 +27,36 @@ export interface ThinkerRow {
 export function ThinkersTable({
   rows,
   jobOptions,
+  palettes,
 }: {
   rows: ThinkerRow[];
   jobOptions: PillOption[];
+  palettes: PaletteForPicker[];
 }) {
   const columns: Column<ThinkerRow>[] = [
+    {
+      key: "color",
+      header: "Color",
+      width: 60,
+      render: (row) => (
+        <EditableColorCell
+          source="jtbd_thinkers"
+          recordId={row.id}
+          color={row.color ?? "#727272"}
+          palettes={palettes}
+        />
+      ),
+    },
+    {
+      key: "hex",
+      header: "Hex",
+      width: 90,
+      render: (row) => (
+        <span className="font-mono text-xs text-muted-foreground">
+          {row.color ?? ""}
+        </span>
+      ),
+    },
     {
       key: "name",
       header: "Name",

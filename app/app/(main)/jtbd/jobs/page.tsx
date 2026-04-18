@@ -2,6 +2,7 @@ import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
 import { Subtitle } from "@/components/subtitle";
+import { getPalettes } from "../../pick-lists/lib";
 import { JobsTable, type JobRow } from "./jobs-table";
 
 export const metadata = { title: "JTBD — Jobs" };
@@ -19,7 +20,7 @@ async function getJobs(): Promise<JobRow[]> {
 }
 
 export default async function JobsPage() {
-  const jobs = await getJobs();
+  const [jobs, palettes] = await Promise.all([getJobs(), getPalettes()]);
   return (
     <PageShell title="Jobs" count={jobs.length} maxWidth="">
       <Realtime
@@ -27,13 +28,14 @@ export default async function JobsPage() {
           "jtbd_jobs",
           "jtbd_thinker_jobs",
           "jtbd_component_jobs",
+          "color_palettes",
         ]}
       />
       <Subtitle>
         The jobs components do for users — what they make the user feel or
         accomplish.
       </Subtitle>
-      <JobsTable rows={jobs} />
+      <JobsTable rows={jobs} palettes={palettes} />
     </PageShell>
   );
 }

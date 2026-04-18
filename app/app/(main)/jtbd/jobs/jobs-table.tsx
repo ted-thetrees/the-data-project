@@ -1,7 +1,10 @@
 "use client";
 
 import { DataTable, type Column } from "@/components/data-table";
-import { Pill } from "@/components/pill";
+import {
+  EditableColorCell,
+  type PaletteForPicker,
+} from "@/components/editable-color-cell";
 import { EditableText, EditableTextWrap } from "@/components/editable-text";
 import { createJob, updateJobName, updateJobNotes } from "./actions";
 
@@ -14,13 +17,36 @@ export interface JobRow {
   component_count: number;
 }
 
-export function JobsTable({ rows }: { rows: JobRow[] }) {
+export function JobsTable({
+  rows,
+  palettes,
+}: {
+  rows: JobRow[];
+  palettes: PaletteForPicker[];
+}) {
   const columns: Column<JobRow>[] = [
     {
-      key: "swatch",
-      header: "",
-      width: 36,
-      render: (row) => <Pill color={row.color}>&nbsp;</Pill>,
+      key: "color",
+      header: "Color",
+      width: 60,
+      render: (row) => (
+        <EditableColorCell
+          source="jtbd_jobs"
+          recordId={row.id}
+          color={row.color ?? "#727272"}
+          palettes={palettes}
+        />
+      ),
+    },
+    {
+      key: "hex",
+      header: "Hex",
+      width: 90,
+      render: (row) => (
+        <span className="font-mono text-xs text-muted-foreground">
+          {row.color ?? ""}
+        </span>
+      ),
     },
     {
       key: "name",
@@ -48,7 +74,7 @@ export function JobsTable({ rows }: { rows: JobRow[] }) {
     {
       key: "notes",
       header: "Notes",
-      width: 460,
+      width: 420,
       render: (row) => (
         <EditableTextWrap
           value={row.notes ?? ""}
