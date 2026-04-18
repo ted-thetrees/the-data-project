@@ -51,6 +51,7 @@
     "@udecode/plate-common": "^41.0.13",
     "@udecode/plate-heading": "^48.0.0",
     "@udecode/plate-list": "^48.0.0",
+    "@vercel/functions": "^3.4.3",
     "@xyflow/react": "^12.10.2",
     "antd": "^6.3.5",
     "chroma-js": "^3.2.0",

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { pool } from "@/lib/db";
 import { registerPassphrase } from "@/lib/passphrase";
 import { detectContentType, cleanUrl } from "@/lib/content";
 import { capturePreviewForInbox } from "@/lib/preview-service";
+
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   const { title, type } = await req.json();
@@ -21,7 +24,7 @@ export async function POST(req: NextRequest) {
 
   const normalized = cleanUrl(title);
   if (detectContentType(normalized) !== "text") {
-    void capturePreviewForInbox(recordId, normalized).catch(() => {});
+    waitUntil(capturePreviewForInbox(recordId, normalized).catch(() => {}));
   }
 
   return NextResponse.json({ success: true, id: recordId, passphrase });
