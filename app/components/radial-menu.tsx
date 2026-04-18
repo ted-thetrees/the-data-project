@@ -16,6 +16,9 @@ import {
   Apple,
   ListTodo,
   Command,
+  Lightbulb,
+  Brain,
+  Puzzle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -60,6 +63,11 @@ const NAV: Branch[] = [
   ] },
   { kind: "branch", label: "Calories", icon: Apple, children: [
     { kind: "leaf", label: "Everything", path: "/calories", key: "a", icon: Apple },
+  ] },
+  { kind: "branch", label: "JTBD", icon: Lightbulb, children: [
+    { kind: "leaf", label: "Thinkers", path: "/jtbd/thinkers", key: "j", icon: Brain },
+    { kind: "leaf", label: "Jobs", path: "/jtbd/jobs", key: "J", icon: Target },
+    { kind: "leaf", label: "Components", path: "/jtbd/components", key: "d", icon: Puzzle },
   ] },
 ];
 
