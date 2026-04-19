@@ -68,13 +68,14 @@ if (RESET) {
   console.log(`Reset ${r.rowCount} plaintext preview URLs.`);
 }
 
-const usedUrls = new Set(
-  (await pool.query(
+async function reservedUrlsNow() {
+  const r = await pool.query(
     `SELECT preview_image_url FROM inbox
      WHERE title !~* '^https?://' AND title !~* '^[a-z]+://'
      ORDER BY created_at DESC LIMIT 100`,
-  )).rows.map((r) => r.preview_image_url).filter(Boolean),
-);
+  );
+  return new Set(r.rows.map((x) => x.preview_image_url).filter(Boolean));
+}
 
 const rows = (await pool.query(
   `SELECT id::text, title FROM inbox
@@ -84,7 +85,7 @@ const rows = (await pool.query(
   [LIMIT],
 )).rows;
 
-console.log(`Processing ${rows.length} plaintext entries (${usedUrls.size} URLs reserved from recent 100)...`);
+console.log(`Processing ${rows.length} plaintext entries (dedupe: sliding-100 per row)...`);
 
 function stripFences(s) {
   return s.replace(/^```json\n?/i, "").replace(/^```\n?/, "").replace(/```$/, "").trim();
@@ -171,12 +172,11 @@ async function searchMetAbstract(word) {
 }
 
 async function findHit(word, usedUrls) {
-  const [aicArtist, aicPhotogram, met] = await Promise.all([
+  const [aicArtist, aicPhotogram] = await Promise.all([
     searchAICCuratedArtists(word),
     searchAICPhotograms(word),
-    searchMetAbstract(word),
   ]);
-  const merged = [...aicArtist, ...aicPhotogram, ...met];
+  const merged = [...aicArtist, ...aicPhotogram];
   for (const c of merged) {
     if (FALLBACK_TRIAD.has(c.imageId)) continue;
     if (usedUrls.has(c.url)) continue;
@@ -198,10 +198,12 @@ for (const [idx, row] of rows.entries()) {
   }
   console.log(`    candidates: ${words.join(" → ")}`);
 
+  const reserved = await reservedUrlsNow();
+
   let hit = null;
   let winning = null;
   for (const w of words) {
-    const result = await findHit(w, usedUrls);
+    const result = await findHit(w, reserved);
     if (result) { hit = result; winning = w; break; }
     console.log(`    miss: ${w}`);
   }
@@ -215,7 +217,6 @@ for (const [idx, row] of rows.entries()) {
     `UPDATE inbox SET preview_image_url = $1, preview_fetched_at = now() WHERE id = $2`,
     [hit.url, row.id],
   );
-  usedUrls.add(hit.url);
   console.log(`    ✓ "${winning}" [${hit.source}] → ${hit.title} — ${hit.artist}`);
 }
 
