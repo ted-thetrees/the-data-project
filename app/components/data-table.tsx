@@ -50,6 +50,7 @@ interface DataTableProps<T> {
   addRowLabel?: string;
   onAddTopRow?: () => void | Promise<void>;
   addTopRowLabel?: string;
+  rowStyle?: (row: T) => React.CSSProperties | undefined;
 }
 
 export function DataTable<T>({
@@ -64,6 +65,7 @@ export function DataTable<T>({
   addRowLabel = "+ Add row",
   onAddTopRow,
   addTopRowLabel = "+ Add new",
+  rowStyle,
 }: DataTableProps<T>) {
   const [addPending, startAddTransition] = useTransition();
   const [addTopPending, startAddTopTransition] = useTransition();
@@ -224,7 +226,7 @@ export function DataTable<T>({
             {rows.map((row) => {
               const record = row as Record<string, unknown>;
               return (
-                <tr key={rowKey(row)}>
+                <tr key={rowKey(row)} style={rowStyle?.(row)}>
                   {orderedColumns.map((col) => (
                     <td
                       key={col.key}

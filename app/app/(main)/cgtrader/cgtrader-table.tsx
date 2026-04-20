@@ -213,6 +213,11 @@ export function CgtraderTable({ rows }: { rows: CgtraderRow[] }) {
       rowKey={(r) => r.id}
       fixedLayout
       storageKey="cgtrader"
+      rowStyle={(row) =>
+        row.rating != null
+          ? ({ "--cell-bg": "#e6f2ff" } as React.CSSProperties)
+          : undefined
+      }
     />
   );
 }
