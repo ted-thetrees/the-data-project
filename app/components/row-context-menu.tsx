@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useTransition, type ReactNode, type CSSProperties } from "react";
+import {
+  useState,
+  useTransition,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+  type CSSProperties,
+} from "react";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -39,10 +45,21 @@ export function RowContextMenu({
     });
   };
 
+  const onRowKeyDown = (e: ReactKeyboardEvent<HTMLTableRowElement>) => {
+    if (e.key !== "Delete") return;
+    const target = e.target as HTMLElement;
+    const tag = target.tagName;
+    // Don't hijack Delete while the user is editing text / numbers.
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (target.isContentEditable) return;
+    e.preventDefault();
+    setConfirmOpen(true);
+  };
+
   return (
     <>
       <ContextMenu>
-        <ContextMenuTrigger render={<tr style={rowStyle} />}>
+        <ContextMenuTrigger render={<tr style={rowStyle} onKeyDown={onRowKeyDown} />}>
           {children}
         </ContextMenuTrigger>
         <ContextMenuContent>

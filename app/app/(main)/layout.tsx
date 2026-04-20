@@ -7,6 +7,7 @@ import { NavShortcuts } from "@/components/nav-shortcuts";
 import { RadialMenu } from "@/components/radial-menu";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { readAllTableViewCookies } from "@/lib/table-views-cookie";
+import { GridPageShortcuts } from "@/components/grid-page-shortcuts";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -57,6 +58,7 @@ export default async function RootLayout({
         <TooltipProvider>
           {!isDesktopShell && <NavShortcuts />}
           <RadialMenu />
+          <GridPageShortcuts />
           <main className="flex-1">{children}</main>
         </TooltipProvider>
       </body>
