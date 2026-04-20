@@ -20,7 +20,7 @@ export default async function Home() {
   const initial = await resolveInboxCards(records);
 
   return (
-    <PageShell title="Inbox" count={count} maxWidth="">
+    <PageShell title="Inbox" count={count} maxWidth="" className="bg-white min-h-screen">
       <InboxRealtime />
       <div className="mb-4">
         <BackfillPreviewsButton initialPending={pendingPreviews} />

@@ -80,7 +80,7 @@ export function InboxCard({ card }: { card: CardData }) {
     : actionText;
 
   return (
-    <div className={`flex w-full flex-col ${frameBg} ${frameInset}`}>
+    <div className={`flex w-full flex-col overflow-hidden rounded-[10px] ${frameBg} ${frameInset}`}>
       <div className="-mx-[6px] px-[29px] py-[19px]">
         <div className="flex items-center justify-between gap-3">
           <span className={metaText}>{date}</span>
