@@ -21,9 +21,20 @@ function createId() {
   return Math.random().toString(36).slice(2, 10);
 }
 
+const COOKIE_PREFIX = "tv-";
+
+function writeCookie(storageKey: string, params: ViewParams) {
+  if (typeof document === "undefined") return;
+  const value = encodeURIComponent(JSON.stringify(params));
+  // 1 year, path-wide, lax same-site. Synced to the server so SSR can pre-
+  // render the correct col widths and avoid the hydration flicker.
+  document.cookie = `${COOKIE_PREFIX}${storageKey}=${value}; Max-Age=31536000; Path=/; SameSite=Lax`;
+}
+
 export function useTableViews(
   storageKey: string,
-  defaultWidths: Record<string, number>
+  defaultWidths: Record<string, number>,
+  initialParams?: ViewParams,
 ) {
   const VIEWS_KEY = `table-views:${storageKey}`;
   const ACTIVE_KEY = `table-views:${storageKey}:active`;
@@ -32,9 +43,16 @@ export function useTableViews(
     columnWidths: { ...defaultWidths },
   });
 
+  const firstParams: ViewParams = initialParams
+    ? {
+        columnWidths: { ...defaultWidths, ...initialParams.columnWidths },
+        columnOrder: initialParams.columnOrder,
+      }
+    : defaultParams();
+
   const [views, setViews] = useState<View[]>([]);
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
-  const [params, setParams] = useState<ViewParams>(defaultParams());
+  const [params, setParams] = useState<ViewParams>(firstParams);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -86,7 +104,22 @@ export function useTableViews(
       window.localStorage.setItem(VIEWS_KEY, JSON.stringify(next));
       return next;
     });
-  }, [params, hydrated, activeViewId, VIEWS_KEY]);
+    // Persist to cookie as well so the server can SSR with the right widths
+    // on the next request.
+    writeCookie(storageKey, params);
+  }, [params, hydrated, activeViewId, VIEWS_KEY, storageKey]);
+
+  // One-shot migration: if the server didn't receive a cookie for this table
+  // but localStorage has saved widths, seed the cookie immediately so the
+  // next SSR is flicker-free.
+  useEffect(() => {
+    if (!hydrated || typeof document === "undefined") return;
+    const cookieName = `${COOKIE_PREFIX}${storageKey}=`;
+    const hasCookie = document.cookie.split("; ").some((c) =>
+      c.startsWith(cookieName),
+    );
+    if (!hasCookie) writeCookie(storageKey, params);
+  }, [hydrated, storageKey, params]);
 
   const switchView = (id: string) => {
     const v = views.find((x) => x.id === id);

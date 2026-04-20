@@ -1,7 +1,13 @@
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
-import { UserStoriesTable, type UserStoryRow } from "./user-stories-table";
+import {
+  UserStoriesTable,
+  type UserStoryRow,
+  USER_STORIES_STORAGE_KEY,
+  USER_STORIES_DEFAULT_WIDTHS,
+} from "./user-stories-table";
 import type { PillOption } from "@/components/pill";
+import { getInitialViewParams } from "@/lib/table-views-cookie";
 
 export const metadata = { title: "User Stories" };
 export const dynamic = "force-dynamic";
@@ -42,10 +48,11 @@ async function getLookupOptions(table: string): Promise<PillOption[]> {
 }
 
 export default async function UserStoriesPage() {
-  const [rows, roleOptions, categoryOptions] = await Promise.all([
+  const [rows, roleOptions, categoryOptions, initialParams] = await Promise.all([
     getUserStories(),
     getLookupOptions("user_story_roles"),
     getLookupOptions("user_story_categories"),
+    getInitialViewParams(USER_STORIES_STORAGE_KEY, USER_STORIES_DEFAULT_WIDTHS),
   ]);
   return (
     <PageShell title="User Stories" count={rows.length} maxWidth="">
@@ -53,6 +60,7 @@ export default async function UserStoriesPage() {
         rows={rows}
         roleOptions={roleOptions}
         categoryOptions={categoryOptions}
+        initialParams={initialParams}
       />
     </PageShell>
   );

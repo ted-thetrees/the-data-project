@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { NavShortcuts } from "@/components/nav-shortcuts";
 import { RadialMenu } from "@/components/radial-menu";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { readAllTableViewCookies } from "@/lib/table-views-cookie";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -40,9 +41,18 @@ export default async function RootLayout({
 }>) {
   const userAgent = (await headers()).get("user-agent") ?? "";
   const isDesktopShell = userAgent.includes("DataDesktop/");
+  const tableViews = await readAllTableViewCookies();
+  const tableViewsJson = JSON.stringify(tableViews).replace(/</g, "\\u003c");
 
   return (
     <html lang="en" className={cn("h-full", "antialiased", outfit.variable, sourceSans.variable, nunito.variable)}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.__TV=${tableViewsJson};`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <TooltipProvider>
           {!isDesktopShell && <NavShortcuts />}

@@ -20,7 +20,11 @@ import {
   type PillOption,
 } from "@/components/pill";
 import { EditableText, EditableTextWrap } from "@/components/editable-text";
-import { useTableViews, resolveColumnOrder } from "@/components/table-views";
+import {
+  useTableViews,
+  resolveColumnOrder,
+  type ViewParams,
+} from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
@@ -52,12 +56,16 @@ export interface UserStoryRow {
 
 const COLUMN_KEYS = ["as", "narrative", "title", "category"] as const;
 
-const DEFAULT_WIDTHS: Record<string, number> = {
+export const USER_STORIES_STORAGE_KEY = "user-stories";
+
+export const USER_STORIES_DEFAULT_WIDTHS: Record<string, number> = {
   as: 280,
   narrative: 560,
   title: 240,
   category: 180,
 };
+
+const DEFAULT_WIDTHS = USER_STORIES_DEFAULT_WIDTHS;
 
 const HEADER_LABELS: Record<string, string> = {
   as: "As",
@@ -88,10 +96,12 @@ export function UserStoriesTable({
   rows,
   roleOptions,
   categoryOptions,
+  initialParams,
 }: {
   rows: UserStoryRow[];
   roleOptions: PillOption[];
   categoryOptions: PillOption[];
+  initialParams?: ViewParams;
 }) {
   const {
     views,
@@ -103,7 +113,7 @@ export function UserStoriesTable({
     deleteView,
     setColumnWidth,
     setColumnOrder,
-  } = useTableViews("user-stories", DEFAULT_WIDTHS);
+  } = useTableViews(USER_STORIES_STORAGE_KEY, DEFAULT_WIDTHS, initialParams);
 
   const orderedKeys = useMemo(
     () =>
