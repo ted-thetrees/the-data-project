@@ -108,11 +108,11 @@ export function InboxCard({ card }: { card: CardData }) {
         ) : (
           <div className="flex flex-col gap-[19px]">
             {card.previewImage && (
-              <div className="-mx-[23px] -mt-[19px] aspect-video w-[calc(100%+46px)] overflow-hidden">
+              <div className="-mx-[23px] -mt-[19px] aspect-video w-[calc(100%+46px)] overflow-hidden bg-[#A1C630]">
                 <img
                   src={card.previewImage}
                   alt=""
-                  className="h-full w-full object-cover [filter:saturate(0)]"
+                  className="h-full w-full object-cover mix-blend-luminosity"
                   loading="lazy"
                 />
               </div>
