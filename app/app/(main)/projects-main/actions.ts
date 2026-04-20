@@ -69,6 +69,71 @@ export async function deleteTask(id: string) {
   revalidatePath("/projects-main");
 }
 
+/**
+ * Swap this task's ordering within its project with the nearest sibling in
+ * `direction`. Neighboring is defined the way the SQL ORDER BY does it:
+ * status bucket (Tickled → Done → Abandoned → other), then `"order"` NULLS
+ * LAST, then name. All tasks in the project get a fresh sequential `"order"`
+ * so the swap is deterministic even when some rows start with NULL orders.
+ */
+export async function moveTask(taskId: string, direction: "up" | "down") {
+  const client = await poolV002.connect();
+  try {
+    await client.query("BEGIN");
+    const projectRes = await client.query<{ project_id: string }>(
+      `SELECT project_id FROM tasks WHERE id = $1 AND deleted_at IS NULL`,
+      [taskId],
+    );
+    const projectId = projectRes.rows[0]?.project_id;
+    if (!projectId) {
+      await client.query("ROLLBACK");
+      return;
+    }
+
+    // Lay out the task ordering the same way the grid renders them, then
+    // rewrite `"order"` to the position so any future swap is stable.
+    const seqRes = await client.query<{ id: string }>(
+      `SELECT t.id
+         FROM tasks t
+         JOIN task_statuses ts ON t.status_id = ts.id
+        WHERE t.project_id = $1 AND t.deleted_at IS NULL
+        ORDER BY
+          CASE ts.name
+            WHEN 'Tickled' THEN 1
+            WHEN 'Done' THEN 2
+            WHEN 'Abandoned' THEN 3
+            ELSE 99
+          END,
+          t."order" NULLS LAST,
+          t.name`,
+      [projectId],
+    );
+    const ids = seqRes.rows.map((r) => r.id);
+    const idx = ids.indexOf(taskId);
+    const neighbor = direction === "up" ? idx - 1 : idx + 1;
+    if (idx < 0 || neighbor < 0 || neighbor >= ids.length) {
+      await client.query("ROLLBACK");
+      return;
+    }
+    [ids[idx], ids[neighbor]] = [ids[neighbor], ids[idx]];
+
+    // Persist the new sequence. 10-step gaps leave room for future inserts.
+    const values = ids.map((id, i) => `('${id}'::uuid, ${(i + 1) * 10})`).join(",");
+    await client.query(
+      `UPDATE tasks t SET "order" = v.new_order
+         FROM (VALUES ${values}) AS v(id, new_order)
+        WHERE t.id = v.id`,
+    );
+    await client.query("COMMIT");
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
+  revalidatePath("/projects-main");
+}
+
 export async function deleteProject(id: string) {
   const client = await poolV002.connect();
   try {

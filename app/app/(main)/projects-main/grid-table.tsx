@@ -39,6 +39,7 @@ import {
   createProject,
   deleteTask,
   deleteProject,
+  moveTask,
 } from "./actions";
 import { createPicklistOptionNamed } from "../pick-lists/actions";
 import { Pill, PillSelect } from "@/components/pill";
@@ -357,6 +358,29 @@ export function GridTable({
 
   const TASK_COL_COUNT = 4; // task, task_status, result, notes
 
+  const handleProjectsKeyDown = (e: React.KeyboardEvent<HTMLTableElement>) => {
+    const target = e.target as HTMLElement;
+    const tr = target.closest("tr[data-project-id]") as HTMLElement | null;
+    const projectId = tr?.dataset.projectId;
+    const taskId = tr?.dataset.taskId;
+
+    // Cmd/Ctrl+Enter → commit the project of the focused row.
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && projectId) {
+      e.preventDefault();
+      if (dirtySet.has(projectId)) commitProject(projectId);
+      return;
+    }
+
+    // Alt+Up / Alt+Down → reorder task within project.
+    if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown") && taskId) {
+      e.preventDefault();
+      void moveTask(taskId, e.key === "ArrowUp" ? "up" : "down");
+      return;
+    }
+
+    handleGridKeyDown(e);
+  };
+
   const {
     views,
     activeViewId,
@@ -435,7 +459,7 @@ export function GridTable({
         >
         <table
           className="text-[length:var(--cell-font-size)] [&_td]:align-top"
-          onKeyDown={handleGridKeyDown}
+          onKeyDown={handleProjectsKeyDown}
           style={{
             tableLayout: "fixed",
             width: columnKeys.reduce(
@@ -520,7 +544,7 @@ export function GridTable({
                 </tr>
               )}
               <ContextMenu>
-                <ContextMenuTrigger render={<tr />}>
+                <ContextMenuTrigger render={<tr data-project-id={row.project_id} data-task-id={row.id} />}>
                 {/* Icicle: Project (rowspan-merged, +1 to span add-row) */}
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
