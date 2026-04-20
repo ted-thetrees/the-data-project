@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       }
       await client.query(
         `INSERT INTO inbox (title, record_type, preview_image_url, preview_fetched_at)
-         VALUES ($1, 'URL', $2, CASE WHEN $2 IS NULL THEN NULL ELSE now() END)`,
+         VALUES ($1, 'URL', $2::text, CASE WHEN $2::text IS NULL THEN NULL ELSE now() END)`,
         [it.url, it.image ?? null],
       );
       inserted++;
