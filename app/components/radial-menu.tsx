@@ -19,6 +19,7 @@ import {
   Lightbulb,
   Brain,
   Puzzle,
+  Box,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -68,6 +69,9 @@ const NAV: Branch[] = [
     { kind: "leaf", label: "Thinkers", path: "/jtbd/thinkers", key: "j", icon: Brain },
     { kind: "leaf", label: "Jobs", path: "/jtbd/jobs", key: "J", icon: Target },
     { kind: "leaf", label: "Components", path: "/jtbd/components", key: "d", icon: Puzzle },
+  ] },
+  { kind: "branch", label: "CGTrader", icon: Box, children: [
+    { kind: "leaf", label: "All", path: "/cgtrader", key: "g", icon: Box },
   ] },
 ];
 
