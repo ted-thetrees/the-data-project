@@ -19,6 +19,7 @@ import { useTableViews, resolveColumnOrder } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
+import { RowContextMenu } from "@/components/row-context-menu";
 import type { ExpandOnGroupConfig } from "@/lib/table-grouping";
 
 export interface Column<T> {
@@ -51,6 +52,8 @@ interface DataTableProps<T> {
   onAddTopRow?: () => void | Promise<void>;
   addTopRowLabel?: string;
   rowStyle?: (row: T) => React.CSSProperties | undefined;
+  onDeleteRow?: (row: T) => void | Promise<void>;
+  deleteItemLabel?: string | ((row: T) => string);
 }
 
 export function DataTable<T>({
@@ -66,6 +69,8 @@ export function DataTable<T>({
   onAddTopRow,
   addTopRowLabel = "+ Add new",
   rowStyle,
+  onDeleteRow,
+  deleteItemLabel,
 }: DataTableProps<T>) {
   const [addPending, startAddTransition] = useTransition();
   const [addTopPending, startAddTopTransition] = useTransition();
@@ -225,23 +230,40 @@ export function DataTable<T>({
             )}
             {rows.map((row) => {
               const record = row as Record<string, unknown>;
+              const cells = orderedColumns.map((col) => (
+                <td
+                  key={col.key}
+                  className={cn(
+                    "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)]",
+                    "bg-[color:var(--cell-bg)]",
+                    alignFor(col),
+                    col.className,
+                  )}
+                >
+                  {col.render
+                    ? col.render(row)
+                    : String(record[col.key] ?? "")}
+                </td>
+              ));
+              if (onDeleteRow) {
+                const label =
+                  typeof deleteItemLabel === "function"
+                    ? deleteItemLabel(row)
+                    : deleteItemLabel;
+                return (
+                  <RowContextMenu
+                    key={rowKey(row)}
+                    rowStyle={rowStyle?.(row)}
+                    onDelete={() => onDeleteRow(row)}
+                    itemLabel={label}
+                  >
+                    {cells}
+                  </RowContextMenu>
+                );
+              }
               return (
                 <tr key={rowKey(row)} style={rowStyle?.(row)}>
-                  {orderedColumns.map((col) => (
-                    <td
-                      key={col.key}
-                      className={cn(
-                        "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)]",
-                        "bg-[color:var(--cell-bg)]",
-                        alignFor(col),
-                        col.className,
-                      )}
-                    >
-                      {col.render
-                        ? col.render(row)
-                        : String(record[col.key] ?? "")}
-                    </td>
-                  ))}
+                  {cells}
                 </tr>
               );
             })}
