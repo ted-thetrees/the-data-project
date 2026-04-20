@@ -1,11 +1,10 @@
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
+import { UserStoriesTable, type UserStoryRow } from "./user-stories-table";
 import {
-  UserStoriesTable,
-  type UserStoryRow,
   USER_STORIES_STORAGE_KEY,
   USER_STORIES_DEFAULT_WIDTHS,
-} from "./user-stories-table";
+} from "./config";
 import type { PillOption } from "@/components/pill";
 import { getInitialViewParams } from "@/lib/table-views-cookie";
 

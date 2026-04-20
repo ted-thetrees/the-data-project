@@ -54,16 +54,12 @@ export interface UserStoryRow {
   roles: Array<{ id: string; name: string }>;
 }
 
+import {
+  USER_STORIES_STORAGE_KEY,
+  USER_STORIES_DEFAULT_WIDTHS,
+} from "./config";
+
 const COLUMN_KEYS = ["as", "narrative", "title", "category"] as const;
-
-export const USER_STORIES_STORAGE_KEY = "user-stories";
-
-export const USER_STORIES_DEFAULT_WIDTHS: Record<string, number> = {
-  as: 280,
-  narrative: 560,
-  title: 240,
-  category: 180,
-};
 
 const DEFAULT_WIDTHS = USER_STORIES_DEFAULT_WIDTHS;
 
