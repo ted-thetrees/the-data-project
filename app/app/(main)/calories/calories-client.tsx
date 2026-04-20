@@ -129,6 +129,8 @@ export function CaloriesClient({
             addTopRowLabel="+ New entry"
             onAddRow={createLogEntry}
             addRowLabel="+ Add entry"
+            onDeleteRow={(row) => deleteLogEntry(row.id)}
+            deleteItemLabel={(row) => `"${row.item}"`}
           />
         </div>
       </section>
@@ -147,6 +149,8 @@ export function CaloriesClient({
             addTopRowLabel="+ New food"
             onAddRow={createFood}
             addRowLabel="+ Add food"
+            onDeleteRow={(row) => deleteFood(row.id)}
+            deleteItemLabel={(row) => `"${row.name}"`}
           />
         </div>
       </section>

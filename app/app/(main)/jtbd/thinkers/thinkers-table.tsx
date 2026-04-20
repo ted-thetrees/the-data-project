@@ -11,6 +11,7 @@ import {
   addThinkerJob,
   createJobOption,
   createThinker,
+  deleteThinker,
   removeThinkerJob,
   updateThinkerName,
   updateThinkerNotes,
@@ -107,6 +108,8 @@ export function ThinkersTable({
       addTopRowLabel="+ New thinker"
       onAddRow={createThinker}
       addRowLabel="+ Add thinker"
+      onDeleteRow={(row) => deleteThinker(row.id)}
+      deleteItemLabel={(row) => `"${row.name}"`}
     />
   );
 }

@@ -24,6 +24,7 @@ import { useTableViews, resolveColumnOrder } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
+import { RowContextMenu } from "@/components/row-context-menu";
 import { handleGridKeyDown } from "@/components/grid-keyboard-nav";
 import {
   updateUserStoryTitle,
@@ -32,6 +33,7 @@ import {
   addUserStoryRole,
   removeUserStoryRole,
   createUserStory,
+  deleteUserStory,
 } from "./actions";
 import { createPicklistOptionNamed } from "../pick-lists/actions";
 
@@ -255,9 +257,13 @@ export function UserStoriesTable({
                 />
               </tr>
               {rows.map((row) => (
-                <tr key={row.id}>
+                <RowContextMenu
+                  key={row.id}
+                  onDelete={() => deleteUserStory(row.id)}
+                  itemLabel={row.title ? `"${row.title}"` : "this user story"}
+                >
                   {orderedKeys.map((key) => cellRenderers[key]?.(row))}
-                </tr>
+                </RowContextMenu>
               ))}
             </tbody>
           </table>

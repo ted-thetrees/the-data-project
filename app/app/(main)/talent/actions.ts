@@ -99,3 +99,8 @@ export async function createTalentInArea(areaId: string) {
   );
   revalidateTalentPages();
 }
+
+export async function deleteTalent(id: string) {
+  await poolV002.query(`DELETE FROM talent WHERE id = $1`, [id]);
+  revalidateTalentPages();
+}

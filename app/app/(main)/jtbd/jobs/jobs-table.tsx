@@ -13,6 +13,7 @@ import {
   createComponentOption,
   createJob,
   createThinkerOption,
+  deleteJob,
   removeJobComponent,
   removeJobThinker,
   updateJobName,
@@ -127,6 +128,8 @@ export function JobsTable({
       addTopRowLabel="+ New job"
       onAddRow={createJob}
       addRowLabel="+ Add job"
+      onDeleteRow={(row) => deleteJob(row.id)}
+      deleteItemLabel={(row) => `"${row.name}"`}
     />
   );
 }

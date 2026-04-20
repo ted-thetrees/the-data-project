@@ -13,3 +13,8 @@ export async function setCgtraderRating(id: string, rating: number | null) {
   );
   revalidatePath("/cgtrader");
 }
+
+export async function deleteCgtraderItem(id: string) {
+  await poolV002.query(`DELETE FROM cgtrader_items WHERE id = $1`, [id]);
+  revalidatePath("/cgtrader");
+}

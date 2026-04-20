@@ -69,6 +69,22 @@ export async function deleteTask(id: string) {
   revalidatePath("/projects-main");
 }
 
+export async function deleteProject(id: string) {
+  const client = await poolV002.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(`DELETE FROM tasks WHERE project_id = $1`, [id]);
+    await client.query(`DELETE FROM projects WHERE id = $1`, [id]);
+    await client.query("COMMIT");
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
+  revalidatePath("/projects-main");
+}
+
 export async function createTask(projectId: string) {
   const status = await poolV002.query(
     `SELECT id FROM task_statuses WHERE name = 'Tickled' LIMIT 1`

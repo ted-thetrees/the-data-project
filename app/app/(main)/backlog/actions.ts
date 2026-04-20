@@ -81,3 +81,8 @@ export async function createBacklogItem() {
   );
   revalidateBacklogPage();
 }
+
+export async function deleteBacklogItem(id: string) {
+  await poolV002.query(`DELETE FROM backlog WHERE id = $1`, [id]);
+  revalidateBacklogPage();
+}

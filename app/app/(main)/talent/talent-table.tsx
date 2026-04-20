@@ -29,6 +29,7 @@ import { useTableViews, resolveColumnOrder } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
+import { RowContextMenu } from "@/components/row-context-menu";
 import { handleGridKeyDown } from "@/components/grid-keyboard-nav";
 import {
   updateTalentCategory,
@@ -40,6 +41,7 @@ import {
   createTalentInArea,
   addTalentArea,
   removeTalentArea,
+  deleteTalent,
 } from "./actions";
 import { createPicklistOptionNamed } from "../pick-lists/actions";
 import "./talent.css";
@@ -520,13 +522,22 @@ export function TalentTable({
             </tr>
             {groupBy === "category"
               ? sorted.map((row) => (
-                  <tr key={row.display_id}>{renderRowBody(row)}</tr>
+                  <RowContextMenu
+                    key={row.display_id}
+                    onDelete={() => deleteTalent(row.record_id)}
+                    itemLabel={row.name ? `"${row.name}"` : "this talent"}
+                  >
+                    {renderRowBody(row)}
+                  </RowContextMenu>
                 ))
               : sorted.map((row, i) => {
                   const isAreaEnd = areaEndSet.has(i);
                   return (
                     <Fragment key={row.display_id}>
-                      <tr>
+                      <RowContextMenu
+                        onDelete={() => deleteTalent(row.record_id)}
+                        itemLabel={row.name ? `"${row.name}"` : "this talent"}
+                      >
                         {areaStartSet.has(i) && (
                           <IcicleCell
                             span={areaByIndex[i]}
@@ -534,7 +545,7 @@ export function TalentTable({
                           />
                         )}
                         {renderRowBody(row)}
-                      </tr>
+                      </RowContextMenu>
                       {isAreaEnd && (
                         <AddTalentRowArea
                           areaId={areaEndToAreaId[i]}

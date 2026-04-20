@@ -25,12 +25,14 @@ import { useTableViews, resolveColumnOrder } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
+import { RowContextMenu } from "@/components/row-context-menu";
 import { handleGridKeyDown } from "@/components/grid-keyboard-nav";
 import {
   updateCrimeSeriesStatus,
   updateCrimeSeriesTitle,
   updateCrimeSeriesTrailer,
   createCrimeSeries,
+  deleteCrimeSeries,
 } from "./actions";
 import { createPicklistOptionNamed } from "../pick-lists/actions";
 
@@ -375,7 +377,10 @@ export function CrimeSeriesTable({
               };
               return data.map((row, i) => (
                 <Fragment key={row.id}>
-                  <tr>
+                  <RowContextMenu
+                    onDelete={() => deleteCrimeSeries(row.id)}
+                    itemLabel={row.title ? `"${row.title}"` : "this series"}
+                  >
                     {statusStartSet.has(i) &&
                       (() => {
                         const span = statusByIndex[i];
@@ -391,7 +396,7 @@ export function CrimeSeriesTable({
                     {orderedCommonKeys.map((key) =>
                       commonCellRenderers[key]?.(row),
                     )}
-                  </tr>
+                  </RowContextMenu>
                   {statusEndSet.has(i) && (
                     <AddSeriesRow
                       statusId={statusEndToSpan[i].statusId ?? null}

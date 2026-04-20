@@ -57,3 +57,8 @@ export async function createUserStory() {
   );
   revalidateUserStoriesPage();
 }
+
+export async function deleteUserStory(id: string) {
+  await poolV002.query(`DELETE FROM user_stories WHERE id = $1`, [id]);
+  revalidateUserStoriesPage();
+}

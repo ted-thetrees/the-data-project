@@ -92,3 +92,8 @@ export async function updateJobNotes(jobId: string, notes: string) {
   );
   revalidateAll();
 }
+
+export async function deleteJob(id: string) {
+  await poolV002.query(`DELETE FROM jtbd_jobs WHERE id = $1`, [id]);
+  revalidateAll();
+}

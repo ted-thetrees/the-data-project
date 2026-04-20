@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { DataTable, type Column } from "@/components/data-table";
 import { Empty } from "@/components/empty";
-import { setCgtraderRating } from "./actions";
+import { setCgtraderRating, deleteCgtraderItem } from "./actions";
 
 type SortDir = "desc" | "asc" | null;
 
@@ -218,6 +218,8 @@ export function CgtraderTable({ rows }: { rows: CgtraderRow[] }) {
           ? ({ "--cell-bg": "#e6f2ff" } as React.CSSProperties)
           : undefined
       }
+      onDeleteRow={(row) => deleteCgtraderItem(row.id)}
+      deleteItemLabel={(row) => `"${shortUrl(row.url)}"`}
     />
   );
 }

@@ -38,6 +38,7 @@ import {
   createTask,
   createProject,
   deleteTask,
+  deleteProject,
 } from "./actions";
 import { createPicklistOptionNamed } from "../pick-lists/actions";
 import { Pill, PillSelect } from "@/components/pill";
@@ -52,8 +53,18 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { useTableViews, resolveColumnOrder } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
@@ -157,6 +168,12 @@ export function GridTable({
   // to the top in the order they became dirty and stay put until committed.
   // Committed projects render in normal SQL order below.
   const [dirtyProjectIds, setDirtyProjectIds] = useState<string[]>([]);
+  type DeleteConfirm =
+    | { kind: "task"; id: string; name: string }
+    | { kind: "project"; id: string; name: string }
+    | null;
+  const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirm>(null);
+  const [deletePending, startDeleteTransition] = useTransition();
   const dirtyTaskOrderRef = useRef<Map<string, string[]>>(new Map());
   const prevProjectIdsRef = useRef<Set<string> | null>(null);
 
@@ -672,12 +689,30 @@ export function GridTable({
                 </ContextMenuTrigger>
                 <ContextMenuContent>
                   <ContextMenuItem
-                    onClick={() => {
-                      void deleteTask(row.id);
-                    }}
+                    onClick={() =>
+                      setDeleteConfirm({
+                        kind: "task",
+                        id: row.id,
+                        name: row.task,
+                      })
+                    }
                     variant="destructive"
                   >
                     Delete task
+                  </ContextMenuItem>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem
+                    onClick={() =>
+                      setDeleteConfirm({
+                        kind: "project",
+                        id: row.project_id,
+                        name:
+                          (projectByIndex[i]?.value as string) ?? "this project",
+                      })
+                    }
+                    variant="destructive"
+                  >
+                    Delete project
                   </ContextMenuItem>
                 </ContextMenuContent>
               </ContextMenu>
@@ -694,6 +729,53 @@ export function GridTable({
         </table>
         </DndContext>
       </div>
+      <Dialog
+        open={deleteConfirm !== null}
+        onOpenChange={(o) => {
+          if (!o) setDeleteConfirm(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              Delete {deleteConfirm?.kind === "project" ? "project" : "task"}{" "}
+              {deleteConfirm?.name ? `"${deleteConfirm.name}"` : ""}?
+            </DialogTitle>
+            <DialogDescription>
+              {deleteConfirm?.kind === "project"
+                ? "This will also delete all tasks under this project. This action cannot be undone."
+                : "This action cannot be undone."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteConfirm(null)}
+              disabled={deletePending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deletePending}
+              onClick={() => {
+                if (!deleteConfirm) return;
+                const target = deleteConfirm;
+                startDeleteTransition(async () => {
+                  if (target.kind === "task") {
+                    await deleteTask(target.id);
+                  } else {
+                    await deleteProject(target.id);
+                  }
+                  setDeleteConfirm(null);
+                });
+              }}
+            >
+              {deletePending ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 

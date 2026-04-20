@@ -52,6 +52,11 @@ export async function removeComponentJob(componentId: string, jobId: string) {
   revalidateAll();
 }
 
+export async function deleteComponent(id: string) {
+  await poolV002.query(`DELETE FROM jtbd_components WHERE id = $1`, [id]);
+  revalidateAll();
+}
+
 export async function createJobOption(name: string): Promise<PillOption> {
   const result = await poolV002.query(
     `INSERT INTO jtbd_jobs (name, sort_order)

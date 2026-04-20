@@ -7,6 +7,7 @@ import {
   addComponentJob,
   createComponent,
   createJobOption,
+  deleteComponent,
   removeComponentJob,
   updateComponentName,
   updateComponentNotes,
@@ -77,6 +78,8 @@ export function ComponentsTable({
       addTopRowLabel="+ New component"
       onAddRow={createComponent}
       addRowLabel="+ Add component"
+      onDeleteRow={(row) => deleteComponent(row.id)}
+      deleteItemLabel={(row) => `"${row.name}"`}
     />
   );
 }

@@ -21,6 +21,7 @@ import { useTableViews, resolveColumnOrder } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
+import { RowContextMenu } from "@/components/row-context-menu";
 import { handleGridKeyDown } from "@/components/grid-keyboard-nav";
 import {
   updateBacklogMainEntry,
@@ -32,6 +33,7 @@ import {
   updateBacklogStatus,
   updateBacklogPrototypeStage,
   createBacklogItem,
+  deleteBacklogItem,
 } from "./actions";
 import { createPicklistOptionNamed } from "../pick-lists/actions";
 
@@ -360,9 +362,13 @@ export function BacklogTable({
                 />
               </tr>
               {rows.map((row) => (
-                <tr key={row.id}>
+                <RowContextMenu
+                  key={row.id}
+                  onDelete={() => deleteBacklogItem(row.id)}
+                  itemLabel={row.main_entry ? `"${row.main_entry}"` : "this backlog item"}
+                >
                   {orderedKeys.map((key) => cellRenderers[key]?.(row))}
-                </tr>
+                </RowContextMenu>
               ))}
             </tbody>
           </table>

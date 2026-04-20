@@ -20,6 +20,7 @@ import { useTableViews, resolveColumnOrder } from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
+import { RowContextMenu } from "@/components/row-context-menu";
 import { handleGridKeyDown } from "@/components/grid-keyboard-nav";
 import {
   updatePersonName,
@@ -31,6 +32,7 @@ import {
   updatePersonOrgFilled,
   updatePersonMetroArea,
   createPerson,
+  deletePerson,
 } from "./actions";
 import { createPicklistOptionNamed } from "../pick-lists/actions";
 
@@ -323,9 +325,13 @@ export function PeopleTable({
                 />
               </tr>
               {rows.map((row) => (
-                <tr key={row.id}>
+                <RowContextMenu
+                  key={row.id}
+                  onDelete={() => deletePerson(row.id)}
+                  itemLabel={row.name ? `"${row.name}"` : "this person"}
+                >
                   {orderedKeys.map((key) => cellRenderers[key]?.(row))}
-                </tr>
+                </RowContextMenu>
               ))}
             </tbody>
           </table>

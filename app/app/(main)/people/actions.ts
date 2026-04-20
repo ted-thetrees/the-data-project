@@ -79,3 +79,8 @@ export async function createPerson() {
   await poolV002.query(`INSERT INTO people (name) VALUES ('Untitled')`);
   revalidatePeoplePage();
 }
+
+export async function deletePerson(id: string) {
+  await poolV002.query(`DELETE FROM people WHERE id = $1`, [id]);
+  revalidatePeoplePage();
+}

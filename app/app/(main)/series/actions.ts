@@ -48,3 +48,8 @@ export async function createCrimeSeries(statusId: string | null) {
   );
   revalidate();
 }
+
+export async function deleteCrimeSeries(id: string) {
+  await poolV002.query(`DELETE FROM crime_series WHERE id = $1`, [id]);
+  revalidate();
+}
