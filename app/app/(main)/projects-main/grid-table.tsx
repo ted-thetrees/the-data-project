@@ -301,8 +301,11 @@ export function GridTable({
       if (!byProject.has(row.project_id)) byProject.set(row.project_id, []);
       byProject.get(row.project_id)!.push(row);
     }
+    // Render the dirty tray in stable project_id order so editing the Project
+    // name (which re-sorts the upstream SQL result) can't reshuffle the tray.
+    const sortedDirtyIds = [...dirtyProjectIds].sort();
     const result: TaskRow[] = [];
-    for (const pid of dirtyProjectIds) {
+    for (const pid of sortedDirtyIds) {
       const rows = byProject.get(pid) ?? [];
       const snapshotTaskIds = dirtyTaskOrderRef.current.get(pid) ?? [];
       const taskIndex = new Map(snapshotTaskIds.map((id, i) => [id, i]));
@@ -314,6 +317,10 @@ export function GridTable({
         else fresh.push(row);
       }
       known.sort((a, b) => a.idx - b.idx);
+      // Stable sort for fresh tasks too — server task order can shift when
+      // status/order/name changes, and we don't want that to reshuffle tasks
+      // inside a pending tray row.
+      fresh.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
       for (const { row } of known) result.push(row);
       for (const row of fresh) result.push(row);
     }
