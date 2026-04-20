@@ -3,6 +3,16 @@ import { poolV002 } from "@/lib/db";
 
 export const maxDuration = 60;
 
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS });
+}
+
 interface Item {
   url: string;
   image?: string | null;
@@ -12,7 +22,10 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const items: Item[] = Array.isArray(body?.items) ? body.items : [];
   if (items.length === 0) {
-    return NextResponse.json({ error: "items array required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "items array required" },
+      { status: 400, headers: CORS },
+    );
   }
 
   const client = await poolV002.connect();
@@ -45,11 +58,14 @@ export async function POST(req: NextRequest) {
     await client.query("ROLLBACK");
     return NextResponse.json(
       { error: e instanceof Error ? e.message : String(e) },
-      { status: 500 },
+      { status: 500, headers: CORS },
     );
   } finally {
     client.release();
   }
 
-  return NextResponse.json({ inserted, skipped, total: items.length });
+  return NextResponse.json(
+    { inserted, skipped, total: items.length },
+    { headers: CORS },
+  );
 }
