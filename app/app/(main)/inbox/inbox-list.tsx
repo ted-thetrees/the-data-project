@@ -112,7 +112,7 @@ export function InboxCard({ card }: { card: CardData }) {
                 <img
                   src={card.previewImage}
                   alt=""
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover [filter:saturate(0)]"
                   loading="lazy"
                 />
               </div>
