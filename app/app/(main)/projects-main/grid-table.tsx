@@ -988,6 +988,26 @@ function EditableDate({
     : undefined;
   const displayLabel = dateValue ? format(dateValue, "EEE, MMM d") : null;
 
+  // Base UI's Popover doesn't auto-focus into react-day-picker, so nothing in
+  // the calendar receives arrow keys. Force focus onto the selected day (or
+  // today) on open.
+  useEffect(() => {
+    if (!open) return;
+    const id = requestAnimationFrame(() => {
+      const popup = document.querySelector<HTMLElement>(
+        '[data-slot="popover-content"]',
+      );
+      if (!popup) return;
+      const day =
+        popup.querySelector<HTMLElement>('[data-selected="true"] button') ??
+        popup.querySelector<HTMLElement>('[data-today="true"] button') ??
+        popup.querySelector<HTMLElement>(".rdp-day_button") ??
+        popup.querySelector<HTMLElement>("button");
+      day?.focus();
+    });
+    return () => cancelAnimationFrame(id);
+  }, [open]);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
@@ -1005,12 +1025,29 @@ function EditableDate({
               cursor: "pointer",
               opacity: isPending ? 0.6 : 1,
             }}
+            onKeyDown={(e) => {
+              // Space on a focused button normally opens the popover (Base UI
+              // default), but Enter sometimes races with outer handlers —
+              // open explicitly so keyboard users get a consistent experience.
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setOpen(true);
+              }
+            }}
           />
         }
       >
         {displayLabel ?? <span style={{ opacity: 0.4 }}>—</span>}
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0">
+      <PopoverContent
+        className="w-auto p-0"
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            e.preventDefault();
+            setOpen(false);
+          }
+        }}
+      >
         <Calendar
           mode="single"
           selected={dateValue}
