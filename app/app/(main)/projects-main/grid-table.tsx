@@ -737,15 +737,15 @@ export function GridTable({
       >
         <DialogContent className="sm:max-w-sm rounded-none p-4 gap-3">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="leading-relaxed">
               Delete {deleteConfirm?.kind === "project" ? "project" : "task"}{" "}
               {deleteConfirm?.name ? `"${deleteConfirm.name}"` : ""}?
             </DialogTitle>
-            <DialogDescription>
-              {deleteConfirm?.kind === "project"
-                ? "This will also delete all tasks under this project. This action cannot be undone."
-                : "This action cannot be undone."}
-            </DialogDescription>
+            {deleteConfirm?.kind === "project" && (
+              <DialogDescription>
+                This will also delete all tasks under this project.
+              </DialogDescription>
+            )}
           </DialogHeader>
           <DialogFooter>
             <Button

@@ -10,7 +10,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -58,10 +57,9 @@ export function RowContextMenu({
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="sm:max-w-sm rounded-none p-4 gap-3">
           <DialogHeader>
-            <DialogTitle>Delete {itemLabel}?</DialogTitle>
-            <DialogDescription>
-              This action cannot be undone.
-            </DialogDescription>
+            <DialogTitle className="leading-relaxed">
+              Delete {itemLabel}?
+            </DialogTitle>
           </DialogHeader>
           <DialogFooter>
             <Button
