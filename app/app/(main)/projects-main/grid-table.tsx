@@ -735,7 +735,7 @@ export function GridTable({
           if (!o) setDeleteConfirm(null);
         }}
       >
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-sm rounded-none p-4 gap-3">
           <DialogHeader>
             <DialogTitle>
               Delete {deleteConfirm?.kind === "project" ? "project" : "task"}{" "}
