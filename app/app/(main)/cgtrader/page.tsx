@@ -10,7 +10,7 @@ async function getRows(): Promise<CgtraderRow[]> {
   const result = await poolV002.query<CgtraderRow>(`
     SELECT id::text AS id, url, image_url, rating
     FROM cgtrader_items
-    ORDER BY rating DESC NULLS LAST, created_at DESC
+    ORDER BY rating DESC NULLS LAST, created_at DESC, id
   `);
   return result.rows;
 }

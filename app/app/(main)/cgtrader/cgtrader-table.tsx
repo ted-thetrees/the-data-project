@@ -168,10 +168,10 @@ export function CgtraderTable({ rows }: { rows: CgtraderRow[] }) {
     return [...rows].sort((a, b) => {
       const av = a.rating;
       const bv = b.rating;
-      if (av == null && bv == null) return 0;
-      if (av == null) return 1;
-      if (bv == null) return -1;
-      return (av - bv) * sign;
+      if (av != null && bv != null && av !== bv) return (av - bv) * sign;
+      if (av == null && bv != null) return 1;
+      if (bv == null && av != null) return -1;
+      return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
     });
   }, [rows, sortDir]);
 
