@@ -56,7 +56,7 @@ export function RowContextMenu({
       </ContextMenu>
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="sm:max-w-sm rounded-none p-4 gap-3">
-          <DialogHeader>
+          <DialogHeader className="pr-8">
             <DialogTitle className="leading-relaxed">
               Delete {itemLabel}?
             </DialogTitle>
