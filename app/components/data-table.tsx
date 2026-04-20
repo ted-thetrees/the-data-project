@@ -23,7 +23,7 @@ import type { ExpandOnGroupConfig } from "@/lib/table-grouping";
 
 export interface Column<T> {
   key: string;
-  header: string;
+  header: React.ReactNode;
   align?: "left" | "center" | "right";
   width?: number;
   render?: (row: T) => React.ReactNode;

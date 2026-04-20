@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { DataTable, type Column } from "@/components/data-table";
 import { Empty } from "@/components/empty";
 import { setCgtraderRating } from "./actions";
+
+type SortDir = "desc" | "asc" | null;
 
 export interface CgtraderRow {
   id: string;
@@ -84,8 +86,8 @@ function ImageCell({ row }: { row: CgtraderRow }) {
         loading="lazy"
         className="rounded-[var(--radius-sm)] object-cover"
         style={{
-          width: 160,
-          height: 120,
+          width: 400,
+          height: 300,
           background: "var(--muted)",
         }}
       />
@@ -117,12 +119,67 @@ function LinkCell({ row }: { row: CgtraderRow }) {
   );
 }
 
+function nextSortDir(current: SortDir): SortDir {
+  if (current === "desc") return "asc";
+  if (current === "asc") return null;
+  return "desc";
+}
+
+function RatingHeader({
+  dir,
+  onClick,
+}: {
+  dir: SortDir;
+  onClick: () => void;
+}) {
+  const arrow = dir === "desc" ? "▾" : dir === "asc" ? "▴" : "⇅";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] rounded-sm"
+      style={{
+        background: "transparent",
+        border: "none",
+        padding: 0,
+        font: "inherit",
+        color: "inherit",
+        letterSpacing: "inherit",
+      }}
+      title={
+        dir === "desc"
+          ? "Sorted high → low (click for low → high)"
+          : dir === "asc"
+            ? "Sorted low → high (click to clear sort)"
+            : "Click to sort by rating"
+      }
+    >
+      Rating <span style={{ opacity: dir ? 1 : 0.4 }}>{arrow}</span>
+    </button>
+  );
+}
+
 export function CgtraderTable({ rows }: { rows: CgtraderRow[] }) {
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const sortedRows = useMemo(() => {
+    if (!sortDir) return rows;
+    const sign = sortDir === "asc" ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      const av = a.rating;
+      const bv = b.rating;
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      return (av - bv) * sign;
+    });
+  }, [rows, sortDir]);
+
   const columns: Column<CgtraderRow>[] = [
     {
       key: "image",
       header: "Image",
-      width: 184,
+      width: 460,
       render: (row) => <ImageCell row={row} />,
     },
     {
@@ -133,7 +190,12 @@ export function CgtraderTable({ rows }: { rows: CgtraderRow[] }) {
     },
     {
       key: "rating",
-      header: "Rating",
+      header: (
+        <RatingHeader
+          dir={sortDir}
+          onClick={() => setSortDir((d) => nextSortDir(d))}
+        />
+      ),
       width: 160,
       render: (row) => (
         <StarRating
@@ -147,7 +209,7 @@ export function CgtraderTable({ rows }: { rows: CgtraderRow[] }) {
   return (
     <DataTable
       columns={columns}
-      rows={rows}
+      rows={sortedRows}
       rowKey={(r) => r.id}
       fixedLayout
       storageKey="cgtrader"
