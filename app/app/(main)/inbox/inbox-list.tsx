@@ -8,7 +8,7 @@ import type { CardData } from "./card-data";
 
 const DUMMY_HREF = "#";
 const stripe = "px-[23px] py-[19px]";
-const frameInset = "";
+const frameInset = "px-[6px] pb-[6px]";
 const metaBgDefault = `${stripe} bg-[#f8f8f8cc]`;
 const contentBg = `${stripe} bg-[#ffffffcc]`;
 const metaTextDefault = "text-[13px] text-[color:var(--card-foreground)] leading-none";
