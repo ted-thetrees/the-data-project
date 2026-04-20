@@ -2,7 +2,9 @@ import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
 import { PeopleTable, type PersonRow } from "./people-table";
+import { PEOPLE_STORAGE_KEY, PEOPLE_DEFAULT_WIDTHS } from "./config";
 import type { PillOption } from "@/components/pill";
+import { getInitialViewParams } from "@/lib/table-views-cookie";
 
 export const metadata = { title: "People" };
 export const dynamic = "force-dynamic";
@@ -43,6 +45,7 @@ export default async function PeoplePage() {
     tellerStatusOptions,
     orgFilledOptions,
     metroAreaOptions,
+    initialParams,
   ] = await Promise.all([
     getPeople(),
     getLookupOptions("people_genders"),
@@ -50,6 +53,7 @@ export default async function PeoplePage() {
     getLookupOptions("people_teller_statuses"),
     getLookupOptions("people_org_fill_statuses"),
     getLookupOptions("people_metro_areas", "ORDER BY name"),
+    getInitialViewParams(PEOPLE_STORAGE_KEY, PEOPLE_DEFAULT_WIDTHS),
   ]);
 
   return (
@@ -71,6 +75,7 @@ export default async function PeoplePage() {
         tellerStatusOptions={tellerStatusOptions}
         orgFilledOptions={orgFilledOptions}
         metroAreaOptions={metroAreaOptions}
+        initialParams={initialParams}
       />
     </PageShell>
   );

@@ -5,6 +5,8 @@ import { Subtitle } from "@/components/subtitle";
 import type { PillOption } from "@/components/pill";
 import { getPalettes } from "../../pick-lists/lib";
 import { ThinkersTable, type ThinkerRow } from "./thinkers-table";
+import { THINKERS_STORAGE_KEY, THINKERS_DEFAULT_WIDTHS } from "./config";
+import { getInitialViewParams } from "@/lib/table-views-cookie";
 
 export const metadata = { title: "JTBD — Thinkers" };
 export const dynamic = "force-dynamic";
@@ -38,10 +40,11 @@ async function getJobOptions(): Promise<PillOption[]> {
 }
 
 export default async function ThinkersPage() {
-  const [thinkers, jobOptions, palettes] = await Promise.all([
+  const [thinkers, jobOptions, palettes, initialParams] = await Promise.all([
     getThinkers(),
     getJobOptions(),
     getPalettes(),
+    getInitialViewParams(THINKERS_STORAGE_KEY, THINKERS_DEFAULT_WIDTHS),
   ]);
   return (
     <PageShell title="Thinkers" count={thinkers.length} maxWidth="">
@@ -60,6 +63,7 @@ export default async function ThinkersPage() {
         rows={thinkers}
         jobOptions={jobOptions}
         palettes={palettes}
+        initialParams={initialParams}
       />
     </PageShell>
   );

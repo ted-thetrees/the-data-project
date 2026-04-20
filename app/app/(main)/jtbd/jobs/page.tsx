@@ -5,6 +5,8 @@ import { Subtitle } from "@/components/subtitle";
 import type { PillOption } from "@/components/pill";
 import { getPalettes } from "../../pick-lists/lib";
 import { JobsTable, type JobRow } from "./jobs-table";
+import { JOBS_STORAGE_KEY, JOBS_DEFAULT_WIDTHS } from "./config";
+import { getInitialViewParams } from "@/lib/table-views-cookie";
 
 export const metadata = { title: "JTBD — Jobs" };
 export const dynamic = "force-dynamic";
@@ -46,12 +48,14 @@ async function getLookupOptions(table: string): Promise<PillOption[]> {
 }
 
 export default async function JobsPage() {
-  const [jobs, thinkerOptions, componentOptions, palettes] = await Promise.all([
-    getJobs(),
-    getLookupOptions("jtbd_thinkers"),
-    getLookupOptions("jtbd_components"),
-    getPalettes(),
-  ]);
+  const [jobs, thinkerOptions, componentOptions, palettes, initialParams] =
+    await Promise.all([
+      getJobs(),
+      getLookupOptions("jtbd_thinkers"),
+      getLookupOptions("jtbd_components"),
+      getPalettes(),
+      getInitialViewParams(JOBS_STORAGE_KEY, JOBS_DEFAULT_WIDTHS),
+    ]);
   return (
     <PageShell title="Jobs" count={jobs.length} maxWidth="">
       <Realtime
@@ -73,6 +77,7 @@ export default async function JobsPage() {
         thinkerOptions={thinkerOptions}
         componentOptions={componentOptions}
         palettes={palettes}
+        initialParams={initialParams}
       />
     </PageShell>
   );

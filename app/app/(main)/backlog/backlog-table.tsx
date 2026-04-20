@@ -17,7 +17,11 @@ import {
 import { PillSelect, type PillOption } from "@/components/pill";
 import { EditableText, EditableTextWrap } from "@/components/editable-text";
 import { Empty } from "@/components/empty";
-import { useTableViews, resolveColumnOrder } from "@/components/table-views";
+import {
+  useTableViews,
+  resolveColumnOrder,
+  type ViewParams,
+} from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
@@ -75,17 +79,12 @@ const COLUMN_KEYS = [
   "image",
 ] as const;
 
-const DEFAULT_WIDTHS: Record<string, number> = {
-  main_entry: 320,
-  priority: 200,
-  category: 200,
-  status: 200,
-  yes_or_not_yet: 110,
-  design_paradigm: 140,
-  prototype_stage: 120,
-  details: 360,
-  image: 80,
-};
+import {
+  BACKLOG_STORAGE_KEY,
+  BACKLOG_DEFAULT_WIDTHS,
+} from "./config";
+
+const DEFAULT_WIDTHS = BACKLOG_DEFAULT_WIDTHS;
 
 const HEADER_LABELS: Record<string, string> = {
   main_entry: "Main Entry",
@@ -125,6 +124,7 @@ export function BacklogTable({
   designParadigmOptions,
   statusOptions,
   prototypeStageOptions,
+  initialParams,
 }: {
   rows: BacklogRow[];
   priorityOptions: PillOption[];
@@ -133,6 +133,7 @@ export function BacklogTable({
   designParadigmOptions: PillOption[];
   statusOptions: PillOption[];
   prototypeStageOptions: PillOption[];
+  initialParams?: ViewParams;
 }) {
   const {
     views,
@@ -144,7 +145,7 @@ export function BacklogTable({
     deleteView,
     setColumnWidth,
     setColumnOrder,
-  } = useTableViews("backlog", DEFAULT_WIDTHS);
+  } = useTableViews(BACKLOG_STORAGE_KEY, DEFAULT_WIDTHS, initialParams);
 
   const orderedKeys = useMemo(
     () =>

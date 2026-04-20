@@ -1,7 +1,9 @@
 "use client";
 
 import { DataTable, type Column } from "@/components/data-table";
+import type { ViewParams } from "@/components/table-views";
 import { MultiPillSelect, type PillOption } from "@/components/pill";
+import { JOBS_STORAGE_KEY } from "./config";
 import {
   EditableColorCell,
   type PaletteForPicker,
@@ -34,11 +36,13 @@ export function JobsTable({
   thinkerOptions,
   componentOptions,
   palettes,
+  initialParams,
 }: {
   rows: JobRow[];
   thinkerOptions: PillOption[];
   componentOptions: PillOption[];
   palettes: PaletteForPicker[];
+  initialParams?: ViewParams;
 }) {
   const columns: Column<JobRow>[] = [
     {
@@ -123,7 +127,8 @@ export function JobsTable({
       rows={rows}
       rowKey={(r) => r.id}
       fixedLayout
-      storageKey="jtbd-jobs"
+      storageKey={JOBS_STORAGE_KEY}
+      initialParams={initialParams}
       onAddTopRow={createJob}
       addTopRowLabel="+ New job"
       onAddRow={createJob}

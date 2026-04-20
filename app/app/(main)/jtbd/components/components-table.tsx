@@ -1,7 +1,9 @@
 "use client";
 
 import { DataTable, type Column } from "@/components/data-table";
+import type { ViewParams } from "@/components/table-views";
 import { MultiPillSelect, type PillOption } from "@/components/pill";
+import { COMPONENTS_STORAGE_KEY } from "./config";
 import { EditableText, EditableTextWrap } from "@/components/editable-text";
 import {
   addComponentJob,
@@ -23,9 +25,11 @@ export interface ComponentRow {
 export function ComponentsTable({
   rows,
   jobOptions,
+  initialParams,
 }: {
   rows: ComponentRow[];
   jobOptions: PillOption[];
+  initialParams?: ViewParams;
 }) {
   const columns: Column<ComponentRow>[] = [
     {
@@ -73,7 +77,8 @@ export function ComponentsTable({
       rows={rows}
       rowKey={(r) => r.id}
       fixedLayout
-      storageKey="jtbd-components"
+      storageKey={COMPONENTS_STORAGE_KEY}
+      initialParams={initialParams}
       onAddTopRow={createComponent}
       addTopRowLabel="+ New component"
       onAddRow={createComponent}

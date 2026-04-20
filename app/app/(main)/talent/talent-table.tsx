@@ -25,7 +25,12 @@ import {
   type PillOption,
 } from "@/components/pill";
 import { EditableText } from "@/components/editable-text";
-import { useTableViews, resolveColumnOrder } from "@/components/table-views";
+import {
+  useTableViews,
+  resolveColumnOrder,
+  type ViewParams,
+} from "@/components/table-views";
+import { TALENT_STORAGE_KEY, TALENT_DEFAULT_WIDTHS } from "./config";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
@@ -72,16 +77,6 @@ const TALENT_AREA_MODE_KEYS = [
   ...TALENT_COMMON_COLUMN_KEYS,
 ] as const;
 
-const TALENT_DEFAULT_WIDTHS: Record<string, number> = {
-  category: 140,
-  overall_rating: 180,
-  area: 140,
-  resource: 220,
-  website: 180,
-  instagram: 100,
-  areas: 220,
-  notes: 180,
-};
 
 interface TalentRow {
   id: string;
@@ -247,6 +242,7 @@ export function TalentTable({
   categoryOptions,
   ratingOptions,
   areaOptions,
+  initialParams,
 }: {
   data: TalentRow[];
   recordCount: number;
@@ -254,6 +250,7 @@ export function TalentTable({
   categoryOptions: PillOption[];
   ratingOptions: PillOption[];
   areaOptions: PillOption[];
+  initialParams?: ViewParams;
 }) {
   const sorted = data;
 
@@ -295,7 +292,7 @@ export function TalentTable({
     deleteView,
     setColumnWidth,
     setColumnOrder,
-  } = useTableViews("talent", TALENT_DEFAULT_WIDTHS);
+  } = useTableViews(TALENT_STORAGE_KEY, TALENT_DEFAULT_WIDTHS, initialParams);
 
   const orderedCommonKeys = useMemo(
     () =>

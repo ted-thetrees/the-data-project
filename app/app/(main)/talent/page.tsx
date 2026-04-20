@@ -3,6 +3,8 @@ import { TalentTable } from "./talent-table";
 import { Realtime } from "@/components/realtime";
 import type { PillOption } from "@/components/pill";
 import { makeDisplayId } from "@/lib/table-grouping";
+import { TALENT_STORAGE_KEY, TALENT_DEFAULT_WIDTHS } from "./config";
+import { getInitialViewParams } from "@/lib/table-views-cookie";
 
 export const metadata = { title: "Talent" };
 export const dynamic = "force-dynamic";
@@ -164,11 +166,13 @@ export default async function TalentPage({
     categoryOptions,
     ratingOptions,
     areaOptions,
+    initialParams,
   ] = await Promise.all([
     getTalent({ expandOn: groupBy === "area" ? "area" : null }),
     getLookupOptions("talent_categories"),
     getLookupOptions("talent_rating_levels"),
     getAreaOptions(),
+    getInitialViewParams(TALENT_STORAGE_KEY, TALENT_DEFAULT_WIDTHS),
   ]);
   return (
     <>
@@ -188,6 +192,7 @@ export default async function TalentPage({
         categoryOptions={categoryOptions}
         ratingOptions={ratingOptions}
         areaOptions={areaOptions}
+        initialParams={initialParams}
       />
     </>
   );

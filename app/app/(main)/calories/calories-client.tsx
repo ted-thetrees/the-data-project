@@ -2,8 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { DataTable, type Column } from "@/components/data-table";
+import type { ViewParams } from "@/components/table-views";
 import { Subtitle } from "@/components/subtitle";
 import { EditableText, EditableNumber } from "@/components/editable-text";
+import {
+  CALORIES_LOG_STORAGE_KEY,
+  CALORIES_FOODS_STORAGE_KEY,
+} from "./config";
 import {
   createLogEntry,
   createFood,
@@ -34,11 +39,15 @@ export function CaloriesClient({
   foods,
   total,
   allowance,
+  logInitialParams,
+  foodsInitialParams,
 }: {
   log: LogRow[];
   foods: FoodRow[];
   total: number;
   allowance: number;
+  logInitialParams?: ViewParams;
+  foodsInitialParams?: ViewParams;
 }) {
   const remaining = allowance - total;
   const over = remaining < 0;
@@ -124,7 +133,8 @@ export function CaloriesClient({
             rows={log}
             rowKey={(r) => r.id}
             fixedLayout
-            storageKey="calories:log"
+            storageKey={CALORIES_LOG_STORAGE_KEY}
+            initialParams={logInitialParams}
             onAddTopRow={createLogEntry}
             addTopRowLabel="+ New entry"
             onAddRow={createLogEntry}
@@ -144,7 +154,8 @@ export function CaloriesClient({
             rows={foods}
             rowKey={(r) => r.id}
             fixedLayout
-            storageKey="calories:foods"
+            storageKey={CALORIES_FOODS_STORAGE_KEY}
+            initialParams={foodsInitialParams}
             onAddTopRow={createFood}
             addTopRowLabel="+ New food"
             onAddRow={createFood}

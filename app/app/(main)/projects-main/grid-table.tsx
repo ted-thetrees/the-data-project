@@ -65,7 +65,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useTableViews, resolveColumnOrder } from "@/components/table-views";
+import {
+  useTableViews,
+  resolveColumnOrder,
+  type ViewParams,
+} from "@/components/table-views";
+import {
+  PROJECTS_MAIN_STORAGE_KEY,
+  PROJECTS_MAIN_DEFAULT_WIDTHS,
+} from "./config";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
@@ -93,16 +101,7 @@ const HEADER_LABELS: Record<string, string> = {
   notes: "Notes",
 };
 
-const DEFAULT_COLUMN_WIDTHS: Record<string, number> = {
-  uber_project: 140,
-  project: 220,
-  tickle: 110,
-  project_status: 110,
-  task: 280,
-  task_status: 100,
-  result: 220,
-  notes: 220,
-};
+const DEFAULT_COLUMN_WIDTHS = PROJECTS_MAIN_DEFAULT_WIDTHS;
 
 interface GroupSpan {
   value: string;
@@ -154,6 +153,7 @@ export function GridTable({
   uberProjects,
   wrapped = true,
   title = "Projects",
+  initialParams,
 }: {
   data: TaskRow[];
   taskStatuses: StatusOption[];
@@ -161,6 +161,7 @@ export function GridTable({
   uberProjects: StatusOption[];
   wrapped?: boolean;
   title?: string;
+  initialParams?: ViewParams;
 }) {
   const projectAccessor = (r: TaskRow) => r.project;
 
@@ -359,7 +360,7 @@ export function GridTable({
     deleteView,
     setColumnWidth,
     setColumnOrder,
-  } = useTableViews("projects-main", DEFAULT_COLUMN_WIDTHS);
+  } = useTableViews(PROJECTS_MAIN_STORAGE_KEY, DEFAULT_COLUMN_WIDTHS, initialParams);
 
   const orderedTaskKeys = useMemo(
     () =>

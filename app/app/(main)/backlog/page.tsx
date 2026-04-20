@@ -2,7 +2,9 @@ import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
 import { BacklogTable, type BacklogRow } from "./backlog-table";
+import { BACKLOG_STORAGE_KEY, BACKLOG_DEFAULT_WIDTHS } from "./config";
 import type { PillOption } from "@/components/pill";
+import { getInitialViewParams } from "@/lib/table-views-cookie";
 
 export const metadata = { title: "Backlog" };
 export const dynamic = "force-dynamic";
@@ -51,6 +53,7 @@ export default async function BacklogPage() {
     designParadigmOptions,
     statusOptions,
     prototypeStageOptions,
+    initialParams,
   ] = await Promise.all([
     getBacklog(),
     getLookupOptions("backlog_priorities"),
@@ -59,6 +62,7 @@ export default async function BacklogPage() {
     getLookupOptions("backlog_design_paradigms"),
     getLookupOptions("backlog_statuses"),
     getLookupOptions("backlog_prototype_stages"),
+    getInitialViewParams(BACKLOG_STORAGE_KEY, BACKLOG_DEFAULT_WIDTHS),
   ]);
 
   return (
@@ -82,6 +86,7 @@ export default async function BacklogPage() {
         designParadigmOptions={designParadigmOptions}
         statusOptions={statusOptions}
         prototypeStageOptions={prototypeStageOptions}
+        initialParams={initialParams}
       />
     </PageShell>
   );

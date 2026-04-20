@@ -2,6 +2,8 @@ import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
 import { CgtraderTable, type CgtraderRow } from "./cgtrader-table";
+import { CGTRADER_STORAGE_KEY, CGTRADER_DEFAULT_WIDTHS } from "./config";
+import { getInitialViewParams } from "@/lib/table-views-cookie";
 
 export const metadata = { title: "CGTrader" };
 export const dynamic = "force-dynamic";
@@ -16,11 +18,14 @@ async function getRows(): Promise<CgtraderRow[]> {
 }
 
 export default async function CgtraderPage() {
-  const rows = await getRows();
+  const [rows, initialParams] = await Promise.all([
+    getRows(),
+    getInitialViewParams(CGTRADER_STORAGE_KEY, CGTRADER_DEFAULT_WIDTHS),
+  ]);
   return (
     <PageShell title="CGTrader" count={rows.length} maxWidth="">
       <Realtime tables={["cgtrader_items"]} />
-      <CgtraderTable rows={rows} />
+      <CgtraderTable rows={rows} initialParams={initialParams} />
     </PageShell>
   );
 }

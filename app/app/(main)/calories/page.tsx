@@ -2,6 +2,13 @@ import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
 import { CaloriesClient, type LogRow, type FoodRow } from "./calories-client";
+import {
+  CALORIES_LOG_STORAGE_KEY,
+  CALORIES_LOG_DEFAULT_WIDTHS,
+  CALORIES_FOODS_STORAGE_KEY,
+  CALORIES_FOODS_DEFAULT_WIDTHS,
+} from "./config";
+import { getInitialViewParams } from "@/lib/table-views-cookie";
 
 export const metadata = { title: "Calories" };
 export const dynamic = "force-dynamic";
@@ -30,7 +37,15 @@ async function getFoods(): Promise<FoodRow[]> {
 }
 
 export default async function CaloriesPage() {
-  const [log, foods] = await Promise.all([getTodayLog(), getFoods()]);
+  const [log, foods, logInitialParams, foodsInitialParams] = await Promise.all([
+    getTodayLog(),
+    getFoods(),
+    getInitialViewParams(CALORIES_LOG_STORAGE_KEY, CALORIES_LOG_DEFAULT_WIDTHS),
+    getInitialViewParams(
+      CALORIES_FOODS_STORAGE_KEY,
+      CALORIES_FOODS_DEFAULT_WIDTHS,
+    ),
+  ]);
   const total = log.reduce((sum, row) => sum + row.calories, 0);
 
   return (
@@ -41,6 +56,8 @@ export default async function CaloriesPage() {
         foods={foods}
         total={total}
         allowance={DAILY_ALLOWANCE}
+        logInitialParams={logInitialParams}
+        foodsInitialParams={foodsInitialParams}
       />
     </PageShell>
   );

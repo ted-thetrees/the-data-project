@@ -16,7 +16,12 @@ import {
 } from "@dnd-kit/sortable";
 import { PillSelect, type PillOption } from "@/components/pill";
 import { EditableText } from "@/components/editable-text";
-import { useTableViews, resolveColumnOrder } from "@/components/table-views";
+import {
+  useTableViews,
+  resolveColumnOrder,
+  type ViewParams,
+} from "@/components/table-views";
+import { PEOPLE_STORAGE_KEY, PEOPLE_DEFAULT_WIDTHS } from "./config";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
@@ -70,16 +75,7 @@ const COLUMN_KEYS = [
   "passphrase",
 ] as const;
 
-const DEFAULT_WIDTHS: Record<string, number> = {
-  name: 200,
-  known_as: 140,
-  gender: 110,
-  familiarity: 220,
-  metro_area: 180,
-  teller_status: 220,
-  has_org_filled: 130,
-  passphrase: 180,
-};
+const DEFAULT_WIDTHS = PEOPLE_DEFAULT_WIDTHS;
 
 const HEADER_LABELS: Record<string, string> = {
   name: "Name",
@@ -117,6 +113,7 @@ export function PeopleTable({
   tellerStatusOptions,
   orgFilledOptions,
   metroAreaOptions,
+  initialParams,
 }: {
   rows: PersonRow[];
   genderOptions: PillOption[];
@@ -124,6 +121,7 @@ export function PeopleTable({
   tellerStatusOptions: PillOption[];
   orgFilledOptions: PillOption[];
   metroAreaOptions: PillOption[];
+  initialParams?: ViewParams;
 }) {
   const {
     views,
@@ -135,7 +133,7 @@ export function PeopleTable({
     deleteView,
     setColumnWidth,
     setColumnOrder,
-  } = useTableViews("people", DEFAULT_WIDTHS);
+  } = useTableViews(PEOPLE_STORAGE_KEY, DEFAULT_WIDTHS, initialParams);
 
   const orderedKeys = useMemo(
     () =>

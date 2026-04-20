@@ -4,6 +4,8 @@ import { Realtime } from "@/components/realtime";
 import { Subtitle } from "@/components/subtitle";
 import type { PillOption } from "@/components/pill";
 import { ComponentsTable, type ComponentRow } from "./components-table";
+import { COMPONENTS_STORAGE_KEY, COMPONENTS_DEFAULT_WIDTHS } from "./config";
+import { getInitialViewParams } from "@/lib/table-views-cookie";
 
 export const metadata = { title: "JTBD — Components" };
 export const dynamic = "force-dynamic";
@@ -37,9 +39,10 @@ async function getJobOptions(): Promise<PillOption[]> {
 }
 
 export default async function ComponentsPage() {
-  const [components, jobOptions] = await Promise.all([
+  const [components, jobOptions, initialParams] = await Promise.all([
     getComponents(),
     getJobOptions(),
+    getInitialViewParams(COMPONENTS_STORAGE_KEY, COMPONENTS_DEFAULT_WIDTHS),
   ]);
   return (
     <PageShell title="Components" count={components.length} maxWidth="">
@@ -53,7 +56,11 @@ export default async function ComponentsPage() {
       <Subtitle>
         Parts of the If Not For app that do jobs for users.
       </Subtitle>
-      <ComponentsTable rows={components} jobOptions={jobOptions} />
+      <ComponentsTable
+        rows={components}
+        jobOptions={jobOptions}
+        initialParams={initialParams}
+      />
     </PageShell>
   );
 }

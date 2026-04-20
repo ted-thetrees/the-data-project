@@ -21,7 +21,15 @@ import { Empty } from "@/components/empty";
 import { EditableLink } from "@/components/editable-link";
 import { Subtitle } from "@/components/subtitle";
 import { EditableText } from "@/components/editable-text";
-import { useTableViews, resolveColumnOrder } from "@/components/table-views";
+import {
+  useTableViews,
+  resolveColumnOrder,
+  type ViewParams,
+} from "@/components/table-views";
+import {
+  CRIME_SERIES_STORAGE_KEY,
+  CRIME_SERIES_DEFAULT_WIDTHS,
+} from "./config";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
@@ -48,14 +56,7 @@ const CRIME_COMMON_KEYS = [
   "release_date",
 ] as const;
 
-const CRIME_DEFAULT_WIDTHS: Record<string, number> = {
-  status: 180,
-  status_edit: 180,
-  title: 220,
-  network: 130,
-  trailer: 480,
-  release_date: 110,
-};
+const CRIME_DEFAULT_WIDTHS = CRIME_SERIES_DEFAULT_WIDTHS;
 
 interface GroupSpan {
   value: string;
@@ -152,9 +153,11 @@ function youtubeEmbedUrl(url: string): string | null {
 export function CrimeSeriesTable({
   data,
   statusOptions,
+  initialParams,
 }: {
   data: SeriesRow[];
   statusOptions: PillOption[];
+  initialParams?: ViewParams;
 }) {
   const statusSpans = useMemo(
     () =>
@@ -187,7 +190,7 @@ export function CrimeSeriesTable({
     deleteView,
     setColumnWidth,
     setColumnOrder,
-  } = useTableViews("crime-series", CRIME_DEFAULT_WIDTHS);
+  } = useTableViews(CRIME_SERIES_STORAGE_KEY, CRIME_DEFAULT_WIDTHS, initialParams);
 
   const orderedCommonKeys = useMemo(
     () =>

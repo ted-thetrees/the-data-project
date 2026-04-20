@@ -6,6 +6,11 @@ import {
   getProjectStatuses,
   getUberProjects,
 } from "./data";
+import {
+  PROJECTS_MAIN_STORAGE_KEY,
+  PROJECTS_MAIN_DEFAULT_WIDTHS,
+} from "./config";
+import { getInitialViewParams } from "@/lib/table-views-cookie";
 
 export const metadata = { title: "Projects" };
 export const dynamic = "force-dynamic";
@@ -41,12 +46,17 @@ export interface StatusOption {
 }
 
 export default async function GridPage() {
-  const [data, taskStatuses, projectStatuses, uberProjects] = await Promise.all([
-    getProjectsMainData(),
-    getTaskStatuses(),
-    getProjectStatuses(),
-    getUberProjects(),
-  ]);
+  const [data, taskStatuses, projectStatuses, uberProjects, initialParams] =
+    await Promise.all([
+      getProjectsMainData(),
+      getTaskStatuses(),
+      getProjectStatuses(),
+      getUberProjects(),
+      getInitialViewParams(
+        PROJECTS_MAIN_STORAGE_KEY,
+        PROJECTS_MAIN_DEFAULT_WIDTHS,
+      ),
+    ]);
   return (
     <>
       <Realtime
@@ -63,6 +73,7 @@ export default async function GridPage() {
         taskStatuses={taskStatuses}
         projectStatuses={projectStatuses}
         uberProjects={uberProjects}
+        initialParams={initialParams}
       />
     </>
   );

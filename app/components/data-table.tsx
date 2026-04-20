@@ -15,7 +15,11 @@ import {
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { cn } from "@/lib/utils";
-import { useTableViews, resolveColumnOrder } from "@/components/table-views";
+import {
+  useTableViews,
+  resolveColumnOrder,
+  type ViewParams,
+} from "@/components/table-views";
 import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
@@ -54,6 +58,8 @@ interface DataTableProps<T> {
   rowStyle?: (row: T) => React.CSSProperties | undefined;
   onDeleteRow?: (row: T) => void | Promise<void>;
   deleteItemLabel?: string | ((row: T) => string);
+  /** Server-provided initial params (from cookies) to avoid SSR/hydration flicker. */
+  initialParams?: ViewParams;
 }
 
 export function DataTable<T>({
@@ -71,6 +77,7 @@ export function DataTable<T>({
   rowStyle,
   onDeleteRow,
   deleteItemLabel,
+  initialParams,
 }: DataTableProps<T>) {
   const [addPending, startAddTransition] = useTransition();
   const [addTopPending, startAddTopTransition] = useTransition();
@@ -79,7 +86,11 @@ export function DataTable<T>({
     if (col.width !== undefined) defaultWidths[col.key] = col.width;
   }
 
-  const views = useTableViews(storageKey ?? "__datatable_unused__", defaultWidths);
+  const views = useTableViews(
+    storageKey ?? "__datatable_unused__",
+    defaultWidths,
+    initialParams,
+  );
   const enabled = !!storageKey;
 
   const orderedColumns = useMemo(() => {

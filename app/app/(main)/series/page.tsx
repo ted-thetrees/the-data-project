@@ -2,6 +2,11 @@ import { poolV002 } from "@/lib/db";
 import { CrimeSeriesTable } from "./crime-series-table";
 import { Realtime } from "@/components/realtime";
 import type { PillOption } from "@/components/pill";
+import {
+  CRIME_SERIES_STORAGE_KEY,
+  CRIME_SERIES_DEFAULT_WIDTHS,
+} from "./config";
+import { getInitialViewParams } from "@/lib/table-views-cookie";
 
 export const metadata = { title: "Series" };
 export const dynamic = "force-dynamic";
@@ -38,11 +43,19 @@ async function getStatusOptions(): Promise<PillOption[]> {
 }
 
 export default async function CrimeSeriesPage() {
-  const [data, statusOptions] = await Promise.all([getData(), getStatusOptions()]);
+  const [data, statusOptions, initialParams] = await Promise.all([
+    getData(),
+    getStatusOptions(),
+    getInitialViewParams(CRIME_SERIES_STORAGE_KEY, CRIME_SERIES_DEFAULT_WIDTHS),
+  ]);
   return (
     <>
       <Realtime tables={["crime_series", "crime_series_statuses"]} />
-      <CrimeSeriesTable data={data} statusOptions={statusOptions} />
+      <CrimeSeriesTable
+        data={data}
+        statusOptions={statusOptions}
+        initialParams={initialParams}
+      />
     </>
   );
 }

@@ -1,7 +1,9 @@
 "use client";
 
 import { DataTable, type Column } from "@/components/data-table";
+import type { ViewParams } from "@/components/table-views";
 import { MultiPillSelect, type PillOption } from "@/components/pill";
+import { THINKERS_STORAGE_KEY } from "./config";
 import {
   EditableColorCell,
   type PaletteForPicker,
@@ -29,10 +31,12 @@ export function ThinkersTable({
   rows,
   jobOptions,
   palettes,
+  initialParams,
 }: {
   rows: ThinkerRow[];
   jobOptions: PillOption[];
   palettes: PaletteForPicker[];
+  initialParams?: ViewParams;
 }) {
   const columns: Column<ThinkerRow>[] = [
     {
@@ -103,7 +107,8 @@ export function ThinkersTable({
       rows={rows}
       rowKey={(r) => r.id}
       fixedLayout
-      storageKey="jtbd-thinkers"
+      storageKey={THINKERS_STORAGE_KEY}
+      initialParams={initialParams}
       onAddTopRow={createThinker}
       addTopRowLabel="+ New thinker"
       onAddRow={createThinker}

@@ -2,8 +2,10 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { DataTable, type Column } from "@/components/data-table";
+import type { ViewParams } from "@/components/table-views";
 import { Empty } from "@/components/empty";
 import { setCgtraderRating, deleteCgtraderItem } from "./actions";
+import { CGTRADER_STORAGE_KEY } from "./config";
 
 type SortDir = "desc" | "asc" | null;
 
@@ -159,7 +161,13 @@ function RatingHeader({
   );
 }
 
-export function CgtraderTable({ rows }: { rows: CgtraderRow[] }) {
+export function CgtraderTable({
+  rows,
+  initialParams,
+}: {
+  rows: CgtraderRow[];
+  initialParams?: ViewParams;
+}) {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const sortedRows = useMemo(() => {
@@ -212,7 +220,8 @@ export function CgtraderTable({ rows }: { rows: CgtraderRow[] }) {
       rows={sortedRows}
       rowKey={(r) => r.id}
       fixedLayout
-      storageKey="cgtrader"
+      storageKey={CGTRADER_STORAGE_KEY}
+      initialParams={initialParams}
       rowStyle={(row) =>
         row.rating != null
           ? ({ "--cell-bg": "#e6f2ff" } as React.CSSProperties)
