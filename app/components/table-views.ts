@@ -1,13 +1,6 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect } from "react";
-
-// Run before the browser paints on the client, but fall back to useEffect on
-// the server so React doesn't warn about useLayoutEffect in SSR. This lets us
-// read persisted column widths from localStorage and apply them BEFORE the
-// first paint — no flash of default widths on refresh.
-const useIsomorphicLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+import { useState, useEffect } from "react";
 
 export interface ViewParams {
   columnWidths: Record<string, number>;
@@ -44,7 +37,7 @@ export function useTableViews(
   const [params, setParams] = useState<ViewParams>(defaultParams());
   const [hydrated, setHydrated] = useState(false);
 
-  useIsomorphicLayoutEffect(() => {
+  useEffect(() => {
     let loadedViews: View[] = [];
     try {
       const raw = window.localStorage.getItem(VIEWS_KEY);
