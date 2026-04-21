@@ -3,11 +3,13 @@ export function ExternalLink({
   children,
   className,
   title,
+  style,
 }: {
   url: string;
   children: React.ReactNode;
   className?: string;
   title?: string;
+  style?: React.CSSProperties;
 }) {
   return (
     <a
@@ -16,6 +18,7 @@ export function ExternalLink({
       rel="noopener noreferrer"
       className={className}
       title={title}
+      style={style}
     >
       {children}
     </a>

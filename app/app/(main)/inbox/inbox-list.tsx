@@ -45,6 +45,10 @@ function ActionBar({ recordId }: { recordId: string }) {
 function UrlContent({ card }: { card: CardData }) {
   const ogImage = card.ogImage;
   const label = card.ogTitle?.trim() || card.content;
+  const isYoutube = card.type === "youtube";
+  const labelStyle: React.CSSProperties | undefined = isYoutube
+    ? { lineHeight: "17px", textWrap: "balance" }
+    : undefined;
   return (
     <div className="flex flex-col gap-[19px]">
       {ogImage && (
@@ -63,6 +67,7 @@ function UrlContent({ card }: { card: CardData }) {
         url={card.content}
         title={card.content}
         className={`${actionText} break-words`}
+        style={labelStyle}
       >
         {label}
       </ExternalLink>
