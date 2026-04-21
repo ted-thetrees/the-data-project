@@ -26,6 +26,7 @@ const SHORTCUTS: { keys: string; desc: string }[] = [
   { keys: "Esc", desc: "Cancel edit / close popover" },
   { keys: "Delete", desc: "Delete the focused row (with confirmation)" },
   { keys: `${MOD}+N`, desc: "New row" },
+  { keys: `${MOD}+Z`, desc: "Undo last change" },
   { keys: `${MOD}+Return`, desc: "Commit project (Projects Main)" },
   { keys: "⌥↑ / ⌥↓", desc: "Reorder task within project (Projects Main)" },
   { keys: "⌥← / ⌥→", desc: "Prev / next month (date picker)" },
