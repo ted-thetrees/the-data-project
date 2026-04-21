@@ -96,6 +96,7 @@ export function GridPageShortcuts() {
         <div
           role="status"
           aria-live="polite"
+          data-testid="undo-toast"
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[color:var(--card)] text-[color:var(--foreground)] border border-[color:var(--border)] px-4 py-2 shadow-lg text-sm"
           style={{ borderRadius: "var(--radius-md)" }}
         >

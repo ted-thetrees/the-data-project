@@ -69,7 +69,7 @@ test("⌘Z reverts a committed cell edit", async ({ page }) => {
     await pressCmdZ(page);
 
     // Expect toast to appear briefly.
-    await expect(page.getByRole("status")).toContainText(/Undid/i, { timeout: 5_000 });
+    await expect(page.getByTestId("undo-toast")).toContainText(/Undid/i, { timeout: 5_000 });
 
     // Expect the DB to be reverted.
     await expect.poll(
