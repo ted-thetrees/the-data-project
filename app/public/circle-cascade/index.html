@@ -44,6 +44,7 @@
     border: none; border-radius: 8px; cursor: pointer; letter-spacing: .02em;
   }
   button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  button[disabled] { opacity: 0.4; cursor: not-allowed; }
   .seed { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--muted); margin-top: 6px; }
   details { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
   details summary { cursor: pointer; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
@@ -74,6 +75,7 @@
       <div class="preset-btns">
         <button class="ghost" id="preset-save">Save</button>
         <button class="ghost" id="preset-saveas">Save as…</button>
+        <button class="ghost" id="preset-revert" disabled>Revert</button>
         <button class="ghost" id="preset-rename">Rename</button>
         <button class="ghost" id="preset-delete">Delete</button>
       </div>
@@ -761,6 +763,7 @@ function refreshPresetSelect() {
 function updatePresetStatus() {
   const el = $("preset-status");
   el.innerHTML = dirty ? '<span class="dirty-dot">● unsaved</span>' : "saved";
+  $("preset-revert").disabled = !dirty;
 }
 function currentPreset() {
   return presetState.list.find(p => p.name === presetState.selected);
@@ -792,6 +795,15 @@ $("preset-save").addEventListener("click", () => {
   dirty = false;
   updatePresetStatus();
   flashBtn("preset-save", "saved");
+});
+$("preset-revert").addEventListener("click", () => {
+  const p = currentPreset();
+  if (!p || !dirty) return;
+  applyParams(p.params);
+  dirty = false;
+  updatePresetStatus();
+  render();
+  flashBtn("preset-revert", "reverted");
 });
 $("preset-saveas").addEventListener("click", () => {
   const name = prompt("Name this preset:", "");
