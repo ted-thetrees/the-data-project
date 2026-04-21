@@ -1007,97 +1007,47 @@ function EditableDate({
     : undefined;
   const displayLabel = dateValue ? format(dateValue, "EEE, MMM d") : null;
 
-  // Base UI's Popover doesn't auto-focus into react-day-picker, so nothing in
-  // the calendar receives arrow keys. Force focus onto the selected day (or
-  // today, or the first visible day) on open. Retry across a couple of
-  // frames because the calendar DOM is mounted asynchronously.
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    function findDay(): HTMLElement | null {
-      const popup = document.querySelector<HTMLElement>(
-        '[data-slot="popover-content"]',
-      );
-      if (!popup) return null;
-      return (
-        popup.querySelector<HTMLElement>('[data-selected="true"] button') ??
-        popup.querySelector<HTMLElement>('[data-today="true"] button') ??
-        popup.querySelector<HTMLElement>(".rdp-day_button") ??
-        popup.querySelector<HTMLElement>("[role='gridcell'] button")
-      );
-    }
-    function tryFocus(attempts: number) {
-      if (cancelled) return;
-      const day = findDay();
-      if (day) {
-        day.focus();
-        return;
-      }
-      if (attempts > 0) requestAnimationFrame(() => tryFocus(attempts - 1));
-    }
-    requestAnimationFrame(() => tryFocus(6));
-    return () => {
-      cancelled = true;
-    };
-  }, [open]);
+  // Base UI's default is to focus the first tabbable element in the popup —
+  // which happens to be the "Previous Month" nav button. That left real
+  // arrow/Enter presses landing on the nav chevron, so Enter either flipped
+  // the month or (via focus redirection) toggled the already-selected day
+  // off. Tell Base UI to hand initial focus to the selected/today day
+  // button directly; react-day-picker's own DayButton effect then handles
+  // arrow nav + Enter natively.
+  const initialFocus = () => {
+    const popup = document.querySelector<HTMLElement>(
+      '[data-slot="popover-content"]',
+    );
+    if (!popup) return null;
+    return (
+      popup.querySelector<HTMLElement>('[data-selected="true"] button') ??
+      popup.querySelector<HTMLElement>('[data-today="true"] button') ??
+      popup.querySelector<HTMLElement>("[role='gridcell'] button") ??
+      null
+    );
+  };
 
-  // Remap laptop-friendly month/year shortcuts to the PageUp/PageDown keys
-  // react-day-picker uses natively, and redirect arrow/Home/End to a day
-  // button when focus is on the month nav (where those keys do nothing).
+  // Laptop-friendly month/year nav. Remaps to the PageUp/PageDown keys
+  // react-day-picker uses natively.
   //   Alt+←     → prev month  (PageUp)
   //   Alt+→     → next month  (PageDown)
   //   Alt+Shift+← → prev year (Shift+PageUp)
   //   Alt+Shift+→ → next year (Shift+PageDown)
-  const redirectKeyToDay = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-    const isDayButton = !!target.closest("[role='gridcell']");
-
-    // Laptop-friendly month/year nav. Works from anywhere in the popup.
-    if (e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
-      const popup = e.currentTarget;
-      const day =
-        popup.querySelector<HTMLElement>('[data-selected="true"] button') ??
-        popup.querySelector<HTMLElement>('[data-today="true"] button') ??
-        popup.querySelector<HTMLElement>(".rdp-day_button") ??
-        popup.querySelector<HTMLElement>("[role='gridcell'] button");
-      if (!day) return;
-      e.preventDefault();
-      day.focus();
-      day.dispatchEvent(
-        new KeyboardEvent("keydown", {
-          key: e.key === "ArrowLeft" ? "PageUp" : "PageDown",
-          shiftKey: e.shiftKey,
-          bubbles: true,
-          cancelable: true,
-        }),
-      );
-      return;
-    }
-
-    if (isDayButton) return;
-    const isNavKey =
-      e.key === "ArrowUp" ||
-      e.key === "ArrowDown" ||
-      e.key === "ArrowLeft" ||
-      e.key === "ArrowRight" ||
-      e.key === "Home" ||
-      e.key === "End" ||
-      e.key === "PageUp" ||
-      e.key === "PageDown";
-    if (!isNavKey) return;
+  const altArrowMonthNav = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!e.altKey) return;
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
     const popup = e.currentTarget;
     const day =
       popup.querySelector<HTMLElement>('[data-selected="true"] button') ??
       popup.querySelector<HTMLElement>('[data-today="true"] button') ??
-      popup.querySelector<HTMLElement>(".rdp-day_button") ??
       popup.querySelector<HTMLElement>("[role='gridcell'] button");
     if (!day) return;
     e.preventDefault();
     day.focus();
     day.dispatchEvent(
       new KeyboardEvent("keydown", {
-        key: e.key,
-        code: e.code,
+        key: e.key === "ArrowLeft" ? "PageUp" : "PageDown",
+        shiftKey: e.shiftKey,
         bubbles: true,
         cancelable: true,
       }),
@@ -1137,13 +1087,14 @@ function EditableDate({
       </PopoverTrigger>
       <PopoverContent
         className="w-auto p-0"
+        initialFocus={initialFocus}
         onKeyDown={(e) => {
           if (e.key === "Escape") {
             e.preventDefault();
             setOpen(false);
             return;
           }
-          redirectKeyToDay(e);
+          altArrowMonthNav(e);
         }}
       >
         <Calendar
