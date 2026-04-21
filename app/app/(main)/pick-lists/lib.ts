@@ -121,6 +121,18 @@ export function getBacklogPrototypeStages() {
   );
 }
 
+export function getGetCategories() {
+  return getStatusesByName("get_categories", "ORDER BY sort_order NULLS LAST, name");
+}
+
+export function getGetStatuses() {
+  return getStatusesByName("get_statuses", "ORDER BY sort_order NULLS LAST, name");
+}
+
+export function getGetSources() {
+  return getStatusesByName("get_sources", "ORDER BY sort_order NULLS LAST, name");
+}
+
 export async function getPeopleMetroAreas(): Promise<Status[]> {
   const result = await poolV002.query(
     `SELECT id::text, name, full_name, COALESCE(color, '') as color

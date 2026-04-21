@@ -48,6 +48,7 @@ function revalidate() {
   revalidatePath("/pick-lists/people");
   revalidatePath("/pick-lists/crime-series");
   revalidatePath("/pick-lists/backlog");
+  revalidatePath("/pick-lists/get");
   revalidatePath("/backlog");
   revalidatePath("/projects-main");
   revalidatePath("/series");

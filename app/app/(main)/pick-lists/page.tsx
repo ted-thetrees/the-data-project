@@ -34,6 +34,11 @@ const SECTIONS: Array<{
     title: "Crime Series",
     description: "Statuses",
   },
+  {
+    href: "/pick-lists/get",
+    title: "Get",
+    description: "Categories, statuses, sources",
+  },
 ];
 
 export default function PickListsIndexPage() {

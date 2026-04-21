@@ -69,6 +69,7 @@ const NAV: Branch[] = [
   ] },
   { kind: "branch", label: "Get", icon: ShoppingBag, children: [
     { kind: "leaf", label: "All", path: "/get", key: "g", icon: ShoppingBag },
+    { kind: "leaf", label: "Pick Lists", path: "/pick-lists/get", key: "G", icon: List },
   ] },
   { kind: "branch", label: "JTBD", icon: Lightbulb, children: [
     { kind: "leaf", label: "Thinkers", path: "/jtbd/thinkers", key: "j", icon: Brain },
