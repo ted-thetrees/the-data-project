@@ -37,7 +37,7 @@ export function PageShell({
   return (
     <div className={classes}>
       <div className="flex items-baseline justify-between mb-6">
-        <h1 className="text-[length:var(--title-font-size)] font-[number:var(--title-font-weight)] tracking-[var(--letter-spacing-tight)]">
+        <h1 className="text-[length:var(--title-font-size)] leading-[var(--title-line-height)] font-[number:var(--title-font-weight)] tracking-[var(--letter-spacing-tight)]">
           {title}
         </h1>
         {count != null && (

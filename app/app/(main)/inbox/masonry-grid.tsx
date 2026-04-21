@@ -12,12 +12,14 @@ import {
 
 type Item = { id: string; element: ReactNode };
 
-const GAP = 20;
-
 function pickCols(width: number): number {
   if (width >= 1280) return 3;
   if (width >= 768) return 2;
   return 1;
+}
+
+function pickGap(width: number): number {
+  return width < 640 ? 7 : 20;
 }
 
 type Pos = { top: number; left: number; width: number };
@@ -26,19 +28,23 @@ export function MasonryGrid({ items }: { items: Item[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [cols, setCols] = useState(3);
+  const [gap, setGap] = useState(20);
   const [containerWidth, setContainerWidth] = useState(0);
   const [positions, setPositions] = useState<Record<string, Pos>>({});
   const [height, setHeight] = useState(0);
 
   useEffect(() => {
-    const update = () => setCols(pickCols(window.innerWidth));
+    const update = () => {
+      setCols(pickCols(window.innerWidth));
+      setGap(pickGap(window.innerWidth));
+    };
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, []);
 
   const colWidth = containerWidth
-    ? (containerWidth - GAP * (cols - 1)) / cols
+    ? (containerWidth - gap * (cols - 1)) / cols
     : 0;
 
   const recompute = useCallback(() => {
@@ -47,7 +53,7 @@ export function MasonryGrid({ items }: { items: Item[] }) {
     const cw = container.clientWidth;
     setContainerWidth((prev) => (prev === cw ? prev : cw));
     if (!cw) return;
-    const w = (cw - GAP * (cols - 1)) / cols;
+    const w = (cw - gap * (cols - 1)) / cols;
     const colHeights: number[] = new Array(cols).fill(0);
     const next: Record<string, Pos> = {};
     for (const item of items) {
@@ -59,16 +65,16 @@ export function MasonryGrid({ items }: { items: Item[] }) {
       }
       next[item.id] = {
         top: colHeights[minIdx],
-        left: minIdx * (w + GAP),
+        left: minIdx * (w + gap),
         width: w,
       };
-      colHeights[minIdx] += h + GAP;
+      colHeights[minIdx] += h + gap;
     }
     setPositions(next);
     setHeight(
-      colHeights.length ? Math.max(0, ...colHeights.map((x) => x - GAP)) : 0
+      colHeights.length ? Math.max(0, ...colHeights.map((x) => x - gap)) : 0
     );
-  }, [items, cols]);
+  }, [items, cols, gap]);
 
   useLayoutEffect(() => {
     recompute();

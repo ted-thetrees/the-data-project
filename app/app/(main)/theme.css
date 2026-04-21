@@ -250,6 +250,7 @@
 
   /* ── Page title area ── */
   --title-font-size: var(--font-size-xl);
+  --title-line-height: 1.1;
   --title-font-weight: var(--font-weight-bold);
   --title-letter-spacing: var(--letter-spacing-tight);
   --title-color: #F3F0E9;
@@ -331,5 +332,11 @@
 @media (max-width: 639px) {
   :root {
     --page-padding-x: 7px;
+    --font-size-xs: 9px;
+    --font-size-sm: 10px;
+    --font-size-base: 12px;
+    --font-size-lg: 14px;
+    --font-size-xl: 26px;
+    --title-line-height: 1.4;
   }
 }
