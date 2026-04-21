@@ -5,8 +5,11 @@ import type { KeyboardEvent } from "react";
 const FOCUSABLE =
   'input:not([type="hidden"]), textarea, button, [role="button"], [tabindex]:not([tabindex="-1"])';
 
-function focusInCell(td: HTMLTableCellElement): boolean {
-  let focusable = td.querySelector<HTMLElement>(FOCUSABLE);
+function focusInCell(td: HTMLTableCellElement, reverse = false): boolean {
+  const all = Array.from(td.querySelectorAll<HTMLElement>(FOCUSABLE));
+  let focusable: HTMLElement | null = reverse
+    ? all[all.length - 1] ?? null
+    : all[0] ?? null;
   if (!focusable && td.tabIndex >= 0) focusable = td;
   if (!focusable) return false;
   focusable.focus();
@@ -136,15 +139,26 @@ export function handleGridKeyDown(e: KeyboardEvent<HTMLElement>) {
   }
 
   // Tab / Shift+Tab move horizontally, wrapping into the next/previous row.
+  // Exception: if the current cell has multiple focusable children (e.g. a
+  // project name input + a "Commit" button), let the browser walk through
+  // them first; only jump to the next cell when the active element is the
+  // last (Shift+Tab: first) focusable inside the current <td>.
   if (key === "Tab") {
     const dir = e.shiftKey ? -1 : 1;
+    const children = Array.from(td.querySelectorAll<HTMLElement>(FOCUSABLE))
+      .filter((el) => !el.hasAttribute("disabled"));
+    if (children.length > 1) {
+      const idx = children.indexOf(document.activeElement as HTMLElement);
+      if (dir > 0 && idx >= 0 && idx < children.length - 1) return;
+      if (dir < 0 && idx > 0) return;
+    }
     let r = pos.row;
     let c = pos.col + dir;
     while (r >= 0 && r < grid.length) {
       while (c >= 0 && c <= maxCol) {
         const next = grid[r][c];
         if (next && next !== td) {
-          focusInCell(next);
+          focusInCell(next, dir < 0);
           e.preventDefault();
           return;
         }
