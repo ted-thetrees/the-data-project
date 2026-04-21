@@ -109,13 +109,13 @@ export function JobsTable({
     },
     {
       key: "notes",
-      header: "Notes",
+      header: "Explanation",
       width: 360,
       render: (row) => (
         <EditableTextWrap
           value={row.notes ?? ""}
           onSave={(v) => updateJobNotes(row.id, v)}
-          placeholder="Notes"
+          placeholder="Explanation"
         />
       ),
     },
