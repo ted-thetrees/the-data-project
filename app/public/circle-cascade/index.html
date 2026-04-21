@@ -19,8 +19,10 @@
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
   .stage { display: flex; align-items: flex-start; justify-content: center; }
   .phone {
-    width: min(720px, 85vh);
-    aspect-ratio: 1 / 1;
+    --asp: 1;   /* width/height ratio, updated from JS */
+    height: min(85vh, 720px);
+    width: calc(min(85vh, 720px) * var(--asp));
+    max-width: 95vw;
     background: #fff;
     border: 1px solid var(--line);
     border-radius: 12px;
@@ -79,7 +81,11 @@
 
     <div class="group">
       <div class="row"><label>Count (N)</label><span class="val" id="v-n">161</span></div>
-      <input id="s-n" type="range" min="10" max="250" value="161" step="1" />
+      <input id="s-n" type="range" min="10" max="400" value="161" step="1" />
+    </div>
+    <div class="group">
+      <div class="row"><label>Width (H=400)</label><span class="val" id="v-w">400</span></div>
+      <input id="s-w" type="range" min="200" max="800" value="400" step="10" />
     </div>
     <div class="group">
       <div class="row"><label>Falloff (k)</label><span class="val" id="v-k">2.3</span></div>
@@ -324,23 +330,34 @@ function refineSlicedOT(circles, iterations, lr, seed, W, H) {
   avgR = avgR / n;
   const scaleX = W, scaleY = H, scaleR = avgR * 4 + 1e-6;
 
-  // Sample reference to same size
+  // Build tiled reference cloud to cover the current viewport. Reference is
+  // native at 400×400; for W > 400 we tile copies with horizontal offsets so
+  // the OT target density matches the canvas; for W < 400 we compress x.
   const refFlat = REF_POINTS_FLAT;
   const refN = refFlat.length / 3;
-  const rng = mulberry32(seed);
-  // Fisher-Yates partial shuffle on a 0..refN-1 array, take n
-  const idx = new Int32Array(refN);
-  for (let i = 0; i < refN; i++) idx[i] = i;
-  for (let i = 0; i < Math.min(n, refN); i++) {
-    const j = i + Math.floor(rng() * (refN - i));
-    const tmp = idx[i]; idx[i] = idx[j]; idx[j] = tmp;
+  const REF_W = 400;
+  const tiles = Math.max(1, Math.ceil(W / REF_W));
+  const xScale = W < REF_W ? W / REF_W : 1;  // compress if narrower
+  const tiledPts = [];
+  for (let t = 0; t < tiles; t++) {
+    const offset = t * REF_W;
+    for (let k = 0; k < refN; k++) {
+      const x = refFlat[k * 3    ] * xScale + offset;
+      if (x > W) continue;  // past right edge of canvas
+      const y = refFlat[k * 3 + 1];
+      const r = refFlat[k * 3 + 2];
+      tiledPts.push([x, y, r]);
+    }
   }
+  const tN = tiledPts.length;
+  const rng = mulberry32(seed);
+  // sample n points from tiled cloud (with replacement if n > tN)
   const refNorm = new Float64Array(n * 3);
   for (let i = 0; i < n; i++) {
-    const k = idx[i % refN];
-    refNorm[i * 3    ] = refFlat[k * 3    ] / scaleX;
-    refNorm[i * 3 + 1] = refFlat[k * 3 + 1] / scaleY;
-    refNorm[i * 3 + 2] = refFlat[k * 3 + 2] / scaleR;
+    const k = Math.floor(rng() * tN);
+    refNorm[i * 3    ] = tiledPts[k][0] / scaleX;
+    refNorm[i * 3 + 1] = tiledPts[k][1] / scaleY;
+    refNorm[i * 3 + 2] = tiledPts[k][2] / scaleR;
   }
 
   // Pack synth into normalized buffer
@@ -546,7 +563,7 @@ function generate(params) {
 // ---- wiring ----
 const $ = id => document.getElementById(id);
 const canvas = $("canvas");
-const W = 400, H = 400; // matches reference image native size
+const H = 400; // height fixed; width comes from slider so aspect can vary
 
 // palette sampled directly from the watercolor reference image
 const PALETTE = [
@@ -578,6 +595,7 @@ const REF_POINTS_FLAT = [71.0,15.0,14.04,196.0,9.0,13.42,318.0,16.0,12.73,109.0,
 let seed = 727; // tuned to match the watercolor reference cascade
 
 function currentParams() {
+  const W = +$("s-w").value;
   return {
     N: +$("s-n").value,
     falloff: +$("s-k").value,
@@ -591,7 +609,7 @@ function currentParams() {
     outline: $("s-outline").checked,
     allowOverlap: $("s-overlap").checked,
     colored: $("s-colored").checked,
-    algorithm: $("s-algorithm").value, // parametric | empirical-hardcore | empirical-pcf
+    algorithm: $("s-algorithm").value,
     seed, W, H,
   };
 }
@@ -599,6 +617,7 @@ function currentParams() {
 function render() {
   const p = currentParams();
   $("v-n").textContent = p.N;
+  $("v-w").textContent = p.W;
   $("v-k").textContent = p.falloff.toFixed(1);
   $("v-rt").textContent = p.sizeTop;
   $("v-rb").textContent = p.sizeBot;
@@ -607,6 +626,11 @@ function render() {
   $("v-cb").textContent = p.clusterBias.toFixed(2);
   $("v-hn").textContent = p.hNoise.toFixed(2);
   $("v-fa").textContent = p.fillAlpha.toFixed(2);
+
+  // update viewBox + container aspect so the canvas actually resizes
+  canvas.setAttribute("viewBox", `0 0 ${p.W} ${p.H}`);
+  const phone = document.querySelector(".phone");
+  if (phone) phone.style.setProperty("--asp", (p.W / p.H).toFixed(4));
 
   let genResult;
   if (p.algorithm === "empirical-pcf-ot") genResult = generateEmpiricalPCFOT(p);
@@ -635,11 +659,12 @@ function render() {
 const out = { circles: [] };
 
 // ---- preset manager ----
-const PRESET_KEY = "ifn.circle.presets.v3";
+const PRESET_KEY = "ifn.circle.presets.v4";
 
 // Every persisted slider / toggle id → key in the params blob
 const PARAM_MAP = {
   "s-n": { key: "N", type: "number" },
+  "s-w": { key: "W", type: "number" },
   "s-k": { key: "falloff", type: "number" },
   "s-rt": { key: "sizeTop", type: "number" },
   "s-rb": { key: "sizeBot", type: "number" },
@@ -656,17 +681,21 @@ const PARAM_MAP = {
 
 const STARTER_PRESETS = [
   { name: "PCF + sliced-OT (best match)",
-    params: { N: 161, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, algorithm: "empirical-pcf-ot", seed: 727 } },
+    params: { N: 161, W: 400, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, algorithm: "empirical-pcf-ot", seed: 727 } },
+  { name: "Landscape 16:9 · PCF+OT",
+    params: { N: 286, W: 710, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, algorithm: "empirical-pcf-ot", seed: 727 } },
+  { name: "Portrait 9:16 · PCF+OT",
+    params: { N: 90, W: 220, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, algorithm: "empirical-pcf-ot", seed: 727 } },
   { name: "PCF-greedy (more variety)",
-    params: { N: 161, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, algorithm: "empirical-pcf", seed: 727 } },
+    params: { N: 161, W: 400, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, algorithm: "empirical-pcf", seed: 727 } },
   { name: "Empirical hard-core",
-    params: { N: 161, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, algorithm: "empirical-hardcore", seed: 727 } },
+    params: { N: 161, W: 400, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, algorithm: "empirical-hardcore", seed: 727 } },
   { name: "Parametric dense",
-    params: { N: 120, falloff: 2.5, sizeTop: 14, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, algorithm: "parametric", seed: 727 } },
+    params: { N: 120, W: 400, falloff: 2.5, sizeTop: 14, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, algorithm: "parametric", seed: 727 } },
   { name: "Outline only (mono)",
-    params: { N: 161, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: true, allowOverlap: true, colored: false, algorithm: "empirical-pcf-ot", seed: 727 } },
+    params: { N: 161, W: 400, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: true, allowOverlap: true, colored: false, algorithm: "empirical-pcf-ot", seed: 727 } },
   { name: "Sparse 15 black",
-    params: { N: 15, falloff: 2.5, sizeTop: 22, sizeBot: 3, sizeJitter: 0.5, gap: 2, clusterBias: 0.15, hNoise: 0.3, fillAlpha: 1.0, outline: false, allowOverlap: false, colored: false, algorithm: "parametric", seed: 42 } },
+    params: { N: 15, W: 400, falloff: 2.5, sizeTop: 22, sizeBot: 3, sizeJitter: 0.5, gap: 2, clusterBias: 0.15, hNoise: 0.3, fillAlpha: 1.0, outline: false, allowOverlap: false, colored: false, algorithm: "parametric", seed: 42 } },
 ];
 
 function loadPresetState() {
@@ -821,7 +850,7 @@ function flashBtn(id, label) {
 }
 
 // --- input wiring: any change → dirty + re-render ---
-["s-n","s-k","s-rt","s-rb","s-sj","s-gap","s-cb","s-hn","s-fa","s-outline","s-overlap","s-colored","s-algorithm"].forEach(id => {
+["s-n","s-w","s-k","s-rt","s-rb","s-sj","s-gap","s-cb","s-hn","s-fa","s-outline","s-overlap","s-colored","s-algorithm"].forEach(id => {
   $(id).addEventListener("input", () => { markDirty(); render(); });
 });
 $("reroll").addEventListener("click", () => {
