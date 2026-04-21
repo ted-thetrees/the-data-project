@@ -26,6 +26,9 @@ const SOURCE_TABLES: Record<string, string> = {
   jtbd_jobs: "jtbd_jobs",
   jtbd_thinkers: "jtbd_thinkers",
   jtbd_components: "jtbd_components",
+  get_categories: "get_categories",
+  get_statuses: "get_statuses",
+  get_sources: "get_sources",
 };
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
