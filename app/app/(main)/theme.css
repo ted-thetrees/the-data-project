@@ -327,3 +327,9 @@
   --sidebar-border: #dad9d4;
   --sidebar-ring: #c96442;
 }
+
+@media (max-width: 639px) {
+  :root {
+    --page-padding-x: 7px;
+  }
+}
