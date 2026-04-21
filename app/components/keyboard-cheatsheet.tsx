@@ -23,6 +23,8 @@ const SHORTCUTS: { keys: string; desc: string }[] = [
   { keys: `${MOD}+N`, desc: "New row" },
   { keys: `${MOD}+Enter`, desc: "Commit project (Projects Main)" },
   { keys: "⌥↑ / ⌥↓", desc: "Reorder task within project (Projects Main)" },
+  { keys: "⌥← / ⌥→", desc: "Prev / next month (date picker)" },
+  { keys: "⌥⇧← / ⌥⇧→", desc: "Prev / next year (date picker)" },
   { keys: `? or ${MOD}+/`, desc: "Show this cheatsheet" },
 ];
 

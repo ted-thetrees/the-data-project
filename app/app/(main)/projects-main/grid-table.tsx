@@ -1022,11 +1022,39 @@ function EditableDate({
     };
   }, [open]);
 
-  // Redirect arrow/Home/End/PageUp/PageDown to an appropriate day button if
-  // focus lands on the month nav buttons (where those keys do nothing).
+  // Remap laptop-friendly month/year shortcuts to the PageUp/PageDown keys
+  // react-day-picker uses natively, and redirect arrow/Home/End to a day
+  // button when focus is on the month nav (where those keys do nothing).
+  //   Alt+←     → prev month  (PageUp)
+  //   Alt+→     → next month  (PageDown)
+  //   Alt+Shift+← → prev year (Shift+PageUp)
+  //   Alt+Shift+→ → next year (Shift+PageDown)
   const redirectKeyToDay = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
     const isDayButton = !!target.closest("[role='gridcell']");
+
+    // Laptop-friendly month/year nav. Works from anywhere in the popup.
+    if (e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+      const popup = e.currentTarget;
+      const day =
+        popup.querySelector<HTMLElement>('[data-selected="true"] button') ??
+        popup.querySelector<HTMLElement>('[data-today="true"] button') ??
+        popup.querySelector<HTMLElement>(".rdp-day_button") ??
+        popup.querySelector<HTMLElement>("[role='gridcell'] button");
+      if (!day) return;
+      e.preventDefault();
+      day.focus();
+      day.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: e.key === "ArrowLeft" ? "PageUp" : "PageDown",
+          shiftKey: e.shiftKey,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+      return;
+    }
+
     if (isDayButton) return;
     const isNavKey =
       e.key === "ArrowUp" ||
@@ -1047,7 +1075,6 @@ function EditableDate({
     if (!day) return;
     e.preventDefault();
     day.focus();
-    // Re-dispatch the key so react-day-picker's handler picks it up.
     day.dispatchEvent(
       new KeyboardEvent("keydown", {
         key: e.key,
