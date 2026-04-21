@@ -7,21 +7,26 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
+const MAC =
+  typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
 const MOD = MAC ? "⌘" : "Ctrl";
+// Apple Magic Keyboard has no dedicated Home/End keys — macOS generates them
+// from fn + ←/→.
+const HOME = MAC ? "fn+←" : "Home";
+const END = MAC ? "fn+→" : "End";
 
 const SHORTCUTS: { keys: string; desc: string }[] = [
   { keys: "↑ ↓ ← →", desc: "Move between cells" },
   { keys: "j / k", desc: "Move row down / up" },
   { keys: "Tab / ⇧Tab", desc: "Next / previous cell (wraps rows)" },
-  { keys: "Home / End", desc: "First / last cell in row" },
-  { keys: `${MOD}+Home / ${MOD}+End`, desc: "First / last cell in table" },
-  { keys: "Enter", desc: "Enter first editable cell (when nothing focused)" },
-  { keys: "Enter", desc: "Open pill picker / commit text edit" },
+  { keys: `${HOME} / ${END}`, desc: "First / last cell in row" },
+  { keys: `${MOD}+${HOME} / ${MOD}+${END}`, desc: "First / last cell in table" },
+  { keys: "Return", desc: "Enter first editable cell (when nothing focused)" },
+  { keys: "Return", desc: "Open pill picker / commit text edit" },
   { keys: "Esc", desc: "Cancel edit / close popover" },
   { keys: "Delete", desc: "Delete the focused row (with confirmation)" },
   { keys: `${MOD}+N`, desc: "New row" },
-  { keys: `${MOD}+Enter`, desc: "Commit project (Projects Main)" },
+  { keys: `${MOD}+Return`, desc: "Commit project (Projects Main)" },
   { keys: "⌥↑ / ⌥↓", desc: "Reorder task within project (Projects Main)" },
   { keys: "⌥← / ⌥→", desc: "Prev / next month (date picker)" },
   { keys: "⌥⇧← / ⌥⇧→", desc: "Prev / next year (date picker)" },
