@@ -57,7 +57,7 @@ export function GetTable({
       header: "Name",
       width: 320,
       render: (row) => (
-        <EditableText
+        <EditableTextWrap
           value={row.name}
           onSave={(v) => updateGetName(row.id, v)}
         />
