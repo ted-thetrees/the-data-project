@@ -5,16 +5,10 @@ import { migrateRecord } from "./actions";
 
 const TRAY_KEY = "projects-main:tray";
 
-export function MigrateLink({
-  recordId,
-  className,
-}: {
-  recordId: string;
-  className?: string;
-}) {
+export function useMigrateAction(recordId: string) {
   const [pending, setPending] = useState(false);
 
-  const handleClick = async () => {
+  const migrate = async () => {
     if (pending) return;
     setPending(true);
     try {
@@ -44,10 +38,22 @@ export function MigrateLink({
     }
   };
 
+  return { migrate, pending };
+}
+
+export function MigrateLink({
+  recordId,
+  className,
+}: {
+  recordId: string;
+  className?: string;
+}) {
+  const { migrate, pending } = useMigrateAction(recordId);
+
   return (
     <button
       type="button"
-      onClick={handleClick}
+      onClick={migrate}
       disabled={pending}
       className={`${className ?? ""} cursor-pointer disabled:opacity-50`}
     >

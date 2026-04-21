@@ -4,6 +4,7 @@ import { DeleteLink } from "./delete-button";
 import { MigrateLink } from "./migrate-button";
 import { ExternalLink } from "./external-link";
 import { LinkifiedText } from "./linkified-text";
+import { MobileActionMenu } from "./mobile-menu";
 import type { CardData } from "./card-data";
 
 const DUMMY_HREF = "#";
@@ -88,17 +89,26 @@ export function InboxCard({ card }: { card: CardData }) {
             isUrl ? (
               <ExternalLink
                 url={content}
-                className={`${metaText} truncate italic`}
+                className={`${metaText} hidden md:inline truncate italic`}
               >
                 {passphrase}
               </ExternalLink>
             ) : (
-              <span className={`${metaText} truncate italic`}>{passphrase}</span>
+              <span className={`${metaText} hidden md:inline truncate italic`}>{passphrase}</span>
             )
           ) : (
-            <span />
+            <span className="hidden md:inline" />
           )}
-          <DeleteLink recordId={recordId} className={deleteClass} />
+          <div className="flex items-center gap-3">
+            <DeleteLink recordId={recordId} className={deleteClass} />
+            <MobileActionMenu
+              recordId={recordId}
+              passphrase={passphrase}
+              content={content}
+              isUrl={isUrl}
+              triggerClassName={`md:hidden ${source ? "text-white" : "text-black"}`}
+            />
+          </div>
         </div>
       </div>
 
@@ -127,7 +137,7 @@ export function InboxCard({ card }: { card: CardData }) {
         )}
       </div>
 
-      <div className={metaBgDefault}>
+      <div className={`${metaBgDefault} hidden md:block`}>
         <ActionBar recordId={recordId} />
       </div>
     </div>
