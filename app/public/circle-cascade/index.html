@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>IFN · Circle Cascade</title>
+<style>
+  :root {
+    --bg: #f6f6f4;
+    --panel: #ffffff;
+    --ink: #1a1a1a;
+    --muted: #6b6b6b;
+    --line: #e3e3df;
+    --accent: #1a1a1a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; font: 13px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; color: var(--ink); background: var(--bg); }
+  .app { display: grid; grid-template-columns: minmax(280px, 340px) 1fr; gap: 20px; padding: 20px; min-height: 100vh; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .stage { display: flex; align-items: flex-start; justify-content: center; }
+  .phone {
+    width: min(720px, 85vh);
+    aspect-ratio: 1 / 1;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.06);
+    overflow: hidden;
+    position: relative;
+  }
+  svg { display: block; width: 100%; height: 100%; }
+  h1 { font-size: 14px; margin: 0 0 4px; letter-spacing: .02em; }
+  .sub { color: var(--muted); font-size: 11px; margin-bottom: 14px; }
+  .group { margin-bottom: 12px; }
+  .row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin-bottom: 4px; }
+  .row label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .row .val { font-variant-numeric: tabular-nums; font-size: 11px; color: var(--ink); }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .btns { display: flex; gap: 8px; margin-top: 8px; }
+  button {
+    flex: 1; padding: 8px 10px; font: inherit; background: var(--ink); color: #fff;
+    border: none; border-radius: 8px; cursor: pointer; letter-spacing: .02em;
+  }
+  button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .seed { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--muted); margin-top: 6px; }
+  details { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+  details summary { cursor: pointer; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  pre { font-size: 11px; background: #fafaf8; border: 1px solid var(--line); border-radius: 6px; padding: 8px; overflow: auto; max-height: 180px; margin: 8px 0 0; }
+  .swatches { display: flex; gap: 6px; margin-top: 6px; }
+  .swatch { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); cursor: pointer; }
+  .swatch.active { outline: 2px solid var(--ink); outline-offset: 1px; }
+  .toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink); }
+  .preset-group { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 14px; background: #fafaf8; }
+  .preset-select { width: 100%; padding: 7px 8px; font: inherit; border: 1px solid var(--line); border-radius: 6px; background: #fff; margin-bottom: 8px; }
+  .preset-btns { display: flex; gap: 6px; }
+  .preset-btns button { padding: 6px 8px; font-size: 11px; }
+  .dirty-dot { color: #d97706; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="panel">
+    <h1>Circle Cascade</h1>
+    <div class="sub">Empirical mode on · λ(y), R(y), g(r) measured from reference</div>
+
+    <div class="preset-group">
+      <div class="row">
+        <label>Preset</label>
+        <span class="val" id="preset-status"></span>
+      </div>
+      <select id="preset-select" class="preset-select"></select>
+      <div class="preset-btns">
+        <button class="ghost" id="preset-save">Save</button>
+        <button class="ghost" id="preset-saveas">Save as…</button>
+        <button class="ghost" id="preset-rename">Rename</button>
+        <button class="ghost" id="preset-delete">Delete</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="row"><label>Count (N)</label><span class="val" id="v-n">161</span></div>
+      <input id="s-n" type="range" min="10" max="250" value="161" step="1" />
+    </div>
+    <div class="group">
+      <div class="row"><label>Falloff (k)</label><span class="val" id="v-k">2.3</span></div>
+      <input id="s-k" type="range" min="1" max="6" value="2.3" step="0.1" />
+    </div>
+    <div class="group">
+      <div class="row"><label>Size top (px)</label><span class="val" id="v-rt">20</span></div>
+      <input id="s-rt" type="range" min="6" max="60" value="20" step="1" />
+    </div>
+    <div class="group">
+      <div class="row"><label>Size bottom (px)</label><span class="val" id="v-rb">2</span></div>
+      <input id="s-rb" type="range" min="1" max="24" value="2" step="1" />
+    </div>
+    <div class="group">
+      <div class="row"><label>Size jitter</label><span class="val" id="v-sj">0.6</span></div>
+      <input id="s-sj" type="range" min="0" max="0.8" value="0.6" step="0.02" />
+    </div>
+    <div class="group">
+      <div class="row"><label>Gap (px)</label><span class="val" id="v-gap">0</span></div>
+      <input id="s-gap" type="range" min="0" max="20" value="0" step="1" />
+    </div>
+    <div class="group">
+      <div class="row"><label>Cluster bias</label><span class="val" id="v-cb">0.08</span></div>
+      <input id="s-cb" type="range" min="0" max="0.8" value="0.08" step="0.02" />
+    </div>
+    <div class="group">
+      <div class="row"><label>Horizontal noise</label><span class="val" id="v-hn">0.1</span></div>
+      <input id="s-hn" type="range" min="0" max="1" value="0.1" step="0.02" />
+    </div>
+    <div class="group">
+      <div class="row"><label>Fill opacity</label><span class="val" id="v-fa">0.85</span></div>
+      <input id="s-fa" type="range" min="0.05" max="1" value="0.85" step="0.01" />
+    </div>
+
+    <div class="group">
+      <label class="toggle"><input type="checkbox" id="s-outline" /> outline only</label>
+    </div>
+    <div class="group">
+      <label class="toggle"><input type="checkbox" id="s-overlap" checked /> allow overlap</label>
+    </div>
+    <div class="group">
+      <label class="toggle"><input type="checkbox" id="s-colored" checked /> color (palette from reference)</label>
+    </div>
+    <div class="group">
+      <label class="toggle"><input type="checkbox" id="s-empirical" checked /> empirical mode (λ, R, g from reference)</label>
+    </div>
+
+    <div class="btns">
+      <button id="reroll">Reroll</button>
+      <button class="ghost" id="copy">Copy params</button>
+    </div>
+    <div class="seed" id="seed">seed: —</div>
+
+    <details>
+      <summary>Params JSON</summary>
+      <pre id="json"></pre>
+    </details>
+  </aside>
+
+  <main class="stage">
+    <div class="phone">
+      <svg id="canvas" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+  </main>
+</div>
+
+<script>
+// ---- seeded PRNG (mulberry32) ----
+function mulberry32(a) {
+  return function() {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = a;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// ---- 1D value noise (cheap, ~Perlin feel) ----
+function makeValueNoise1D(rng, octaves = 5) {
+  const tables = [];
+  for (let o = 0; o < octaves; o++) {
+    const n = 4 << o;
+    const arr = new Float32Array(n + 1);
+    for (let i = 0; i < n; i++) arr[i] = rng() * 2 - 1;
+    arr[n] = arr[0];
+    tables.push(arr);
+  }
+  const smooth = t => t * t * (3 - 2 * t);
+  return function(x) {
+    let total = 0, amp = 1, norm = 0;
+    for (let o = 0; o < octaves; o++) {
+      const arr = tables[o];
+      const n = arr.length - 1;
+      const p = ((x % 1) + 1) % 1 * n;
+      const i = Math.floor(p);
+      const f = smooth(p - i);
+      total += amp * (arr[i] * (1 - f) + arr[i + 1] * f);
+      norm += amp;
+      amp *= 0.5;
+      x *= 2.03;
+    }
+    return total / norm; // ~[-1, 1]
+  };
+}
+
+// ---- empirical generator (driven by measured λ, R, g) ----
+function generateEmpirical(params) {
+  const { N, seed, W, H } = params;
+  const rng = mulberry32(seed);
+
+  const nbins = EMPIRICAL.lambda_y.length;
+  const edges = EMPIRICAL.y_edges;
+  const cdf = EMPIRICAL_CDF;
+  const meanR = EMPIRICAL.mean_r_y;
+  const stdR = EMPIRICAL.std_r_y;
+  const hardCore = EMPIRICAL.hard_core;
+  const sx = W / EMPIRICAL.W;
+  const sy = H / EMPIRICAL.H;
+
+  // inverse-CDF sampler for λ(y)
+  const sampleY = () => {
+    const u = rng();
+    let idx = 0;
+    // linear search is fine for 40 bins
+    while (idx < cdf.length - 1 && cdf[idx] < u) idx++;
+    const lo = edges[idx], hi = edges[idx + 1];
+    return (lo + rng() * (hi - lo)) * sy;
+  };
+  // Box-Muller normal
+  const gauss = () => Math.sqrt(-2 * Math.log(Math.max(rng(), 1e-9)))
+                      * Math.cos(2 * Math.PI * rng());
+  const sampleR = (cy) => {
+    const t = Math.max(0, Math.min(0.9999, cy / H));
+    const idx = Math.floor(t * nbins);
+    let m = meanR[idx], s = stdR[idx];
+    if (m === 0) { m = 4; s = 1.5; }
+    let r = m + gauss() * s;
+    return Math.max(1.5, Math.min(r, m + 3 * s)) * ((sx + sy) / 2);
+  };
+
+  const circles = [];
+  const hc = hardCore * ((sx + sy) / 2) * 0.85; // slight slack
+  const hc2 = hc * hc;
+  let attempts = 0;
+  const maxAttempts = N * 500;
+  while (circles.length < N && attempts < maxAttempts) {
+    attempts++;
+    const cy = sampleY();
+    const cx = rng() * W;
+    const r = sampleR(cy);
+    if (cx - r < 0 || cx + r > W || cy - r < 0 || cy + r > H) continue;
+    // PCF-derived rejection: no center closer than hard_core
+    let ok = true;
+    if (hc > 0) {
+      for (const c of circles) {
+        const dx = cx - c.cx, dy = cy - c.cy;
+        if (dx * dx + dy * dy < hc2) { ok = false; break; }
+      }
+    }
+    if (!ok) continue;
+    circles.push({ cx, cy, r });
+  }
+  return { circles, attempts };
+}
+
+// ---- generator (parametric, slider-driven) ----
+function generate(params) {
+  const { N, falloff, sizeTop, sizeBot, sizeJitter, gap, clusterBias, hNoise, allowOverlap, seed, W, H } = params;
+  const rng = mulberry32(seed);
+  const xNoise = makeValueNoise1D(rng, 5);
+
+  const circles = [];
+  const maxAttempts = N * 400;
+  let attempts = 0;
+
+  const meanRAt = (cy) => {
+    const t = Math.max(0, Math.min(1, cy / H));
+    return sizeBot + (sizeTop - sizeBot) * Math.pow(1 - t, 1.6);
+  };
+  const densityAt = (cy) => {
+    const t = Math.max(0, Math.min(1, cy / H));
+    return Math.exp(-falloff * t);
+  };
+  const xWeightAt = (cx) => {
+    // map noise [-1,1] -> [0,1], then ease toward 1 as hNoise -> 0
+    const n = (xNoise(cx / W * 1.7) + 1) * 0.5;
+    return 1 - hNoise + hNoise * n;
+  };
+
+  const overlaps = (cx, cy, r) => {
+    if (allowOverlap) return false;
+    for (const c of circles) {
+      const dx = cx - c.cx, dy = cy - c.cy;
+      const m = r + c.r + gap;
+      if (dx * dx + dy * dy < m * m) return true;
+    }
+    return false;
+  };
+
+  while (circles.length < N && attempts < maxAttempts) {
+    attempts++;
+    let cx, cy, r;
+
+    if (circles.length > 0 && rng() < clusterBias) {
+      const parent = circles[Math.floor(rng() * circles.length)];
+      const ang = rng() * Math.PI * 2;
+      const dist = parent.r * (0.6 + rng() * 1.8) + gap;
+      cx = parent.cx + Math.cos(ang) * dist;
+      cy = parent.cy + Math.sin(ang) * dist;
+      const mean = meanRAt(cy);
+      r = Math.max(2, mean * (1 + (rng() * 2 - 1) * sizeJitter));
+    } else {
+      // sample (x,y) by rejection against D(y)*Xw(x)
+      let ok = false, tries = 0;
+      while (!ok && tries < 60) {
+        tries++;
+        cx = rng() * W;
+        cy = rng() * H;
+        if (rng() < densityAt(cy) * xWeightAt(cx)) ok = true;
+      }
+      if (!ok) continue;
+      const mean = meanRAt(cy);
+      r = Math.max(2, mean * (1 + (rng() * 2 - 1) * sizeJitter));
+    }
+
+    if (cx - r < 0 || cx + r > W || cy - r < 0 || cy + r > H) continue;
+    if (overlaps(cx, cy, r)) continue;
+    circles.push({ cx, cy, r });
+  }
+  return { circles, attempts };
+}
+
+// ---- wiring ----
+const $ = id => document.getElementById(id);
+const canvas = $("canvas");
+const W = 400, H = 400; // matches reference image native size
+
+// palette sampled directly from the watercolor reference image
+const PALETTE = [
+  "#5090b0", "#70b090", "#d0b050", "#d07030", "#903030", "#705090",
+  "#70d0b0", "#d09030", "#70b0d0", "#d0d050", "#5090d0", "#b07050",
+  "#5070b0", "#7090d0", "#503070", "#905050", "#d07050", "#d0d070"
+];
+
+// Empirical targets measured from the reference image via analyze.py.
+// lambda_y: normalized intensity per 40 y-bins (0 = top, 1 = bottom).
+// mean_r_y, std_r_y: radius distribution per y-bin.
+// hard_core: minimum center separation derived from g(r) first zero (the
+// pair correlation function's hard-core radius).
+const EMPIRICAL = {"N":161,"W":400,"H":400,"lambda_y":[0.049689440993788817,0.055900621118012424,0.043478260869565216,0.031055900621118012,0.07453416149068323,0.049689440993788817,0.07453416149068323,0.049689440993788817,0.049689440993788817,0.031055900621118012,0.062111801242236024,0.055900621118012424,0.055900621118012424,0.049689440993788817,0.043478260869565216,0.031055900621118012,0.055900621118012424,0.037267080745341616,0.012422360248447204,0.012422360248447204,0.012422360248447204,0.024844720496894408,0.006211180124223602,0,0.006211180124223602,0,0.012422360248447204,0.006211180124223602,0,0,0,0,0.006211180124223602,0,0,0,0,0,0,0],"y_edges":[0,10,20,30,40,50,60,70,80,90,100,110,120,130,140,150,160,170,180,190,200,210,220,230,240,250,260,270,280,290,300,310,320,330,340,350,360,370,380,390,400],"mean_r_y":[9.71550426189535,9.181341361967974,10.667906480222968,9.055128891396468,6.681106788961936,6.49245292696944,5.738550388572306,5.650666427238183,5.190768862756717,6.316489450187324,6.460846984659284,5.729308896288334,5.564665036955194,4.805345544901465,5.523396806847747,4.966565150617785,5.198734322478948,5.357840746532882,4.949747468305833,4.549509756796392,6.354101966249685,4.714325190533521,4,0,3.605551275463989,0,4.302775637731995,4,0,0,0,0,4,0,0,0,0,0,0,0],"std_r_y":[2.1468527981893057,3.746505588992149,1.329360711261398,2.8292473840576355,1.944088151590196,2.2578872848496987,1.522839268543024,1.0931463433974749,1.0867007929671062,1.4498141348711755,1.660559014554752,1.6857301793519688,1.121037576850424,1.0764080054029888,1.2786496224381656,0.856288855859366,0.9284666570040253,1.3392320690574757,0.7071067811865479,0.5495097567963922,0.3541019662496847,0.5245359834187566,0,0,0,0,0.6972243622680054,0,0,0,0,0,0,0,0,0,0,0,0,0],"hard_core":8};
+
+// Pre-compute CDF for inverse-transform sampling of λ(y)
+const EMPIRICAL_CDF = (() => {
+  const c = new Float64Array(EMPIRICAL.lambda_y.length);
+  let s = 0;
+  for (let i = 0; i < c.length; i++) { s += EMPIRICAL.lambda_y[i]; c[i] = s; }
+  return c;
+})();
+
+let seed = 727; // tuned to match the watercolor reference cascade
+
+function currentParams() {
+  return {
+    N: +$("s-n").value,
+    falloff: +$("s-k").value,
+    sizeTop: +$("s-rt").value,
+    sizeBot: +$("s-rb").value,
+    sizeJitter: +$("s-sj").value,
+    gap: +$("s-gap").value,
+    clusterBias: +$("s-cb").value,
+    hNoise: +$("s-hn").value,
+    fillAlpha: +$("s-fa").value,
+    outline: $("s-outline").checked,
+    allowOverlap: $("s-overlap").checked,
+    colored: $("s-colored").checked,
+    empirical: $("s-empirical").checked,
+    seed, W, H,
+  };
+}
+
+function render() {
+  const p = currentParams();
+  $("v-n").textContent = p.N;
+  $("v-k").textContent = p.falloff.toFixed(1);
+  $("v-rt").textContent = p.sizeTop;
+  $("v-rb").textContent = p.sizeBot;
+  $("v-sj").textContent = p.sizeJitter.toFixed(2);
+  $("v-gap").textContent = p.gap;
+  $("v-cb").textContent = p.clusterBias.toFixed(2);
+  $("v-hn").textContent = p.hNoise.toFixed(2);
+  $("v-fa").textContent = p.fillAlpha.toFixed(2);
+
+  const { circles, attempts } = p.empirical ? generateEmpirical(p) : generate(p);
+  out.circles = circles;
+  const mode = p.empirical ? "empirical" : "parametric";
+  $("seed").textContent = `seed: ${p.seed} · ${mode} · placed ${circles.length}/${p.N} (${attempts} attempts)`;
+
+  const colorRng = mulberry32(p.seed ^ 0xA5A5);
+  const pick = () => PALETTE[Math.floor(colorRng() * PALETTE.length)];
+  const svg = circles.map(c => {
+    const color = p.colored ? pick() : "#111";
+    if (p.outline) {
+      return `<circle cx="${c.cx.toFixed(2)}" cy="${c.cy.toFixed(2)}" r="${c.r.toFixed(2)}" fill="none" stroke="${color}" stroke-width="1.25"/>`;
+    }
+    return `<circle cx="${c.cx.toFixed(2)}" cy="${c.cy.toFixed(2)}" r="${c.r.toFixed(2)}" fill="${color}" fill-opacity="${p.fillAlpha.toFixed(2)}"/>`;
+  }).join("");
+  canvas.innerHTML = svg;
+
+  const { outline, allowOverlap, colored, empirical, ...jsonish } = p;
+  $("json").textContent = JSON.stringify({ ...jsonish, outline, allowOverlap, colored, empirical }, null, 2);
+}
+
+const out = { circles: [] };
+
+// ---- preset manager ----
+const PRESET_KEY = "ifn.circle.presets.v1";
+
+// Every persisted slider / toggle id → key in the params blob
+const PARAM_MAP = {
+  "s-n": { key: "N", type: "number" },
+  "s-k": { key: "falloff", type: "number" },
+  "s-rt": { key: "sizeTop", type: "number" },
+  "s-rb": { key: "sizeBot", type: "number" },
+  "s-sj": { key: "sizeJitter", type: "number" },
+  "s-gap": { key: "gap", type: "number" },
+  "s-cb": { key: "clusterBias", type: "number" },
+  "s-hn": { key: "hNoise", type: "number" },
+  "s-fa": { key: "fillAlpha", type: "number" },
+  "s-outline": { key: "outline", type: "bool" },
+  "s-overlap": { key: "allowOverlap", type: "bool" },
+  "s-colored": { key: "colored", type: "bool" },
+  "s-empirical": { key: "empirical", type: "bool" },
+};
+
+const STARTER_PRESETS = [
+  { name: "Empirical ref match",
+    params: { N: 161, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, empirical: true, seed: 727 } },
+  { name: "Parametric dense",
+    params: { N: 120, falloff: 2.5, sizeTop: 14, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, empirical: false, seed: 727 } },
+  { name: "Outline only (mono)",
+    params: { N: 161, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: true, allowOverlap: true, colored: false, empirical: true, seed: 727 } },
+  { name: "Sparse 15 black",
+    params: { N: 15, falloff: 2.5, sizeTop: 22, sizeBot: 3, sizeJitter: 0.5, gap: 2, clusterBias: 0.15, hNoise: 0.3, fillAlpha: 1.0, outline: false, allowOverlap: false, colored: false, empirical: false, seed: 42 } },
+];
+
+function loadPresetState() {
+  try {
+    const raw = localStorage.getItem(PRESET_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (Array.isArray(s.list) && s.list.length) return s;
+    }
+  } catch (e) {}
+  return { list: STARTER_PRESETS.map(p => ({ ...p, params: { ...p.params } })),
+           selected: STARTER_PRESETS[0].name };
+}
+function savePresetState() {
+  localStorage.setItem(PRESET_KEY, JSON.stringify(presetState));
+}
+
+const presetState = loadPresetState();
+let dirty = false;
+
+function captureParams() {
+  const p = { seed };
+  for (const id in PARAM_MAP) {
+    const spec = PARAM_MAP[id];
+    const el = $(id);
+    p[spec.key] = spec.type === "bool" ? el.checked : +el.value;
+  }
+  return p;
+}
+function applyParams(params) {
+  // suppress dirty while we set inputs programmatically
+  applying = true;
+  if ("seed" in params) seed = params.seed;
+  for (const id in PARAM_MAP) {
+    const spec = PARAM_MAP[id];
+    const v = params[spec.key];
+    if (v === undefined) continue;
+    const el = $(id);
+    if (spec.type === "bool") el.checked = !!v;
+    else el.value = v;
+  }
+  applying = false;
+}
+let applying = false;
+
+function refreshPresetSelect() {
+  const sel = $("preset-select");
+  sel.innerHTML = "";
+  for (const p of presetState.list) {
+    const o = document.createElement("option");
+    o.value = p.name;
+    o.textContent = p.name;
+    if (p.name === presetState.selected) o.selected = true;
+    sel.appendChild(o);
+  }
+  updatePresetStatus();
+}
+function updatePresetStatus() {
+  const el = $("preset-status");
+  el.innerHTML = dirty ? '<span class="dirty-dot">● unsaved</span>' : "saved";
+}
+function currentPreset() {
+  return presetState.list.find(p => p.name === presetState.selected);
+}
+function markDirty() {
+  if (applying) return;
+  if (!dirty) { dirty = true; updatePresetStatus(); }
+}
+
+// --- preset button handlers ---
+$("preset-select").addEventListener("change", e => {
+  const name = e.target.value;
+  if (dirty) {
+    if (!confirm(`Discard unsaved changes to "${presetState.selected}"?`)) {
+      e.target.value = presetState.selected;
+      return;
+    }
+  }
+  presetState.selected = name;
+  savePresetState();
+  const p = currentPreset();
+  if (p) { applyParams(p.params); dirty = false; render(); updatePresetStatus(); }
+});
+$("preset-save").addEventListener("click", () => {
+  const p = currentPreset();
+  if (!p) return;
+  p.params = captureParams();
+  savePresetState();
+  dirty = false;
+  updatePresetStatus();
+  flashBtn("preset-save", "saved");
+});
+$("preset-saveas").addEventListener("click", () => {
+  const name = prompt("Name this preset:", "");
+  if (!name) return;
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  if (presetState.list.some(p => p.name === trimmed)) {
+    if (!confirm(`"${trimmed}" already exists. Overwrite?`)) return;
+    const existing = presetState.list.find(p => p.name === trimmed);
+    existing.params = captureParams();
+  } else {
+    presetState.list.push({ name: trimmed, params: captureParams() });
+  }
+  presetState.selected = trimmed;
+  savePresetState();
+  refreshPresetSelect();
+  dirty = false;
+  updatePresetStatus();
+});
+$("preset-rename").addEventListener("click", () => {
+  const p = currentPreset();
+  if (!p) return;
+  const name = prompt("Rename preset:", p.name);
+  if (!name) return;
+  const trimmed = name.trim();
+  if (!trimmed || trimmed === p.name) return;
+  if (presetState.list.some(x => x.name === trimmed)) {
+    alert(`"${trimmed}" already exists.`);
+    return;
+  }
+  p.name = trimmed;
+  presetState.selected = trimmed;
+  savePresetState();
+  refreshPresetSelect();
+});
+$("preset-delete").addEventListener("click", () => {
+  const p = currentPreset();
+  if (!p) return;
+  if (presetState.list.length <= 1) {
+    alert("Can't delete the last preset.");
+    return;
+  }
+  if (!confirm(`Delete preset "${p.name}"?`)) return;
+  presetState.list = presetState.list.filter(x => x.name !== p.name);
+  presetState.selected = presetState.list[0].name;
+  savePresetState();
+  const next = currentPreset();
+  if (next) { applyParams(next.params); dirty = false; }
+  refreshPresetSelect();
+  render();
+});
+
+function flashBtn(id, label) {
+  const b = $(id); const t = b.textContent;
+  b.textContent = label; setTimeout(() => b.textContent = t, 900);
+}
+
+// --- input wiring: any change → dirty + re-render ---
+["s-n","s-k","s-rt","s-rb","s-sj","s-gap","s-cb","s-hn","s-fa","s-outline","s-overlap","s-colored","s-empirical"].forEach(id => {
+  $(id).addEventListener("input", () => { markDirty(); render(); });
+});
+$("reroll").addEventListener("click", () => {
+  seed = Math.floor(Math.random() * 1e9);
+  markDirty();
+  render();
+});
+$("copy").addEventListener("click", async () => {
+  await navigator.clipboard.writeText($("json").textContent);
+  flashBtn("copy", "copied");
+});
+
+// --- init: apply selected preset then first render ---
+refreshPresetSelect();
+const init = currentPreset();
+if (init) applyParams(init.params);
+dirty = false;
+updatePresetStatus();
+render();
+</script>
+</body>
+</html>
