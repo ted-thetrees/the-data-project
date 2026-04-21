@@ -147,8 +147,6 @@ export function GetTable({
       initialParams={initialParams}
       onAddTopRow={createGetItem}
       addTopRowLabel="+ New thing to get"
-      onAddRow={createGetItem}
-      addRowLabel="+ Add thing to get"
       onDeleteRow={(row) => deleteGetItem(row.id)}
       deleteItemLabel={(row) => `"${row.name}"`}
     />
