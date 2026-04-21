@@ -13,6 +13,15 @@ function isIgnoredTarget(el: EventTarget | null): boolean {
   const tag = el.tagName;
   if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
   if (el.isContentEditable) return true;
+  // Inside a popover / dialog / menu / listbox — e.g. calendar day cells in
+  // the Tickle date picker. Those components own their own Enter handling;
+  // don't steal it to focus the first cell after they close.
+  if (
+    el.closest(
+      '[data-slot="popover-content"], [role="dialog"], [role="menu"], [role="listbox"]',
+    )
+  )
+    return true;
   return false;
 }
 
