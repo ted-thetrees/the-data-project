@@ -20,6 +20,7 @@ import {
   Brain,
   Puzzle,
   Box,
+  Video,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -32,6 +33,7 @@ const NAV: Branch[] = [
   { kind: "branch", label: "Inbox", icon: InboxIcon, children: [
     { kind: "leaf", label: "Chrono", path: "/inbox", key: "i", icon: InboxIcon },
     { kind: "leaf", label: "Notes", path: "/notes", key: "N", icon: InboxIcon },
+    { kind: "leaf", label: "YouTube", path: "/youtube", key: "y", icon: Video },
     { kind: "leaf", label: "Pick Lists", path: "/pick-lists", key: "I", icon: List },
   ] },
   { kind: "branch", label: "Projects", icon: Target, children: [
