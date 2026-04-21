@@ -25,6 +25,46 @@ function navigableRows(tbody: HTMLTableSectionElement): HTMLTableRowElement[] {
   );
 }
 
+/**
+ * Build a rowspan/colspan-aware occupancy grid. `grid[r][c]` is the <td> that
+ * visually occupies row `r`, column `c`. A rowspanned icicle cell appears in
+ * every row it spans, at the same visual column — so keyboard navigation can
+ * skip past it instead of falling into the wrong task column.
+ */
+function buildVisualGrid(
+  rows: HTMLTableRowElement[],
+): HTMLTableCellElement[][] {
+  const grid: HTMLTableCellElement[][] = rows.map(() => []);
+  rows.forEach((tr, r) => {
+    let col = 0;
+    for (const td of Array.from(tr.cells)) {
+      while (grid[r][col]) col++;
+      const colspan = td.colSpan || 1;
+      const rowspan = td.rowSpan || 1;
+      for (let dr = 0; dr < rowspan && r + dr < rows.length; dr++) {
+        for (let dc = 0; dc < colspan; dc++) {
+          grid[r + dr][col + dc] = td;
+        }
+      }
+      col += colspan;
+    }
+  });
+  return grid;
+}
+
+function visualPosition(
+  grid: HTMLTableCellElement[][],
+  td: HTMLTableCellElement,
+): { row: number; col: number } | null {
+  for (let r = 0; r < grid.length; r++) {
+    const row = grid[r];
+    for (let c = 0; c < row.length; c++) {
+      if (row[c] === td) return { row: r, col: c };
+    }
+  }
+  return null;
+}
+
 export function handleGridKeyDown(e: KeyboardEvent<HTMLElement>) {
   const key = e.key;
 
@@ -72,64 +112,89 @@ export function handleGridKeyDown(e: KeyboardEvent<HTMLElement>) {
   if (!tbody || tbody.tagName !== "TBODY") return;
 
   const allRows = navigableRows(tbody);
-  const rowIndex = allRows.indexOf(tr);
-  if (rowIndex === -1) return;
-  const cells = Array.from(tr.cells);
-  const colIndex = cells.indexOf(td);
+  const grid = buildVisualGrid(allRows);
+  const pos = visualPosition(grid, td);
+  if (!pos) return;
+  const maxCol = Math.max(...grid.map((r) => r.length)) - 1;
 
-  // Home / End / Cmd+Home / Cmd+End
+  // Home / End / Cmd+Home / Cmd+End — visual-column aware.
   if (key === "Home" || key === "End") {
     if (e.metaKey || e.ctrlKey) {
-      const targetRow = key === "Home" ? allRows[0] : allRows[allRows.length - 1];
-      if (!targetRow) return;
-      const targetCells = Array.from(targetRow.cells);
+      const r = key === "Home" ? 0 : grid.length - 1;
       const targetTd =
-        key === "Home" ? targetCells[0] : targetCells[targetCells.length - 1];
+        key === "Home"
+          ? grid[r]?.[0]
+          : grid[r]?.[grid[r].length - 1];
       if (targetTd && focusInCell(targetTd)) e.preventDefault();
       return;
     }
-    const targetTd = key === "Home" ? cells[0] : cells[cells.length - 1];
-    if (targetTd && focusInCell(targetTd)) e.preventDefault();
+    const row = grid[pos.row];
+    const targetTd =
+      key === "Home" ? row[0] : row[row.length - 1];
+    if (targetTd && focusInCell(targetTd) && targetTd !== td) e.preventDefault();
     return;
   }
 
   // Tab / Shift+Tab move horizontally, wrapping into the next/previous row.
   if (key === "Tab") {
-    let nextTr = tr;
-    let nextColIndex = e.shiftKey ? colIndex - 1 : colIndex + 1;
-    if (nextColIndex < 0) {
-      if (rowIndex === 0) return;
-      nextTr = allRows[rowIndex - 1];
-      nextColIndex = nextTr.cells.length - 1;
-    } else if (nextColIndex >= cells.length) {
-      if (rowIndex === allRows.length - 1) return;
-      nextTr = allRows[rowIndex + 1];
-      nextColIndex = 0;
+    const dir = e.shiftKey ? -1 : 1;
+    let r = pos.row;
+    let c = pos.col + dir;
+    while (r >= 0 && r < grid.length) {
+      while (c >= 0 && c <= maxCol) {
+        const next = grid[r][c];
+        if (next && next !== td) {
+          focusInCell(next);
+          e.preventDefault();
+          return;
+        }
+        c += dir;
+      }
+      r += dir;
+      if (r < 0 || r >= grid.length) return;
+      c = dir > 0 ? 0 : maxCol;
     }
-    const nextCells = Array.from(nextTr.cells);
-    const nextTd = nextCells[nextColIndex];
-    if (nextTd && focusInCell(nextTd)) e.preventDefault();
     return;
   }
 
-  // Arrow navigation
-  let nextRowIndex = rowIndex;
-  let nextColIndex = colIndex;
-  if (effectiveKey === "ArrowUp") nextRowIndex--;
-  else if (effectiveKey === "ArrowDown") nextRowIndex++;
-  else if (effectiveKey === "ArrowLeft") nextColIndex--;
-  else if (effectiveKey === "ArrowRight") nextColIndex++;
+  // Arrow nav — step through the visual grid so rowspanned icicles skip to
+  // the next row where the column holds a *different* <td>.
+  let nextRow = pos.row;
+  let nextCol = pos.col;
+  const rowDelta =
+    effectiveKey === "ArrowUp" ? -1 : effectiveKey === "ArrowDown" ? 1 : 0;
+  const colDelta =
+    effectiveKey === "ArrowLeft"
+      ? -1
+      : effectiveKey === "ArrowRight"
+        ? 1
+        : 0;
+  if (rowDelta === 0 && colDelta === 0) return;
 
-  if (nextRowIndex < 0 || nextRowIndex >= allRows.length) return;
-  const nextTr = allRows[nextRowIndex];
-  const nextCells = Array.from(nextTr.cells);
-  if (nextCells.length === 0) return;
-  // Rows with fewer cells (e.g. a colspan "+ New" row) clamp to the nearest cell.
-  const targetCol = Math.max(0, Math.min(nextColIndex, nextCells.length - 1));
-  const nextTd = nextCells[targetCol];
-  if (!nextTd) return;
-
-  if (focusInCell(nextTd)) e.preventDefault();
+  while (true) {
+    nextRow += rowDelta;
+    nextCol += colDelta;
+    if (nextRow < 0 || nextRow >= grid.length) return;
+    if (nextCol < 0 || nextCol > maxCol) return;
+    const candidate = grid[nextRow]?.[nextCol];
+    if (!candidate) {
+      if (rowDelta !== 0) {
+        // Row lacks this visual column (e.g. narrow "+ New" helper rows); clamp.
+        const row = grid[nextRow];
+        const clamped =
+          row[Math.max(0, Math.min(nextCol, row.length - 1))];
+        if (clamped && clamped !== td) {
+          if (focusInCell(clamped)) e.preventDefault();
+          return;
+        }
+        continue;
+      }
+      return;
+    }
+    if (candidate === td) continue; // same rowspan/colspan cell — keep stepping
+    if (focusInCell(candidate)) e.preventDefault();
+    return;
+  }
 }
 
 /**
