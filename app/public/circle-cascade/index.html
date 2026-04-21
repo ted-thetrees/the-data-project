@@ -260,11 +260,11 @@ function generateEmpiricalPCF(params) {
 
   const errIf = (contrib, nPts) => {
     const norm = 0.5 * nPts * (nPts - 1);
-    if (norm <= 0) return Infinity;
     let e = 0;
     for (let i = 0; i < gBins; i++) {
-      const h = pairHist[i] + contrib[i];
-      const g = (h / norm) / (shellArea[i] / canvasArea);
+      const g = norm > 0
+        ? ((pairHist[i] + contrib[i]) / norm) / (shellArea[i] / canvasArea)
+        : 0;
       const d = g - targetG[i];
       e += weights[i] * d * d;
     }
