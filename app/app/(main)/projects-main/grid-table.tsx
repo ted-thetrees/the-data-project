@@ -922,6 +922,7 @@ function EditableTextWrap({
         lineHeight: "1.4",
         display: "block",
         textDecoration: "inherit",
+        textWrap: "balance",
       }}
     />
   );

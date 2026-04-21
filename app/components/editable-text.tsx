@@ -107,6 +107,7 @@ export function EditableTextWrap({ value, onSave, placeholder, className }: Edit
         wordBreak: "break-word",
         lineHeight: "1.4",
         display: "block",
+        textWrap: "balance",
       }}
     />
   );
