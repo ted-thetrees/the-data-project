@@ -124,7 +124,12 @@
       <label class="toggle"><input type="checkbox" id="s-colored" checked /> color (palette from reference)</label>
     </div>
     <div class="group">
-      <label class="toggle"><input type="checkbox" id="s-empirical" checked /> empirical mode (λ, R, g from reference)</label>
+      <div class="row"><label>Algorithm</label></div>
+      <select id="s-algorithm" class="preset-select" style="margin-bottom: 0">
+        <option value="parametric">parametric (sliders above)</option>
+        <option value="empirical-hardcore">empirical · hard-core</option>
+        <option value="empirical-pcf" selected>empirical · PCF-greedy</option>
+      </select>
     </div>
 
     <div class="btns">
@@ -184,6 +189,125 @@ function makeValueNoise1D(rng, octaves = 5) {
     }
     return total / norm; // ~[-1, 1]
   };
+}
+
+// ---- shared empirical samplers (λ(y), R(y)) ----
+function makeEmpiricalSamplers(params) {
+  const { seed, W, H } = params;
+  const rng = mulberry32(seed);
+  const nbins = EMPIRICAL.lambda_y.length;
+  const edges = EMPIRICAL.y_edges;
+  const cdf = EMPIRICAL_CDF;
+  const meanR = EMPIRICAL.mean_r_y;
+  const stdR = EMPIRICAL.std_r_y;
+  const sx = W / EMPIRICAL.W;
+  const sy = H / EMPIRICAL.H;
+  const sScale = (sx + sy) / 2;
+
+  const sampleY = () => {
+    const u = rng();
+    let idx = 0;
+    while (idx < cdf.length - 1 && cdf[idx] < u) idx++;
+    const lo = edges[idx], hi = edges[idx + 1];
+    return (lo + rng() * (hi - lo)) * sy;
+  };
+  const gauss = () => Math.sqrt(-2 * Math.log(Math.max(rng(), 1e-9)))
+                      * Math.cos(2 * Math.PI * rng());
+  const sampleR = (cy) => {
+    const t = Math.max(0, Math.min(0.9999, cy / H));
+    const idx = Math.floor(t * nbins);
+    let m = meanR[idx], s = stdR[idx];
+    if (m === 0) { m = 4; s = 1.5; }
+    let r = m + gauss() * s;
+    return Math.max(1.5, Math.min(r, m + 3 * s)) * sScale;
+  };
+  return { rng, sampleY, sampleR, sScale };
+}
+
+// ---- PCF-greedy generator: best-candidate matching full g(r) target ----
+// Reference: Öztireli & Gross 2012, "Analysis and Synthesis of Point Distributions
+// based on Pair Correlation" — practical best-candidate variant.
+function generateEmpiricalPCF(params) {
+  const { N, W, H } = params;
+  const candidatesPerStep = 15;
+  const { rng, sampleY, sampleR, sScale } = makeEmpiricalSamplers(params);
+
+  const targetG = EMPIRICAL.g;
+  const gCenters = EMPIRICAL.g_r;
+  const gBins = targetG.length;
+  // reconstruct bin edges from centers (uniform binning)
+  const gEdges = new Float64Array(gBins + 1);
+  gEdges[0] = 0;
+  for (let i = 0; i < gBins; i++) gEdges[i + 1] = 2 * gCenters[i] - gEdges[i];
+  // scale to current canvas
+  const gEdgesScaled = new Float64Array(gBins + 1);
+  for (let i = 0; i <= gBins; i++) gEdgesScaled[i] = gEdges[i] * sScale;
+  const shellArea = new Float64Array(gBins);
+  for (let i = 0; i < gBins; i++) {
+    shellArea[i] = Math.PI * (gEdgesScaled[i + 1] ** 2 - gEdgesScaled[i] ** 2);
+  }
+  // weight bins inversely by shell area so small-r bins (few pairs expected) matter more
+  const weights = new Float64Array(gBins);
+  let wSum = 0;
+  for (let i = 0; i < gBins; i++) { weights[i] = 1 / (shellArea[i] + 1e-6); wSum += weights[i]; }
+  for (let i = 0; i < gBins; i++) weights[i] /= wSum;
+
+  const canvasArea = W * H;
+  const rMaxSq = gEdgesScaled[gBins] * gEdgesScaled[gBins];
+  const pairHist = new Float64Array(gBins);
+  const circles = [];
+
+  const errIf = (contrib, nPts) => {
+    const norm = 0.5 * nPts * (nPts - 1);
+    if (norm <= 0) return Infinity;
+    let e = 0;
+    for (let i = 0; i < gBins; i++) {
+      const h = pairHist[i] + contrib[i];
+      const g = (h / norm) / (shellArea[i] / canvasArea);
+      const d = g - targetG[i];
+      e += weights[i] * d * d;
+    }
+    return e;
+  };
+
+  const binOfDist = (d) => {
+    // linear; gBins is 30 so this is fine
+    for (let i = 0; i < gBins; i++) if (gEdgesScaled[i + 1] > d) return i;
+    return -1;
+  };
+
+  let attempts = 0;
+  const maxAttempts = N * 20;
+  while (circles.length < N && attempts < maxAttempts) {
+    attempts++;
+    let best = null, bestErr = Infinity;
+    const nPts = circles.length + 1;
+
+    for (let ci = 0; ci < candidatesPerStep; ci++) {
+      const cy = sampleY();
+      const cx = rng() * W;
+      const r = sampleR(cy);
+      if (cx - r < 0 || cx + r > W || cy - r < 0 || cy + r > H) continue;
+
+      const contrib = new Int32Array(gBins);
+      for (const c of circles) {
+        const dx = cx - c.cx, dy = cy - c.cy;
+        const d2 = dx * dx + dy * dy;
+        if (d2 >= rMaxSq) continue;
+        const bin = binOfDist(Math.sqrt(d2));
+        if (bin >= 0) contrib[bin]++;
+      }
+      const e = errIf(contrib, nPts);
+      if (e < bestErr) {
+        bestErr = e;
+        best = { cx, cy, r, contrib };
+      }
+    }
+    if (!best) continue;
+    circles.push({ cx: best.cx, cy: best.cy, r: best.r });
+    for (let i = 0; i < gBins; i++) pairHist[i] += best.contrib[i];
+  }
+  return { circles, attempts };
 }
 
 // ---- empirical generator (driven by measured λ, R, g) ----
@@ -330,7 +454,7 @@ const PALETTE = [
 // mean_r_y, std_r_y: radius distribution per y-bin.
 // hard_core: minimum center separation derived from g(r) first zero (the
 // pair correlation function's hard-core radius).
-const EMPIRICAL = {"N":161,"W":400,"H":400,"lambda_y":[0.049689440993788817,0.055900621118012424,0.043478260869565216,0.031055900621118012,0.07453416149068323,0.049689440993788817,0.07453416149068323,0.049689440993788817,0.049689440993788817,0.031055900621118012,0.062111801242236024,0.055900621118012424,0.055900621118012424,0.049689440993788817,0.043478260869565216,0.031055900621118012,0.055900621118012424,0.037267080745341616,0.012422360248447204,0.012422360248447204,0.012422360248447204,0.024844720496894408,0.006211180124223602,0,0.006211180124223602,0,0.012422360248447204,0.006211180124223602,0,0,0,0,0.006211180124223602,0,0,0,0,0,0,0],"y_edges":[0,10,20,30,40,50,60,70,80,90,100,110,120,130,140,150,160,170,180,190,200,210,220,230,240,250,260,270,280,290,300,310,320,330,340,350,360,370,380,390,400],"mean_r_y":[9.71550426189535,9.181341361967974,10.667906480222968,9.055128891396468,6.681106788961936,6.49245292696944,5.738550388572306,5.650666427238183,5.190768862756717,6.316489450187324,6.460846984659284,5.729308896288334,5.564665036955194,4.805345544901465,5.523396806847747,4.966565150617785,5.198734322478948,5.357840746532882,4.949747468305833,4.549509756796392,6.354101966249685,4.714325190533521,4,0,3.605551275463989,0,4.302775637731995,4,0,0,0,0,4,0,0,0,0,0,0,0],"std_r_y":[2.1468527981893057,3.746505588992149,1.329360711261398,2.8292473840576355,1.944088151590196,2.2578872848496987,1.522839268543024,1.0931463433974749,1.0867007929671062,1.4498141348711755,1.660559014554752,1.6857301793519688,1.121037576850424,1.0764080054029888,1.2786496224381656,0.856288855859366,0.9284666570040253,1.3392320690574757,0.7071067811865479,0.5495097567963922,0.3541019662496847,0.5245359834187566,0,0,0,0,0.6972243622680054,0,0,0,0,0,0,0,0,0,0,0,0,0],"hard_core":8};
+const EMPIRICAL = {"N":161,"W":400,"H":400,"lambda_y":[0.049689440993788817,0.055900621118012424,0.043478260869565216,0.031055900621118012,0.07453416149068323,0.049689440993788817,0.07453416149068323,0.049689440993788817,0.049689440993788817,0.031055900621118012,0.062111801242236024,0.055900621118012424,0.055900621118012424,0.049689440993788817,0.043478260869565216,0.031055900621118012,0.055900621118012424,0.037267080745341616,0.012422360248447204,0.012422360248447204,0.012422360248447204,0.024844720496894408,0.006211180124223602,0.0,0.006211180124223602,0.0,0.012422360248447204,0.006211180124223602,0.0,0.0,0.0,0.0,0.006211180124223602,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"y_edges":[0.0,10.0,20.0,30.0,40.0,50.0,60.0,70.0,80.0,90.0,100.0,110.0,120.0,130.0,140.0,150.0,160.0,170.0,180.0,190.0,200.0,210.0,220.0,230.0,240.0,250.0,260.0,270.0,280.0,290.0,300.0,310.0,320.0,330.0,340.0,350.0,360.0,370.0,380.0,390.0,400.0],"mean_r_y":[9.71550426189535,9.181341361967974,10.667906480222968,9.055128891396468,6.681106788961936,6.49245292696944,5.738550388572306,5.650666427238183,5.190768862756717,6.316489450187324,6.460846984659284,5.729308896288334,5.564665036955194,4.805345544901465,5.523396806847747,4.966565150617785,5.198734322478948,5.357840746532882,4.949747468305833,4.549509756796392,6.354101966249685,4.714325190533521,4.0,0.0,3.605551275463989,0.0,4.302775637731995,4.0,0.0,0.0,0.0,0.0,4.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"std_r_y":[2.1468527981893057,3.746505588992149,1.329360711261398,2.8292473840576355,1.944088151590196,2.2578872848496987,1.522839268543024,1.0931463433974749,1.0867007929671062,1.4498141348711755,1.660559014554752,1.6857301793519688,1.121037576850424,1.0764080054029888,1.2786496224381656,0.856288855859366,0.9284666570040253,1.3392320690574757,0.7071067811865479,0.5495097567963922,0.3541019662496847,0.5245359834187566,0.0,0.0,0.0,0.0,0.6972243622680054,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"hard_core":8.0,"g":[0.0,0.4633781340020245,0.6950672010030366,1.7475975339504923,1.9307422250084358,1.8703626499718071,1.4222144266677537,1.4086695273661534,1.5536796257714935,1.6242623012913087,1.423232840149075,1.2692531496577184,1.4012554772221235,1.266566899605535,1.1888045920603638,1.3273541386896706,1.023644423295382,1.040614895215974,1.2060355217404053,0.9837874229581454,0.9493600794187801,0.8858065724410806,0.9854508316443054,0.872531167216577,0.8766357759589346,0.7686625516974752,0.6845756206105368,0.8163880215417519,0.6731177104450451,0.6856425609894345],"g_r":[2.6666666666666665,8.0,13.333333333333332,18.666666666666664,24.0,29.333333333333332,34.666666666666664,40.0,45.33333333333333,50.666666666666664,56.0,61.33333333333333,66.66666666666666,72.0,77.33333333333333,82.66666666666666,88.0,93.33333333333333,98.66666666666666,104.0,109.33333333333333,114.66666666666666,120.0,125.33333333333333,130.66666666666666,136.0,141.33333333333331,146.66666666666666,152.0,157.33333333333331]};
 
 // Pre-compute CDF for inverse-transform sampling of λ(y)
 const EMPIRICAL_CDF = (() => {
@@ -356,7 +480,7 @@ function currentParams() {
     outline: $("s-outline").checked,
     allowOverlap: $("s-overlap").checked,
     colored: $("s-colored").checked,
-    empirical: $("s-empirical").checked,
+    algorithm: $("s-algorithm").value, // parametric | empirical-hardcore | empirical-pcf
     seed, W, H,
   };
 }
@@ -373,10 +497,13 @@ function render() {
   $("v-hn").textContent = p.hNoise.toFixed(2);
   $("v-fa").textContent = p.fillAlpha.toFixed(2);
 
-  const { circles, attempts } = p.empirical ? generateEmpirical(p) : generate(p);
+  let genResult;
+  if (p.algorithm === "empirical-pcf") genResult = generateEmpiricalPCF(p);
+  else if (p.algorithm === "empirical-hardcore") genResult = generateEmpirical(p);
+  else genResult = generate(p);
+  const { circles, attempts } = genResult;
   out.circles = circles;
-  const mode = p.empirical ? "empirical" : "parametric";
-  $("seed").textContent = `seed: ${p.seed} · ${mode} · placed ${circles.length}/${p.N} (${attempts} attempts)`;
+  $("seed").textContent = `seed: ${p.seed} · ${p.algorithm} · placed ${circles.length}/${p.N} (${attempts} attempts)`;
 
   const colorRng = mulberry32(p.seed ^ 0xA5A5);
   const pick = () => PALETTE[Math.floor(colorRng() * PALETTE.length)];
@@ -389,14 +516,14 @@ function render() {
   }).join("");
   canvas.innerHTML = svg;
 
-  const { outline, allowOverlap, colored, empirical, ...jsonish } = p;
-  $("json").textContent = JSON.stringify({ ...jsonish, outline, allowOverlap, colored, empirical }, null, 2);
+  const { outline, allowOverlap, colored, algorithm, ...jsonish } = p;
+  $("json").textContent = JSON.stringify({ ...jsonish, outline, allowOverlap, colored, algorithm }, null, 2);
 }
 
 const out = { circles: [] };
 
 // ---- preset manager ----
-const PRESET_KEY = "ifn.circle.presets.v1";
+const PRESET_KEY = "ifn.circle.presets.v2";
 
 // Every persisted slider / toggle id → key in the params blob
 const PARAM_MAP = {
@@ -412,18 +539,20 @@ const PARAM_MAP = {
   "s-outline": { key: "outline", type: "bool" },
   "s-overlap": { key: "allowOverlap", type: "bool" },
   "s-colored": { key: "colored", type: "bool" },
-  "s-empirical": { key: "empirical", type: "bool" },
+  "s-algorithm": { key: "algorithm", type: "string" },
 };
 
 const STARTER_PRESETS = [
-  { name: "Empirical ref match",
-    params: { N: 161, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, empirical: true, seed: 727 } },
+  { name: "PCF-greedy (ref match)",
+    params: { N: 161, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, algorithm: "empirical-pcf", seed: 727 } },
+  { name: "Empirical hard-core",
+    params: { N: 161, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, algorithm: "empirical-hardcore", seed: 727 } },
   { name: "Parametric dense",
-    params: { N: 120, falloff: 2.5, sizeTop: 14, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, empirical: false, seed: 727 } },
+    params: { N: 120, falloff: 2.5, sizeTop: 14, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, algorithm: "parametric", seed: 727 } },
   { name: "Outline only (mono)",
-    params: { N: 161, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: true, allowOverlap: true, colored: false, empirical: true, seed: 727 } },
+    params: { N: 161, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: true, allowOverlap: true, colored: false, algorithm: "empirical-pcf", seed: 727 } },
   { name: "Sparse 15 black",
-    params: { N: 15, falloff: 2.5, sizeTop: 22, sizeBot: 3, sizeJitter: 0.5, gap: 2, clusterBias: 0.15, hNoise: 0.3, fillAlpha: 1.0, outline: false, allowOverlap: false, colored: false, empirical: false, seed: 42 } },
+    params: { N: 15, falloff: 2.5, sizeTop: 22, sizeBot: 3, sizeJitter: 0.5, gap: 2, clusterBias: 0.15, hNoise: 0.3, fillAlpha: 1.0, outline: false, allowOverlap: false, colored: false, algorithm: "parametric", seed: 42 } },
 ];
 
 function loadPresetState() {
@@ -449,12 +578,17 @@ function captureParams() {
   for (const id in PARAM_MAP) {
     const spec = PARAM_MAP[id];
     const el = $(id);
-    p[spec.key] = spec.type === "bool" ? el.checked : +el.value;
+    if (spec.type === "bool") p[spec.key] = el.checked;
+    else if (spec.type === "string") p[spec.key] = el.value;
+    else p[spec.key] = +el.value;
   }
   return p;
 }
 function applyParams(params) {
-  // suppress dirty while we set inputs programmatically
+  // back-compat: old presets used `empirical: bool` instead of `algorithm: string`
+  if (params.algorithm === undefined && params.empirical !== undefined) {
+    params = { ...params, algorithm: params.empirical ? "empirical-hardcore" : "parametric" };
+  }
   applying = true;
   if ("seed" in params) seed = params.seed;
   for (const id in PARAM_MAP) {
@@ -573,7 +707,7 @@ function flashBtn(id, label) {
 }
 
 // --- input wiring: any change → dirty + re-render ---
-["s-n","s-k","s-rt","s-rb","s-sj","s-gap","s-cb","s-hn","s-fa","s-outline","s-overlap","s-colored","s-empirical"].forEach(id => {
+["s-n","s-k","s-rt","s-rb","s-sj","s-gap","s-cb","s-hn","s-fa","s-outline","s-overlap","s-colored","s-algorithm"].forEach(id => {
   $(id).addEventListener("input", () => { markDirty(); render(); });
 });
 $("reroll").addEventListener("click", () => {
