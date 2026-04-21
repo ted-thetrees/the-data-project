@@ -128,7 +128,8 @@
       <select id="s-algorithm" class="preset-select" style="margin-bottom: 0">
         <option value="parametric">parametric (sliders above)</option>
         <option value="empirical-hardcore">empirical · hard-core</option>
-        <option value="empirical-pcf" selected>empirical · PCF-greedy</option>
+        <option value="empirical-pcf">empirical · PCF-greedy</option>
+        <option value="empirical-pcf-ot" selected>empirical · PCF + sliced-OT (best match)</option>
       </select>
     </div>
 
@@ -310,6 +311,111 @@ function generateEmpiricalPCF(params) {
   return { circles, attempts };
 }
 
+// ---- sliced OT refinement (Paulin et al. 2020) ----
+// Iteratively projects synth and reference onto random 3-D directions (x, y, r)
+// and nudges each synth point along the direction toward its sort-matched
+// reference-projection target. Directly minimizes sliced Wasserstein distance.
+function refineSlicedOT(circles, iterations, lr, seed, W, H) {
+  const n = circles.length;
+  if (n === 0) return circles;
+  // Normalize axes so r is comparable to position
+  let avgR = 0;
+  for (const c of circles) avgR += c.r;
+  avgR = avgR / n;
+  const scaleX = W, scaleY = H, scaleR = avgR * 4 + 1e-6;
+
+  // Sample reference to same size
+  const refFlat = REF_POINTS_FLAT;
+  const refN = refFlat.length / 3;
+  const rng = mulberry32(seed);
+  // Fisher-Yates partial shuffle on a 0..refN-1 array, take n
+  const idx = new Int32Array(refN);
+  for (let i = 0; i < refN; i++) idx[i] = i;
+  for (let i = 0; i < Math.min(n, refN); i++) {
+    const j = i + Math.floor(rng() * (refN - i));
+    const tmp = idx[i]; idx[i] = idx[j]; idx[j] = tmp;
+  }
+  const refNorm = new Float64Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const k = idx[i % refN];
+    refNorm[i * 3    ] = refFlat[k * 3    ] / scaleX;
+    refNorm[i * 3 + 1] = refFlat[k * 3 + 1] / scaleY;
+    refNorm[i * 3 + 2] = refFlat[k * 3 + 2] / scaleR;
+  }
+
+  // Pack synth into normalized buffer
+  const syn = new Float64Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    syn[i * 3    ] = circles[i].cx / scaleX;
+    syn[i * 3 + 1] = circles[i].cy / scaleY;
+    syn[i * 3 + 2] = circles[i].r  / scaleR;
+  }
+
+  const sProj = new Float64Array(n);
+  const rProj = new Float64Array(n);
+  const sIdx = new Int32Array(n);
+  const rIdx = new Int32Array(n);
+  const target = new Float64Array(n);
+
+  for (let it = 0; it < iterations; it++) {
+    // random 3-D unit direction via normal sampling
+    // Box-Muller x3
+    let tx, ty, tz;
+    {
+      const u1 = Math.max(rng(), 1e-12), u2 = rng();
+      const u3 = Math.max(rng(), 1e-12), u4 = rng();
+      const u5 = Math.max(rng(), 1e-12), u6 = rng();
+      tx = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      ty = Math.sqrt(-2 * Math.log(u3)) * Math.cos(2 * Math.PI * u4);
+      tz = Math.sqrt(-2 * Math.log(u5)) * Math.cos(2 * Math.PI * u6);
+    }
+    const norm = Math.sqrt(tx * tx + ty * ty + tz * tz) || 1;
+    tx /= norm; ty /= norm; tz /= norm;
+
+    for (let i = 0; i < n; i++) {
+      sProj[i] = syn[i * 3] * tx + syn[i * 3 + 1] * ty + syn[i * 3 + 2] * tz;
+      rProj[i] = refNorm[i * 3] * tx + refNorm[i * 3 + 1] * ty + refNorm[i * 3 + 2] * tz;
+      sIdx[i] = i; rIdx[i] = i;
+    }
+    // sort both sets of indices by their projections
+    sIdx.sort((a, b) => sProj[a] - sProj[b]);
+    rIdx.sort((a, b) => rProj[a] - rProj[b]);
+    // target[i] = rProj at matched rank
+    for (let rank = 0; rank < n; rank++) {
+      target[sIdx[rank]] = rProj[rIdx[rank]];
+    }
+    // apply update along theta
+    for (let i = 0; i < n; i++) {
+      const d = (target[i] - sProj[i]) * lr;
+      syn[i * 3    ] += d * tx;
+      syn[i * 3 + 1] += d * ty;
+      syn[i * 3 + 2] += d * tz;
+    }
+  }
+
+  // Unpack & clip
+  const out = new Array(n);
+  for (let i = 0; i < n; i++) {
+    let cx = syn[i * 3    ] * scaleX;
+    let cy = syn[i * 3 + 1] * scaleY;
+    let r  = syn[i * 3 + 2] * scaleR;
+    cx = Math.max(0, Math.min(W, cx));
+    cy = Math.max(0, Math.min(H, cy));
+    r  = Math.max(1.5, Math.min(20.0, r));
+    out[i] = { cx, cy, r };
+  }
+  return out;
+}
+
+// PCF-greedy initialization + sliced-OT refinement
+function generateEmpiricalPCFOT(params) {
+  const { seed } = params;
+  const base = generateEmpiricalPCF(params);
+  const otIters = params.otIterations !== undefined ? params.otIterations : 500;
+  const refined = refineSlicedOT(base.circles, otIters, 0.5, seed ^ 0x5A5A, params.W, params.H);
+  return { circles: refined, attempts: base.attempts };
+}
+
 // ---- empirical generator (driven by measured λ, R, g) ----
 function generateEmpirical(params) {
   const { N, seed, W, H } = params;
@@ -464,6 +570,11 @@ const EMPIRICAL_CDF = (() => {
   return c;
 })();
 
+// Flat (x, y, r) triples — the 161 detected circle centers from the reference
+// image. Used as the target distribution for sliced optimal-transport refinement
+// (Paulin et al. 2020). Coords are in native 400×400 space and scaled at use.
+const REF_POINTS_FLAT = [71.0,15.0,14.04,196.0,9.0,13.42,318.0,16.0,12.73,109.0,17.0,12.73,182.0,20.0,12.65,399.0,25.0,12.0,261.0,12.0,11.7,342.0,22.0,11.4,147.0,30.0,11.4,316.0,36.0,11.4,50.0,5.0,11.05,227.0,9.0,11.0,374.0,34.0,11.0,166.0,13.0,10.77,367.0,8.0,10.63,43.0,20.0,10.44,229.0,21.0,10.3,139.0,45.0,10.3,19.0,54.0,10.3,133.0,6.0,9.22,374.0,109.0,9.22,24.0,111.0,9.22,74.0,43.0,9.06,0.0,24.0,8.94,93.0,27.0,8.94,51.0,40.0,8.94,369.0,61.0,8.94,4.0,94.0,8.94,290.0,5.0,8.6,224.0,50.0,8.49,58.0,58.0,8.25,287.0,127.0,8.25,168.0,102.0,8.06,237.0,145.0,8.0,266.0,0.0,7.81,170.0,41.0,7.81,248.0,40.0,7.62,273.0,68.0,7.62,20.0,81.0,7.62,137.0,108.0,7.62,120.0,117.0,7.62,84.0,170.0,7.62,61.0,104.0,7.07,303.0,32.0,7.0,119.0,63.0,7.0,213.0,73.0,7.0,331.0,100.0,7.0,187.0,161.0,7.0,274.0,44.0,6.71,332.0,55.0,6.71,350.0,63.0,6.71,163.0,78.0,6.71,236.0,90.0,6.71,384.0,207.0,6.71,286.0,19.0,6.4,131.0,77.0,6.32,381.0,78.0,6.32,248.0,104.0,6.32,280.0,105.0,6.32,44.0,112.0,6.32,12.0,128.0,6.32,188.0,139.0,6.32,302.0,139.0,6.32,345.0,149.0,6.32,53.0,150.0,6.32,82.0,112.0,6.08,387.0,126.0,6.08,54.0,179.0,6.08,345.0,179.0,6.08,14.0,8.0,6.0,39.0,204.0,6.0,190.0,41.0,5.83,311.0,63.0,5.83,45.0,82.0,5.83,154.0,90.0,5.83,149.0,148.0,5.83,332.0,10.0,5.66,201.0,58.0,5.66,37.0,63.0,5.66,16.0,160.0,5.66,212.0,162.0,5.66,262.0,189.0,5.66,340.0,52.0,5.39,347.0,76.0,5.39,239.0,77.0,5.39,113.0,89.0,5.39,356.0,104.0,5.39,171.0,129.0,5.39,95.0,135.0,5.39,121.0,146.0,5.39,383.0,158.0,5.39,317.0,166.0,5.39,166.0,168.0,5.39,63.0,211.0,5.39,205.0,42.0,5.1,198.0,46.0,5.1,83.0,83.0,5.1,300.0,91.0,5.1,201.0,111.0,5.1,230.0,116.0,5.1,46.0,126.0,5.1,112.0,162.0,5.1,296.0,192.0,5.1,25.0,11.0,5.0,118.0,46.0,5.0,177.0,60.0,5.0,74.0,63.0,5.0,182.0,63.0,5.0,294.0,88.0,5.0,192.0,90.0,5.0,353.0,124.0,5.0,154.0,126.0,5.0,374.0,135.0,5.0,358.0,142.0,5.0,272.0,153.0,5.0,33.0,165.0,5.0,4.0,210.0,5.0,113.0,261.0,5.0,26.0,38.0,4.47,356.0,42.0,4.47,249.0,60.0,4.47,92.0,62.0,4.47,319.0,79.0,4.47,66.0,80.0,4.47,325.0,126.0,4.47,74.0,128.0,4.47,344.0,213.0,4.47,96.0,48.0,4.24,390.0,175.0,4.24,166.0,185.0,4.24,209.0,89.0,4.12,396.0,113.0,4.12,25.0,136.0,4.12,262.0,137.0,4.12,97.0,145.0,4.12,27.0,155.0,4.12,8.0,177.0,4.12,286.0,57.0,4.0,368.0,86.0,4.0,183.0,108.0,4.0,312.0,111.0,4.0,265.0,117.0,4.0,217.0,131.0,4.0,40.0,144.0,4.0,372.0,153.0,4.0,238.0,169.0,4.0,214.0,172.0,4.0,239.0,199.0,4.0,225.0,211.0,4.0,145.0,224.0,4.0,57.0,277.0,4.0,28.0,324.0,4.0,384.0,12.0,3.61,100.0,76.0,3.61,218.0,103.0,3.61,42.0,163.0,3.61,23.0,241.0,3.61,232.0,263.0,3.61,398.0,55.0,3.16,287.0,64.0,3.16,216.0,139.0,3.16];
+
 let seed = 727; // tuned to match the watercolor reference cascade
 
 function currentParams() {
@@ -498,7 +609,8 @@ function render() {
   $("v-fa").textContent = p.fillAlpha.toFixed(2);
 
   let genResult;
-  if (p.algorithm === "empirical-pcf") genResult = generateEmpiricalPCF(p);
+  if (p.algorithm === "empirical-pcf-ot") genResult = generateEmpiricalPCFOT(p);
+  else if (p.algorithm === "empirical-pcf") genResult = generateEmpiricalPCF(p);
   else if (p.algorithm === "empirical-hardcore") genResult = generateEmpirical(p);
   else genResult = generate(p);
   const { circles, attempts } = genResult;
@@ -523,7 +635,7 @@ function render() {
 const out = { circles: [] };
 
 // ---- preset manager ----
-const PRESET_KEY = "ifn.circle.presets.v2";
+const PRESET_KEY = "ifn.circle.presets.v3";
 
 // Every persisted slider / toggle id → key in the params blob
 const PARAM_MAP = {
@@ -543,14 +655,16 @@ const PARAM_MAP = {
 };
 
 const STARTER_PRESETS = [
-  { name: "PCF-greedy (ref match)",
+  { name: "PCF + sliced-OT (best match)",
+    params: { N: 161, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, algorithm: "empirical-pcf-ot", seed: 727 } },
+  { name: "PCF-greedy (more variety)",
     params: { N: 161, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, algorithm: "empirical-pcf", seed: 727 } },
   { name: "Empirical hard-core",
     params: { N: 161, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, algorithm: "empirical-hardcore", seed: 727 } },
   { name: "Parametric dense",
     params: { N: 120, falloff: 2.5, sizeTop: 14, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: false, allowOverlap: true, colored: true, algorithm: "parametric", seed: 727 } },
   { name: "Outline only (mono)",
-    params: { N: 161, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: true, allowOverlap: true, colored: false, algorithm: "empirical-pcf", seed: 727 } },
+    params: { N: 161, falloff: 2.3, sizeTop: 20, sizeBot: 2, sizeJitter: 0.6, gap: 0, clusterBias: 0.08, hNoise: 0.1, fillAlpha: 0.85, outline: true, allowOverlap: true, colored: false, algorithm: "empirical-pcf-ot", seed: 727 } },
   { name: "Sparse 15 black",
     params: { N: 15, falloff: 2.5, sizeTop: 22, sizeBot: 3, sizeJitter: 0.5, gap: 2, clusterBias: 0.15, hNoise: 0.3, fillAlpha: 1.0, outline: false, allowOverlap: false, colored: false, algorithm: "parametric", seed: 42 } },
 ];
