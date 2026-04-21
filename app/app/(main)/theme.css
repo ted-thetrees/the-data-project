@@ -101,6 +101,11 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+.themed-button-sm:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 1px;
+  box-shadow: var(--focus-shadow);
+}
 
 .themed-button-success {
   color: var(--success-foreground);
