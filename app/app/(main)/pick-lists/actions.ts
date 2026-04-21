@@ -35,6 +35,9 @@ const SOURCE_TABLES: Record<string, SourceConfig> = {
   backlog_design_paradigms: { table: "backlog_design_paradigms", hasSortOrder: true },
   backlog_statuses: { table: "backlog_statuses", hasSortOrder: true },
   backlog_prototype_stages: { table: "backlog_prototype_stages", hasSortOrder: true },
+  get_categories: { table: "get_categories", hasSortOrder: true },
+  get_statuses: { table: "get_statuses", hasSortOrder: true },
+  get_sources: { table: "get_sources", hasSortOrder: true },
 };
 
 function revalidate() {
@@ -52,6 +55,7 @@ function revalidate() {
   revalidatePath("/talent");
   revalidatePath("/user-stories");
   revalidatePath("/people");
+  revalidatePath("/get");
 }
 
 export async function createPicklistOptionNamed(
