@@ -13,6 +13,9 @@ function isIgnoredTarget(el: EventTarget | null): boolean {
   const tag = el.tagName;
   if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
   if (el.isContentEditable) return true;
+  // Native or ARIA buttons own their own Enter/Space activation — e.g. the
+  // "+ Add task" cells, which are keyboard-activatable <td role="button">.
+  if (tag === "BUTTON" || el.getAttribute("role") === "button") return true;
   // Inside a popover / dialog / menu / listbox — e.g. calendar day cells in
   // the Tickle date picker. Those components own their own Enter handling;
   // don't steal it to focus the first cell after they close.

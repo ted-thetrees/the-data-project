@@ -827,13 +827,22 @@ function AddTaskRow({
   colSpan: number;
 }) {
   const [pending, startTransition] = useTransition();
+  const activate = () => {
+    if (!pending) startTransition(() => createTask(projectId));
+  };
   return (
     <tr>
       <td
         colSpan={colSpan}
         className="themed-new-row-cell"
-        onClick={() => {
-          if (!pending) startTransition(() => createTask(projectId));
+        tabIndex={0}
+        role="button"
+        onClick={activate}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            activate();
+          }
         }}
         title="Add a blank task to this project"
       >
@@ -845,13 +854,22 @@ function AddTaskRow({
 
 function NewProjectRow({ colSpan }: { colSpan: number }) {
   const [pending, startTransition] = useTransition();
+  const activate = () => {
+    if (!pending) startTransition(() => createProject());
+  };
   return (
     <tr>
       <td
         colSpan={colSpan}
         className="themed-new-row-cell"
-        onClick={() => {
-          if (!pending) startTransition(() => createProject());
+        tabIndex={0}
+        role="button"
+        onClick={activate}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            activate();
+          }
         }}
         title="Create a new draft project"
       >

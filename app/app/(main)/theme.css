@@ -161,6 +161,11 @@
   color: var(--link-hover-color);
   text-decoration: underline;
 }
+.themed-new-row-cell:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: -2px;
+  color: var(--link-hover-color);
+}
 
 :root {
 
