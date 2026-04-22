@@ -302,7 +302,7 @@ export function DataTable<T>({
                     extras={
                       enabled && (
                         <ColumnResizer
-                          columnIndex={i}
+                          columnIndex={i + (hasRowReorder ? 1 : 0)}
                           currentWidth={getWidth(col) ?? 100}
                           onResize={(w) => views.setColumnWidth(col.key, w)}
                         />
