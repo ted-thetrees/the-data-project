@@ -439,11 +439,20 @@ export function BacklogTable({
     setColumnOrder(arrayMove(orderedKeys, oldIndex, newIndex));
   };
 
+  const iceWidth = (level: number) => {
+    const field = groupBy[level];
+    if (!field) return ICICLE_COLUMN_WIDTH;
+    return params.columnWidths[`__ice:${field}`] ?? ICICLE_COLUMN_WIDTH;
+  };
   const userColsWidth = orderedKeys.reduce(
     (sum, k) => sum + (params.columnWidths[k] ?? 0),
     0,
   );
-  const totalWidth = userColsWidth + iceLevels * ICICLE_COLUMN_WIDTH;
+  const iceColsWidth = Array.from({ length: iceLevels }).reduce<number>(
+    (sum, _, i) => sum + iceWidth(i),
+    0,
+  );
+  const totalWidth = userColsWidth + iceColsWidth;
   const totalColumnCount = iceLevels + orderedKeys.length;
 
   const headerClass =
@@ -592,10 +601,7 @@ export function BacklogTable({
           >
             <colgroup>
               {Array.from({ length: iceLevels }).map((_, i) => (
-                <col
-                  key={`ice-${i}`}
-                  style={{ width: ICICLE_COLUMN_WIDTH }}
-                />
+                <col key={`ice-${i}`} style={{ width: iceWidth(i) }} />
               ))}
               {orderedKeys.map((key) => (
                 <col key={key} style={{ width: params.columnWidths[key] }} />
@@ -606,10 +612,18 @@ export function BacklogTable({
                 {Array.from({ length: iceLevels }).map((_, i) => (
                   <th
                     key={`ice-h-${i}`}
-                    aria-hidden="true"
                     className={headerClass}
-                    style={{ width: ICICLE_COLUMN_WIDTH, padding: 0 }}
-                  />
+                    style={{ position: "relative" }}
+                  >
+                    {HEADER_LABELS[groupBy[i]] ?? groupBy[i]}
+                    <ColumnResizer
+                      columnIndex={i}
+                      currentWidth={iceWidth(i)}
+                      onResize={(w) =>
+                        setColumnWidth(`__ice:${groupBy[i]}`, w)
+                      }
+                    />
+                  </th>
                 ))}
                 <SortableContext
                   items={orderedKeys}
