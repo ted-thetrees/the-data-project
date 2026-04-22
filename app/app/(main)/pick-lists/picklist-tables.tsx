@@ -8,6 +8,7 @@ import {
 } from "@/components/editable-color-cell";
 import {
   createPicklistOption,
+  reorderPicklistOptions,
   updatePicklistName,
   updatePicklistFullName,
 } from "./actions";
@@ -98,6 +99,7 @@ export function PicklistStatusTable({
   showVisible = false,
   showFullName = false,
   storageKey,
+  sortable = false,
 }: {
   source: string;
   rows: Status[];
@@ -105,9 +107,13 @@ export function PicklistStatusTable({
   showVisible?: boolean;
   showFullName?: boolean;
   storageKey: string;
+  sortable?: boolean;
 }) {
   const columns = buildStatusColumns(source, palettes, showVisible, showFullName);
   const create = () => createPicklistOption(source);
+  const reorder = sortable
+    ? (orderedIds: string[]) => reorderPicklistOptions(source, orderedIds)
+    : undefined;
   return (
     <DataTable
       columns={columns}
@@ -118,6 +124,7 @@ export function PicklistStatusTable({
       addTopRowLabel="+ New option"
       onAddRow={create}
       addRowLabel="+ Add option"
+      onReorderRows={reorder}
     />
   );
 }

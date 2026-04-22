@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -13,7 +13,11 @@ import {
   SortableContext,
   arrayMove,
   horizontalListSortingStrategy,
+  useSortable,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   useTableViews,
@@ -58,8 +62,60 @@ interface DataTableProps<T> {
   rowStyle?: (row: T) => React.CSSProperties | undefined;
   onDeleteRow?: (row: T) => void | Promise<void>;
   deleteItemLabel?: string | ((row: T) => string);
+  /**
+   * Enables vertical row drag with a grip-handle column on the left.
+   * Called with the new ordering of row keys after a drop.
+   */
+  onReorderRows?: (orderedKeys: string[]) => void | Promise<void>;
   /** Server-provided initial params (from cookies) to avoid SSR/hydration flicker. */
   initialParams?: ViewParams;
+}
+
+const GRIP_COLUMN_WIDTH = 24;
+
+function DraggableRow({
+  id,
+  rowStyle,
+  children,
+}: {
+  id: string;
+  rowStyle?: React.CSSProperties;
+  children: React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+  const style: React.CSSProperties = {
+    ...rowStyle,
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.85 : rowStyle?.opacity,
+    position: isDragging ? "relative" : rowStyle?.position,
+    zIndex: isDragging ? 2 : rowStyle?.zIndex,
+  };
+  return (
+    <tr ref={setNodeRef} style={style} {...attributes}>
+      <td
+        {...listeners}
+        className="cursor-grab select-none bg-[color:var(--cell-bg)] text-[color:var(--muted-foreground)] align-middle"
+        style={{
+          width: GRIP_COLUMN_WIDTH,
+          padding: 0,
+          textAlign: "center",
+          touchAction: "none",
+        }}
+        title="Drag to reorder"
+      >
+        <GripVertical className="inline-block w-3 h-3 opacity-60 hover:opacity-100" />
+      </td>
+      {children}
+    </tr>
+  );
 }
 
 export function DataTable<T>({
@@ -77,6 +133,7 @@ export function DataTable<T>({
   rowStyle,
   onDeleteRow,
   deleteItemLabel,
+  onReorderRows,
   initialParams,
 }: DataTableProps<T>) {
   const [addPending, startAddTransition] = useTransition();
@@ -109,14 +166,50 @@ export function DataTable<T>({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
+  const hasRowReorder = Boolean(onReorderRows);
+  const [optimisticOrder, setOptimisticOrder] = useState<string[] | null>(null);
+  useEffect(() => {
+    setOptimisticOrder(null);
+  }, [rows]);
+
+  const displayRows = useMemo(() => {
+    if (!optimisticOrder) return rows;
+    const byKey = new Map(rows.map((r) => [rowKey(r), r]));
+    const ordered = optimisticOrder
+      .map((k) => byKey.get(k))
+      .filter((r): r is T => r != null);
+    const seen = new Set(optimisticOrder);
+    for (const r of rows) {
+      if (!seen.has(rowKey(r))) ordered.push(r);
+    }
+    return ordered;
+  }, [rows, optimisticOrder, rowKey]);
+
+  const rowKeys = displayRows.map(rowKey);
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const keys = orderedColumns.map((c) => c.key);
-    const oldIndex = keys.indexOf(String(active.id));
-    const newIndex = keys.indexOf(String(over.id));
-    if (oldIndex < 0 || newIndex < 0) return;
-    views.setColumnOrder(arrayMove(keys, oldIndex, newIndex));
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    const columnKeys = orderedColumns.map((c) => c.key);
+    if (columnKeys.includes(activeId)) {
+      const oldIndex = columnKeys.indexOf(activeId);
+      const newIndex = columnKeys.indexOf(overId);
+      if (oldIndex < 0 || newIndex < 0) return;
+      views.setColumnOrder(arrayMove(columnKeys, oldIndex, newIndex));
+      return;
+    }
+
+    if (hasRowReorder && rowKeys.includes(activeId)) {
+      const oldIndex = rowKeys.indexOf(activeId);
+      const newIndex = rowKeys.indexOf(overId);
+      if (oldIndex < 0 || newIndex < 0) return;
+      const reordered = arrayMove(rowKeys, oldIndex, newIndex);
+      setOptimisticOrder(reordered);
+      void onReorderRows?.(reordered);
+    }
   };
 
   const getWidth = (col: Column<T>): number | undefined => {
@@ -132,10 +225,13 @@ export function DataTable<T>({
         : "text-left";
 
   const totalWidth = enabled
-    ? orderedColumns.reduce((sum, c) => sum + (getWidth(c) ?? 0), 0)
+    ? orderedColumns.reduce((sum, c) => sum + (getWidth(c) ?? 0), 0) +
+      (hasRowReorder ? GRIP_COLUMN_WIDTH : 0)
     : undefined;
 
   const sortableIds = orderedColumns.map((c) => c.key);
+  const totalColumnCount =
+    orderedColumns.length + (hasRowReorder ? 1 : 0);
 
   return (
     <div className={cn("overflow-x-auto", className)}>
@@ -165,8 +261,11 @@ export function DataTable<T>({
             width: totalWidth || undefined,
           }}
         >
-          {orderedColumns.some((c) => c.width) && (
+          {(hasRowReorder || orderedColumns.some((c) => c.width)) && (
             <colgroup>
+              {hasRowReorder && (
+                <col style={{ width: GRIP_COLUMN_WIDTH }} />
+              )}
               {orderedColumns.map((col) => {
                 const w = getWidth(col);
                 return (
@@ -177,6 +276,13 @@ export function DataTable<T>({
           )}
           <thead>
             <tr>
+              {hasRowReorder && (
+                <th
+                  aria-hidden="true"
+                  className="bg-[color:var(--header-bg)]"
+                  style={{ width: GRIP_COLUMN_WIDTH }}
+                />
+              )}
               <SortableContext
                 items={sortableIds}
                 strategy={horizontalListSortingStrategy}
@@ -212,7 +318,7 @@ export function DataTable<T>({
           <tbody>
             <tr aria-hidden="true">
               <td
-                colSpan={orderedColumns.length}
+                colSpan={totalColumnCount}
                 style={{ height: 14, padding: 0, background: "transparent" }}
               />
             </tr>
@@ -220,7 +326,7 @@ export function DataTable<T>({
               <>
                 <tr>
                   <td
-                    colSpan={orderedColumns.length}
+                    colSpan={totalColumnCount}
                     className="themed-new-row-cell"
                     onClick={() => {
                       if (!addTopPending)
@@ -239,49 +345,67 @@ export function DataTable<T>({
                 </tr>
               </>
             )}
-            {rows.map((row) => {
-              const record = row as Record<string, unknown>;
-              const cells = orderedColumns.map((col) => (
-                <td
-                  key={col.key}
-                  className={cn(
-                    "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)]",
-                    "bg-[color:var(--cell-bg)]",
-                    alignFor(col),
-                    col.className,
-                  )}
-                >
-                  {col.render
-                    ? col.render(row)
-                    : String(record[col.key] ?? "")}
-                </td>
-              ));
-              if (onDeleteRow) {
-                const label =
-                  typeof deleteItemLabel === "function"
-                    ? deleteItemLabel(row)
-                    : deleteItemLabel;
-                return (
-                  <RowContextMenu
-                    key={rowKey(row)}
-                    rowStyle={rowStyle?.(row)}
-                    onDelete={() => onDeleteRow(row)}
-                    itemLabel={label}
+            <SortableContext
+              items={rowKeys}
+              strategy={verticalListSortingStrategy}
+              disabled={!hasRowReorder}
+            >
+              {displayRows.map((row) => {
+                const record = row as Record<string, unknown>;
+                const key = rowKey(row);
+                const cells = orderedColumns.map((col) => (
+                  <td
+                    key={col.key}
+                    className={cn(
+                      "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)]",
+                      "bg-[color:var(--cell-bg)]",
+                      alignFor(col),
+                      col.className,
+                    )}
                   >
+                    {col.render
+                      ? col.render(row)
+                      : String(record[col.key] ?? "")}
+                  </td>
+                ));
+                if (hasRowReorder) {
+                  return (
+                    <DraggableRow
+                      key={key}
+                      id={key}
+                      rowStyle={rowStyle?.(row)}
+                    >
+                      {cells}
+                    </DraggableRow>
+                  );
+                }
+                if (onDeleteRow) {
+                  const label =
+                    typeof deleteItemLabel === "function"
+                      ? deleteItemLabel(row)
+                      : deleteItemLabel;
+                  return (
+                    <RowContextMenu
+                      key={key}
+                      rowStyle={rowStyle?.(row)}
+                      onDelete={() => onDeleteRow(row)}
+                      itemLabel={label}
+                    >
+                      {cells}
+                    </RowContextMenu>
+                  );
+                }
+                return (
+                  <tr key={key} style={rowStyle?.(row)}>
                     {cells}
-                  </RowContextMenu>
+                  </tr>
                 );
-              }
-              return (
-                <tr key={rowKey(row)} style={rowStyle?.(row)}>
-                  {cells}
-                </tr>
-              );
-            })}
+              })}
+            </SortableContext>
             {onAddRow && (
               <tr>
                 <td
-                  colSpan={orderedColumns.length}
+                  colSpan={totalColumnCount}
                   className="themed-new-row-cell"
                   onClick={() => {
                     if (!addPending) startAddTransition(() => onAddRow());

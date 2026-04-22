@@ -175,3 +175,23 @@ export async function updatePicklistFullName(
   );
   revalidate();
 }
+
+export async function reorderPicklistOptions(
+  source: string,
+  orderedIds: string[],
+) {
+  const config = SOURCE_TABLES[source];
+  if (!config) throw new Error(`Invalid picklist source: ${source}`);
+  if (!config.hasSortOrder) {
+    throw new Error(`${source} does not support reordering`);
+  }
+  if (orderedIds.length === 0) return;
+  await poolV002.query(
+    `UPDATE ${config.table} AS t
+       SET sort_order = u.ord
+       FROM unnest($1::bigint[]) WITH ORDINALITY AS u(id, ord)
+       WHERE t.id = u.id`,
+    [orderedIds],
+  );
+  revalidate();
+}

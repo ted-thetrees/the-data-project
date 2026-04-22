@@ -71,6 +71,7 @@ export default async function PickListsBacklogPage() {
             rows={priorities}
             palettes={palettes}
             storageKey="pick-lists:backlog_priorities"
+            sortable
           />
         </PickListSection>
 
@@ -80,6 +81,7 @@ export default async function PickListsBacklogPage() {
             rows={categories}
             palettes={palettes}
             storageKey="pick-lists:backlog_categories"
+            sortable
           />
         </PickListSection>
 
@@ -89,6 +91,7 @@ export default async function PickListsBacklogPage() {
             rows={statuses}
             palettes={palettes}
             storageKey="pick-lists:backlog_statuses"
+            sortable
           />
         </PickListSection>
 
@@ -98,6 +101,7 @@ export default async function PickListsBacklogPage() {
             rows={yesOrNotYet}
             palettes={palettes}
             storageKey="pick-lists:backlog_yes_or_not_yet"
+            sortable
           />
         </PickListSection>
 
@@ -107,6 +111,7 @@ export default async function PickListsBacklogPage() {
             rows={designParadigms}
             palettes={palettes}
             storageKey="pick-lists:backlog_design_paradigms"
+            sortable
           />
         </PickListSection>
 
@@ -116,6 +121,7 @@ export default async function PickListsBacklogPage() {
             rows={prototypeStages}
             palettes={palettes}
             storageKey="pick-lists:backlog_prototype_stages"
+            sortable
           />
         </PickListSection>
       </div>
