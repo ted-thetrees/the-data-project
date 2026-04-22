@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -224,14 +224,39 @@ export function DataTable<T>({
         ? "text-right"
         : "text-left";
 
-  const totalWidth = enabled
-    ? orderedColumns.reduce((sum, c) => sum + (getWidth(c) ?? 0), 0) +
-      (hasRowReorder ? GRIP_COLUMN_WIDTH : 0)
-    : undefined;
+  const userColsWidth = enabled
+    ? orderedColumns.reduce((sum, c) => sum + (getWidth(c) ?? 0), 0)
+    : 0;
+  // Only pin a table width when user columns actually have saved widths —
+  // otherwise adding the grip width alone would shrink the table to 24px and
+  // force table-layout:auto to squeeze the rest of the columns.
+  const totalWidth =
+    enabled && userColsWidth > 0
+      ? userColsWidth + (hasRowReorder ? GRIP_COLUMN_WIDTH : 0)
+      : undefined;
 
   const sortableIds = orderedColumns.map((c) => c.key);
   const totalColumnCount =
     orderedColumns.length + (hasRowReorder ? 1 : 0);
+
+  const tableRef = useRef<HTMLTableElement>(null);
+
+  const snapshotMissingWidths = () => {
+    if (!enabled) return;
+    const tableEl = tableRef.current;
+    if (!tableEl) return;
+    const colEls = tableEl.querySelectorAll("col");
+    const gripOffset = hasRowReorder ? 1 : 0;
+    const updates: Record<string, number> = {};
+    orderedColumns.forEach((c, idx) => {
+      if (getWidth(c) !== undefined) return;
+      const el = colEls[idx + gripOffset] as
+        | HTMLTableColElement
+        | undefined;
+      if (el && el.offsetWidth > 0) updates[c.key] = el.offsetWidth;
+    });
+    views.setColumnWidths(updates);
+  };
 
   return (
     <div className={cn("overflow-x-auto", className)}>
@@ -253,6 +278,7 @@ export function DataTable<T>({
         onDragEnd={handleDragEnd}
       >
         <table
+          ref={tableRef}
           className="text-[length:var(--cell-font-size)] [&_td]:align-top"
           style={{
             tableLayout: fixedLayout ? "fixed" : undefined,
@@ -304,6 +330,7 @@ export function DataTable<T>({
                         <ColumnResizer
                           columnIndex={i + (hasRowReorder ? 1 : 0)}
                           currentWidth={getWidth(col) ?? 100}
+                          onResizeStart={snapshotMissingWidths}
                           onResize={(w) => views.setColumnWidth(col.key, w)}
                         />
                       )

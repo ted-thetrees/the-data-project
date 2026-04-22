@@ -172,6 +172,14 @@ export function useTableViews(
     }));
   };
 
+  const setColumnWidths = (widths: Record<string, number>) => {
+    if (Object.keys(widths).length === 0) return;
+    setParams((p) => ({
+      ...p,
+      columnWidths: { ...p.columnWidths, ...widths },
+    }));
+  };
+
   const setColumnOrder = (keys: string[]) => {
     setParams((p) => ({ ...p, columnOrder: keys }));
   };
@@ -186,6 +194,7 @@ export function useTableViews(
     renameView,
     deleteView,
     setColumnWidth,
+    setColumnWidths,
     setColumnOrder,
   };
 }
