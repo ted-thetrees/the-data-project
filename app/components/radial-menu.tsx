@@ -347,6 +347,8 @@ export function RadialMenu() {
             const pr = Math.hypot(p.x, p.y);
             const ux = pr === 0 ? 0 : p.x / pr;
             const uy = pr === 0 ? 0 : p.y / pr;
+            const squareHalf = layout.nodeR * 0.7;
+            const foHalf = isPicklist ? Math.max(1, squareHalf - 2) : layout.nodeR - 6;
             return (
               <g
                 key={`n-${i}`}
@@ -362,10 +364,10 @@ export function RadialMenu() {
                 <title>{p.node.label}</title>
                 {isPicklist ? (
                   <rect
-                    x={-layout.nodeR}
-                    y={-layout.nodeR}
-                    width={layout.nodeR * 2}
-                    height={layout.nodeR * 2}
+                    x={-squareHalf}
+                    y={-squareHalf}
+                    width={squareHalf * 2}
+                    height={squareHalf * 2}
                     rx={5}
                     ry={5}
                     fill={groupFill(p.groupIdx)}
@@ -381,10 +383,10 @@ export function RadialMenu() {
                   />
                 )}
                 <foreignObject
-                  x={-(layout.nodeR - 6)}
-                  y={-(layout.nodeR - 6)}
-                  width={(layout.nodeR - 6) * 2}
-                  height={(layout.nodeR - 6) * 2}
+                  x={-foHalf}
+                  y={-foHalf}
+                  width={foHalf * 2}
+                  height={foHalf * 2}
                   style={{ overflow: "visible" }}
                 >
                   <div className="flex h-full w-full flex-col items-center justify-center text-white" style={{ gap: 3 }}>
@@ -406,8 +408,19 @@ export function RadialMenu() {
                     </span>
                   </div>
                 </foreignObject>
-                {isLeaf && (
-                  <g transform={`translate(${ux * layout.nodeR}, ${uy * layout.nodeR})`}>
+                {isLeaf && (() => {
+                  let bx: number;
+                  let by: number;
+                  if (isPicklist) {
+                    const m = Math.max(Math.abs(ux), Math.abs(uy), 1e-6);
+                    bx = (ux / m) * squareHalf;
+                    by = (uy / m) * squareHalf;
+                  } else {
+                    bx = ux * layout.nodeR;
+                    by = uy * layout.nodeR;
+                  }
+                  return (
+                  <g transform={`translate(${bx}, ${by})`}>
                     <circle
                       r={Math.max(9, layout.nodeR * 0.32)}
                       fill="white"
@@ -425,7 +438,8 @@ export function RadialMenu() {
                       {(p.node as Leaf).key}
                     </text>
                   </g>
-                )}
+                  );
+                })()}
               </g>
             );
           })}
