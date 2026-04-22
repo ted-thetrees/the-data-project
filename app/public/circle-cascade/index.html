@@ -116,6 +116,15 @@
     <div class="group">
       <div class="row"><label>Horizontal noise</label><span class="val" id="v-hn">0.1</span></div>
       <input id="s-hn" type="range" min="0" max="1" value="0.1" step="0.02" />
+
+      <div class="row"><label>Taper</label><span class="val" id="v-tp">0</span></div>
+      <input id="s-tp" type="range" min="0" max="1" value="0" step="0.02" />
+
+      <div class="row"><label>Taper shape</label></div>
+      <select id="s-tps" class="preset-select" style="margin-bottom: 0">
+        <option value="linear" selected>linear</option>
+        <option value="curved">curved (pendant)</option>
+      </select>
     </div>
     <div class="group">
       <div class="row"><label>Fill opacity</label><span class="val" id="v-fa">0.85</span></div>
@@ -497,7 +506,7 @@ function generateEmpirical(params) {
 
 // ---- generator (parametric, slider-driven) ----
 function generate(params) {
-  const { N, falloff, sizeTop, sizeBot, sizeJitter, gap, clusterBias, hNoise, allowOverlap, seed, W, H } = params;
+  const { N, falloff, sizeTop, sizeBot, sizeJitter, gap, clusterBias, hNoise, taper, taperShape, allowOverlap, seed, W, H } = params;
   const rng = mulberry32(seed);
   const xNoise = makeValueNoise1D(rng, 5);
 
@@ -505,18 +514,26 @@ function generate(params) {
   const maxAttempts = N * 400;
   let attempts = 0;
 
+  const taperAt = (cy) => {
+    const t = Math.max(0, Math.min(1, cy / H));
+    return taperShape === "curved" ? t * t : t;
+  };
+
   const meanRAt = (cy) => {
     const t = Math.max(0, Math.min(1, cy / H));
     return sizeBot + (sizeTop - sizeBot) * Math.pow(1 - t, 1.6);
   };
   const densityAt = (cy) => {
     const t = Math.max(0, Math.min(1, cy / H));
-    return Math.exp(-falloff * t);
+    return Math.exp(-falloff * t) * (1 - taper * taperAt(cy));
   };
   const xWeightAt = (cx) => {
-    // map noise [-1,1] -> [0,1], then ease toward 1 as hNoise -> 0
     const n = (xNoise(cx / W * 1.7) + 1) * 0.5;
     return 1 - hNoise + hNoise * n;
+  };
+  const inBand = (cx, cy) => {
+    const half = (W / 2) * (1 - taper * taperAt(cy));
+    return Math.abs(cx - W / 2) <= half;
   };
 
   const overlaps = (cx, cy, r) => {
@@ -542,19 +559,19 @@ function generate(params) {
       const mean = meanRAt(cy);
       r = Math.max(2, mean * (1 + (rng() * 2 - 1) * sizeJitter));
     } else {
-      // sample (x,y) by rejection against D(y)*Xw(x)
       let ok = false, tries = 0;
       while (!ok && tries < 60) {
         tries++;
         cx = rng() * W;
         cy = rng() * H;
-        if (rng() < densityAt(cy) * xWeightAt(cx)) ok = true;
+        if (rng() < densityAt(cy) * xWeightAt(cx) && inBand(cx, cy)) ok = true;
       }
       if (!ok) continue;
       const mean = meanRAt(cy);
       r = Math.max(2, mean * (1 + (rng() * 2 - 1) * sizeJitter));
     }
 
+    if (!inBand(cx, cy)) continue;
     if (cx - r < 0 || cx + r > W || cy - r < 0 || cy + r > H) continue;
     if (overlaps(cx, cy, r)) continue;
     circles.push({ cx, cy, r });
@@ -607,6 +624,8 @@ function currentParams() {
     gap: +$("s-gap").value,
     clusterBias: +$("s-cb").value,
     hNoise: +$("s-hn").value,
+    taper: +$("s-tp").value,
+    taperShape: $("s-tps").value,
     fillAlpha: +$("s-fa").value,
     outline: $("s-outline").checked,
     allowOverlap: $("s-overlap").checked,
@@ -627,6 +646,7 @@ function render() {
   $("v-gap").textContent = p.gap;
   $("v-cb").textContent = p.clusterBias.toFixed(2);
   $("v-hn").textContent = p.hNoise.toFixed(2);
+  $("v-tp").textContent = p.taper.toFixed(2);
   $("v-fa").textContent = p.fillAlpha.toFixed(2);
 
   // update viewBox + container aspect so the canvas actually resizes
@@ -674,6 +694,8 @@ const PARAM_MAP = {
   "s-gap": { key: "gap", type: "number" },
   "s-cb": { key: "clusterBias", type: "number" },
   "s-hn": { key: "hNoise", type: "number" },
+  "s-tp": { key: "taper", type: "number" },
+  "s-tps": { key: "taperShape", type: "string" },
   "s-fa": { key: "fillAlpha", type: "number" },
   "s-outline": { key: "outline", type: "bool" },
   "s-overlap": { key: "allowOverlap", type: "bool" },
@@ -734,6 +756,9 @@ function applyParams(params) {
   if (params.algorithm === undefined && params.empirical !== undefined) {
     params = { ...params, algorithm: params.empirical ? "empirical-hardcore" : "parametric" };
   }
+  // back-compat: presets predating taper default to no taper
+  if (params.taper === undefined) params = { ...params, taper: 0 };
+  if (params.taperShape === undefined) params = { ...params, taperShape: "linear" };
   applying = true;
   if ("seed" in params) seed = params.seed;
   for (const id in PARAM_MAP) {
@@ -862,7 +887,7 @@ function flashBtn(id, label) {
 }
 
 // --- input wiring: any change → dirty + re-render ---
-["s-n","s-w","s-k","s-rt","s-rb","s-sj","s-gap","s-cb","s-hn","s-fa","s-outline","s-overlap","s-colored","s-algorithm"].forEach(id => {
+["s-n","s-w","s-k","s-rt","s-rb","s-sj","s-gap","s-cb","s-hn","s-tp","s-tps","s-fa","s-outline","s-overlap","s-colored","s-algorithm"].forEach(id => {
   $(id).addEventListener("input", () => { markDirty(); render(); });
 });
 $("reroll").addEventListener("click", () => {
