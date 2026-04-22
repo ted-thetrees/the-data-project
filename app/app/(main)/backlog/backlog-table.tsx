@@ -462,8 +462,8 @@ export function BacklogTable({
 
   const cellRenderers: Record<string, (row: BacklogRow) => React.ReactNode> = {
     main_entry: (row) => (
-      <td key="main_entry" className={`${cellClass} text-foreground`}>
-        <EditableText
+      <td key="main_entry" className={`${cellClass} text-foreground align-top`}>
+        <EditableTextWrap
           value={row.main_entry ?? ""}
           onSave={(v) => updateBacklogMainEntry(row.id, v)}
         />
