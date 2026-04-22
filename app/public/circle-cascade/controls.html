@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Circle Cascade — Controls Reference</title>
+<style>
+  :root {
+    --bg: #fafaf7;
+    --fg: #1a1a1a;
+    --muted: #6b6b6b;
+    --line: #e3e3de;
+    --accent: #2f6d4a;
+    --active: #eaf3ec;
+    --inactive: #f3f3ef;
+    --cell-pad: 10px 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    font-size: 13px; line-height: 1.4; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 28px 20px 60px; }
+  h1 { font-size: 20px; margin: 0 0 4px; font-weight: 600; }
+  .sub { color: var(--muted); margin-bottom: 18px; }
+  .sub a { color: var(--accent); text-decoration: none; }
+  .sub a:hover { text-decoration: underline; }
+  .legend { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; font-size: 12px; color: var(--muted); }
+  .legend .chip { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; border: 1px solid var(--line); }
+  .dot.on { background: var(--active); border-color: #cfdecf; }
+  .dot.off { background: var(--inactive); }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  table { border-collapse: collapse; width: 100%; min-width: 820px; }
+  th, td { padding: var(--cell-pad); border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); vertical-align: top; text-align: left; }
+  th:last-child, td:last-child { border-right: none; }
+  tr:last-child td { border-bottom: none; }
+  thead th { background: #f6f6f1; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #4a4a4a; position: sticky; top: 0; }
+  thead th.param { width: 190px; }
+  tbody th { font-weight: 600; background: #fbfbf7; width: 190px; }
+  tbody th .range { display: block; color: var(--muted); font-weight: 400; font-size: 11px; margin-top: 2px; letter-spacing: 0; text-transform: none; }
+  td.cell.on { background: var(--active); }
+  td.cell.off { background: var(--inactive); color: #8a8a8a; }
+  td.cell .mark { display: inline-block; font-weight: 600; margin-right: 6px; }
+  td.cell.on .mark { color: var(--accent); }
+  td.cell.off .mark { color: #aaa; }
+  td.cell .note { display: block; margin-top: 2px; color: #3a3a3a; font-size: 12px; }
+  td.cell.off .note { color: #8a8a8a; }
+  tbody tr.group td, tbody tr.group th { background: #efeee8; font-weight: 600; color: #4a4a4a; text-transform: uppercase; font-size: 11px; letter-spacing: .05em; }
+  .footer { margin-top: 18px; font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Circle Cascade — Controls Reference</h1>
+  <div class="sub">Which parameters each algorithm actually uses. Back to the app: <a href="/circle-cascade">/circle-cascade</a></div>
+
+  <div class="legend">
+    <span class="chip"><span class="dot on"></span> used</span>
+    <span class="chip"><span class="dot off"></span> inert</span>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="param">Parameter</th>
+          <th>parametric</th>
+          <th>empirical · hard-core</th>
+          <th>empirical · PCF-greedy</th>
+          <th>empirical · PCF + sliced-OT</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="group"><th colspan="5">Always active</th></tr>
+
+        <tr>
+          <th>Count (N)<span class="range">10–400</span></th>
+          <td class="cell on"><span class="mark">●</span>number of circles<span class="note">target placements</span></td>
+          <td class="cell on"><span class="mark">●</span>number of circles<span class="note">target placements</span></td>
+          <td class="cell on"><span class="mark">●</span>number of circles<span class="note">target placements</span></td>
+          <td class="cell on"><span class="mark">●</span>number of circles<span class="note">PCF init, then OT refine</span></td>
+        </tr>
+
+        <tr>
+          <th>Width (H=400)<span class="range">200–800</span></th>
+          <td class="cell on"><span class="mark">●</span>canvas width<span class="note">height fixed at 400</span></td>
+          <td class="cell on"><span class="mark">●</span>canvas width<span class="note">height fixed at 400</span></td>
+          <td class="cell on"><span class="mark">●</span>canvas width<span class="note">height fixed at 400</span></td>
+          <td class="cell on"><span class="mark">●</span>canvas width<span class="note">reference tiled to width</span></td>
+        </tr>
+
+        <tr>
+          <th>Fill opacity<span class="range">0.05–1</span></th>
+          <td class="cell on"><span class="mark">●</span>alpha on each circle</td>
+          <td class="cell on"><span class="mark">●</span>alpha on each circle</td>
+          <td class="cell on"><span class="mark">●</span>alpha on each circle</td>
+          <td class="cell on"><span class="mark">●</span>alpha on each circle</td>
+        </tr>
+
+        <tr>
+          <th>outline only</th>
+          <td class="cell on"><span class="mark">●</span>stroke, no fill</td>
+          <td class="cell on"><span class="mark">●</span>stroke, no fill</td>
+          <td class="cell on"><span class="mark">●</span>stroke, no fill</td>
+          <td class="cell on"><span class="mark">●</span>stroke, no fill</td>
+        </tr>
+
+        <tr>
+          <th>allow overlap</th>
+          <td class="cell on"><span class="mark">●</span>disables rejection</td>
+          <td class="cell on"><span class="mark">●</span>disables rejection</td>
+          <td class="cell on"><span class="mark">●</span>disables rejection</td>
+          <td class="cell on"><span class="mark">●</span>disables rejection</td>
+        </tr>
+
+        <tr>
+          <th>color (palette)</th>
+          <td class="cell on"><span class="mark">●</span>sampled palette vs black</td>
+          <td class="cell on"><span class="mark">●</span>sampled palette vs black</td>
+          <td class="cell on"><span class="mark">●</span>sampled palette vs black</td>
+          <td class="cell on"><span class="mark">●</span>sampled palette vs black</td>
+        </tr>
+
+        <tr class="group"><th colspan="5">Parametric shape controls (inert in empirical modes — driven by measurements)</th></tr>
+
+        <tr>
+          <th>Falloff (k)<span class="range">1–6</span></th>
+          <td class="cell on"><span class="mark">●</span>D(y) = e<sup>−k·y</sup><span class="note">density decay top→bottom</span></td>
+          <td class="cell off"><span class="mark">○</span>inert<span class="note">uses measured λ(y)</span></td>
+          <td class="cell off"><span class="mark">○</span>inert<span class="note">uses measured λ(y)</span></td>
+          <td class="cell off"><span class="mark">○</span>inert<span class="note">uses measured λ(y) + OT</span></td>
+        </tr>
+
+        <tr>
+          <th>Size top (px)<span class="range">6–60</span></th>
+          <td class="cell on"><span class="mark">●</span>mean radius at y=0</td>
+          <td class="cell off"><span class="mark">○</span>inert<span class="note">uses measured R(y)</span></td>
+          <td class="cell off"><span class="mark">○</span>inert<span class="note">uses measured R(y)</span></td>
+          <td class="cell off"><span class="mark">○</span>inert<span class="note">uses measured R(y)</span></td>
+        </tr>
+
+        <tr>
+          <th>Size bottom (px)<span class="range">1–24</span></th>
+          <td class="cell on"><span class="mark">●</span>mean radius at y=H<span class="note">linear taper from top</span></td>
+          <td class="cell off"><span class="mark">○</span>inert</td>
+          <td class="cell off"><span class="mark">○</span>inert</td>
+          <td class="cell off"><span class="mark">○</span>inert</td>
+        </tr>
+
+        <tr>
+          <th>Size jitter<span class="range">0–0.8</span></th>
+          <td class="cell on"><span class="mark">●</span>per-circle radius variance</td>
+          <td class="cell off"><span class="mark">○</span>inert<span class="note">variance baked in</span></td>
+          <td class="cell off"><span class="mark">○</span>inert</td>
+          <td class="cell off"><span class="mark">○</span>inert</td>
+        </tr>
+
+        <tr>
+          <th>Gap (px)<span class="range">0–20</span></th>
+          <td class="cell on"><span class="mark">●</span>min separation<span class="note">only when overlap off</span></td>
+          <td class="cell off"><span class="mark">○</span>inert<span class="note">hard-core radius from data</span></td>
+          <td class="cell off"><span class="mark">○</span>inert<span class="note">separation from g(r)</span></td>
+          <td class="cell off"><span class="mark">○</span>inert</td>
+        </tr>
+
+        <tr>
+          <th>Cluster bias<span class="range">0–0.8</span></th>
+          <td class="cell on"><span class="mark">●</span>chance to place near existing</td>
+          <td class="cell off"><span class="mark">○</span>inert</td>
+          <td class="cell off"><span class="mark">○</span>inert<span class="note">clustering from g(r) match</span></td>
+          <td class="cell off"><span class="mark">○</span>inert</td>
+        </tr>
+
+        <tr>
+          <th>Horizontal noise<span class="range">0–1</span></th>
+          <td class="cell on"><span class="mark">●</span>1D value noise on x-density</td>
+          <td class="cell off"><span class="mark">○</span>inert</td>
+          <td class="cell off"><span class="mark">○</span>inert</td>
+          <td class="cell off"><span class="mark">○</span>inert</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    Empirical modes replace the shape sliders with statistics measured from the reference image: λ(y) density, R(y) radius-by-row, g(r) pair correlation, and (for OT) the full reference point cloud nudged via Paulin 2020 sliced optimal transport.
+  </div>
+</div>
+</body>
+</html>
