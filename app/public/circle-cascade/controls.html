@@ -125,58 +125,58 @@
 
         <tr>
           <th>Falloff (k)<span class="range">1–6</span></th>
-          <td class="cell on"><span class="mark">●</span>D(y) = e<sup>−k·y</sup><span class="note">density decay top→bottom</span></td>
-          <td class="cell off"><span class="mark">○</span>inert<span class="note">uses measured λ(y)</span></td>
-          <td class="cell off"><span class="mark">○</span>inert<span class="note">uses measured λ(y)</span></td>
-          <td class="cell off"><span class="mark">○</span>inert<span class="note">uses measured λ(y) + OT</span></td>
+          <td class="cell on"><span class="mark">●</span>Controls how quickly the circles thin out as you move from top to bottom. Low values (around 1) spread circles fairly evenly down the canvas; high values (around 6) pile them heavily at the top and leave the bottom sparse. Each unit of <em>k</em> cuts the local density by a constant factor per row.</td>
+          <td class="cell off"><span class="mark">○</span>Not used. The top-to-bottom density pattern is copied row-by-row from the reference image.</td>
+          <td class="cell off"><span class="mark">○</span>Not used. Density pattern comes from the reference image.</td>
+          <td class="cell off"><span class="mark">○</span>Not used. Density pattern comes from the reference, plus the optimal-transport refinement nudges every circle toward a reference target.</td>
         </tr>
 
         <tr>
           <th>Size top (px)<span class="range">6–60</span></th>
-          <td class="cell on"><span class="mark">●</span>mean radius at y=0</td>
-          <td class="cell off"><span class="mark">○</span>inert<span class="note">uses measured R(y)</span></td>
-          <td class="cell off"><span class="mark">○</span>inert<span class="note">uses measured R(y)</span></td>
-          <td class="cell off"><span class="mark">○</span>inert<span class="note">uses measured R(y)</span></td>
+          <td class="cell on"><span class="mark">●</span>The average circle radius at the very top of the canvas. Think of it as "how big are the biggest circles up top." Circles are then scaled smoothly down toward the bottom value as they go lower.</td>
+          <td class="cell off"><span class="mark">○</span>Not used. Circle sizes come from row-by-row measurements of the reference image.</td>
+          <td class="cell off"><span class="mark">○</span>Not used. Sizes come from reference measurements.</td>
+          <td class="cell off"><span class="mark">○</span>Not used. Sizes come from reference measurements.</td>
         </tr>
 
         <tr>
           <th>Size bottom (px)<span class="range">1–24</span></th>
-          <td class="cell on"><span class="mark">●</span>mean radius at y=H<span class="note">linear taper from top</span></td>
-          <td class="cell off"><span class="mark">○</span>inert</td>
-          <td class="cell off"><span class="mark">○</span>inert</td>
-          <td class="cell off"><span class="mark">○</span>inert</td>
+          <td class="cell on"><span class="mark">●</span>The average circle radius at the very bottom of the canvas. Size shrinks linearly between <em>Size top</em> and <em>Size bottom</em> as you move down, so a circle in the middle of the canvas will be roughly the average of the two.</td>
+          <td class="cell off"><span class="mark">○</span>Not used.</td>
+          <td class="cell off"><span class="mark">○</span>Not used.</td>
+          <td class="cell off"><span class="mark">○</span>Not used.</td>
         </tr>
 
         <tr>
           <th>Size jitter<span class="range">0–0.8</span></th>
-          <td class="cell on"><span class="mark">●</span>per-circle radius variance</td>
-          <td class="cell off"><span class="mark">○</span>inert<span class="note">variance baked in</span></td>
-          <td class="cell off"><span class="mark">○</span>inert</td>
-          <td class="cell off"><span class="mark">○</span>inert</td>
+          <td class="cell on"><span class="mark">●</span>How much each individual circle's size is allowed to wander away from the row-average. 0 means every circle on a row is exactly the same size; 0.8 gives you a wide mix of noticeably smaller and bigger circles. Adds visual variety without changing the overall gradient.</td>
+          <td class="cell off"><span class="mark">○</span>Not used. Size variation is baked into the reference statistics.</td>
+          <td class="cell off"><span class="mark">○</span>Not used.</td>
+          <td class="cell off"><span class="mark">○</span>Not used.</td>
         </tr>
 
         <tr>
           <th>Gap (px)<span class="range">0–20</span></th>
-          <td class="cell on"><span class="mark">●</span>min separation<span class="note">only when overlap off</span></td>
-          <td class="cell off"><span class="mark">○</span>inert<span class="note">hard-core radius from data</span></td>
-          <td class="cell off"><span class="mark">○</span>inert<span class="note">separation from g(r)</span></td>
-          <td class="cell off"><span class="mark">○</span>inert</td>
+          <td class="cell on"><span class="mark">●</span>The minimum empty space forced between the edges of any two neighboring circles. Only takes effect when <em>allow overlap</em> is off. Raise it to give the layout more breathing room; push it too high and some circles may fail to find a spot and won't be placed.</td>
+          <td class="cell off"><span class="mark">○</span>Not used. Minimum spacing is taken directly from the reference — whatever distance it avoids, this algorithm avoids too.</td>
+          <td class="cell off"><span class="mark">○</span>Not used. Spacing comes from matching the reference's pair-correlation curve.</td>
+          <td class="cell off"><span class="mark">○</span>Not used.</td>
         </tr>
 
         <tr>
           <th>Cluster bias<span class="range">0–0.8</span></th>
-          <td class="cell on"><span class="mark">●</span>chance to place near existing</td>
-          <td class="cell off"><span class="mark">○</span>inert</td>
-          <td class="cell off"><span class="mark">○</span>inert<span class="note">clustering from g(r) match</span></td>
-          <td class="cell off"><span class="mark">○</span>inert</td>
+          <td class="cell on"><span class="mark">●</span>The probability that a new circle is placed near an existing one rather than sampled freely from the density field. Higher values produce clumpier, grape-like groupings; lower values produce a more even scatter. Great for shifting the feel between "tight bunches" and "loose sprinkle" without changing the density gradient.</td>
+          <td class="cell off"><span class="mark">○</span>Not used.</td>
+          <td class="cell off"><span class="mark">○</span>Not used. Clumpiness is inherited from the reference's measured pair-correlation function.</td>
+          <td class="cell off"><span class="mark">○</span>Not used.</td>
         </tr>
 
         <tr>
           <th>Horizontal noise<span class="range">0–1</span></th>
-          <td class="cell on"><span class="mark">●</span>1D value noise on x-density</td>
-          <td class="cell off"><span class="mark">○</span>inert</td>
-          <td class="cell off"><span class="mark">○</span>inert</td>
-          <td class="cell off"><span class="mark">○</span>inert</td>
+          <td class="cell on"><span class="mark">●</span>Adds slow, wavy variation in density across the horizontal direction, so rows aren't uniformly packed left-to-right. At 0 every row is flat and even; at 1 you get strong vertical streaks of denser and sparser circles. Helps avoid an obviously algorithmic striped look.</td>
+          <td class="cell off"><span class="mark">○</span>Not used.</td>
+          <td class="cell off"><span class="mark">○</span>Not used.</td>
+          <td class="cell off"><span class="mark">○</span>Not used.</td>
         </tr>
       </tbody>
     </table>
