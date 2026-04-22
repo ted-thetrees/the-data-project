@@ -5,6 +5,7 @@ export const TABLE_VIEW_COOKIE_PREFIX = "tv-";
 export interface StoredViewParams {
   columnWidths?: Record<string, number>;
   columnOrder?: string[];
+  groupBy?: string[];
 }
 
 export async function readAllTableViewCookies(): Promise<
@@ -36,7 +37,11 @@ export async function readAllTableViewCookies(): Promise<
 export async function getInitialViewParams(
   storageKey: string,
   defaultWidths: Record<string, number>,
-): Promise<{ columnWidths: Record<string, number>; columnOrder?: string[] }> {
+): Promise<{
+  columnWidths: Record<string, number>;
+  columnOrder?: string[];
+  groupBy?: string[];
+}> {
   const store = await cookies();
   const raw = store.get(TABLE_VIEW_COOKIE_PREFIX + storageKey)?.value;
   if (!raw) return { columnWidths: { ...defaultWidths } };
@@ -45,6 +50,7 @@ export async function getInitialViewParams(
     return {
       columnWidths: { ...defaultWidths, ...(parsed.columnWidths ?? {}) },
       columnOrder: parsed.columnOrder,
+      groupBy: parsed.groupBy,
     };
   } catch {
     return { columnWidths: { ...defaultWidths } };

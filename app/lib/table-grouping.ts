@@ -55,3 +55,92 @@ export function makeDisplayId(
 ): string {
   return `${recordId}:${groupId ?? "null"}`;
 }
+
+/**
+ * Generic N-level nested grouping for table rows.
+ *
+ * Callers pass a list of GroupBySpec objects — one per level, outer-to-inner.
+ * Each spec provides a function to extract the group key and its display label
+ * for a given row. A null key lands rows in a synthetic "Uncategorized"
+ * bucket (mirrors the LEFT JOIN contract).
+ *
+ * Returns a tree of {group, children} and {row} nodes. Consumers walk the
+ * tree and render group headers + data rows; collapse state is tracked
+ * separately by the caller (usually ephemeral Set<string> of group paths).
+ */
+
+export const UNCATEGORIZED_KEY = "__null__";
+
+export interface GroupBySpec<T> {
+  field: string;
+  getKey: (row: T) => string | null;
+  getLabel: (key: string | null, rows: T[]) => string;
+}
+
+export interface GroupNode<T> {
+  kind: "group";
+  level: number;
+  field: string;
+  /** Unique key within this group's siblings (the extracted key, or UNCATEGORIZED_KEY). */
+  groupKey: string;
+  /** The extracted value for this group; null for the Uncategorized bucket. */
+  value: string | null;
+  label: string;
+  /** Total leaf-row count under this group (including nested groups). */
+  count: number;
+  /** Cumulative path from the root, e.g. "category:abc|status:xyz". Use as collapse key. */
+  path: string;
+  children: GroupItem<T>[];
+}
+
+export interface RowNode<T> {
+  kind: "row";
+  row: T;
+}
+
+export type GroupItem<T> = GroupNode<T> | RowNode<T>;
+
+export function groupRows<T>(
+  rows: T[],
+  specs: GroupBySpec<T>[],
+  level = 0,
+  parentPath = "",
+): GroupItem<T>[] {
+  if (specs.length === 0) {
+    return rows.map((row) => ({ kind: "row", row }) satisfies RowNode<T>);
+  }
+  const [spec, ...rest] = specs;
+  const buckets = new Map<
+    string,
+    { value: string | null; rows: T[] }
+  >();
+  for (const row of rows) {
+    const key = spec.getKey(row);
+    const bucketKey = key ?? UNCATEGORIZED_KEY;
+    let bucket = buckets.get(bucketKey);
+    if (!bucket) {
+      bucket = { value: key, rows: [] };
+      buckets.set(bucketKey, bucket);
+    }
+    bucket.rows.push(row);
+  }
+  const out: GroupNode<T>[] = [];
+  for (const [bucketKey, bucket] of buckets) {
+    const path = parentPath
+      ? `${parentPath}|${spec.field}:${bucketKey}`
+      : `${spec.field}:${bucketKey}`;
+    const children = groupRows(bucket.rows, rest, level + 1, path);
+    out.push({
+      kind: "group",
+      level,
+      field: spec.field,
+      groupKey: bucketKey,
+      value: bucket.value,
+      label: spec.getLabel(bucket.value, bucket.rows),
+      count: bucket.rows.length,
+      path,
+      children,
+    });
+  }
+  return out;
+}

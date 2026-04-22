@@ -9,6 +9,9 @@ export interface ViewParams {
   // Keys not present in the array are appended to the end of the rendered set,
   // which handles schema additions without wiping user preferences.
   columnOrder?: string[];
+  // Ordered list of column keys to group rows by. Outermost group first.
+  // Undefined / empty = no grouping.
+  groupBy?: string[];
 }
 
 export interface View {
@@ -47,6 +50,7 @@ export function useTableViews(
     ? {
         columnWidths: { ...defaultWidths, ...initialParams.columnWidths },
         columnOrder: initialParams.columnOrder,
+        groupBy: initialParams.groupBy,
       }
     : defaultParams();
 
@@ -184,6 +188,13 @@ export function useTableViews(
     setParams((p) => ({ ...p, columnOrder: keys }));
   };
 
+  const setGroupBy = (keys: string[]) => {
+    setParams((p) => ({
+      ...p,
+      groupBy: keys.length === 0 ? undefined : keys,
+    }));
+  };
+
   return {
     views,
     activeViewId,
@@ -196,6 +207,7 @@ export function useTableViews(
     setColumnWidth,
     setColumnWidths,
     setColumnOrder,
+    setGroupBy,
   };
 }
 

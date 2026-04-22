@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -27,6 +27,13 @@ import { ViewSwitcher } from "@/components/view-switcher";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
 import { RowContextMenu } from "@/components/row-context-menu";
 import { handleGridKeyDown } from "@/components/grid-keyboard-nav";
+import { GroupByPicker } from "@/components/group-by-picker";
+import {
+  groupRows,
+  type GroupBySpec,
+  type GroupItem,
+} from "@/lib/table-grouping";
+import { ChevronRight, ChevronDown } from "lucide-react";
 import {
   updateBacklogMainEntry,
   updateBacklogDetails,
@@ -98,6 +105,107 @@ const HEADER_LABELS: Record<string, string> = {
   image: "Image",
 };
 
+const GROUPABLE_KEYS = [
+  "priority",
+  "category",
+  "status",
+  "yes_or_not_yet",
+  "design_paradigm",
+  "prototype_stage",
+] as const;
+
+const ROW_FIELD_FOR_GROUP: Record<string, keyof BacklogRow> = {
+  priority: "priority_id",
+  category: "primary_category_id",
+  status: "status_id",
+  yes_or_not_yet: "yes_or_not_yet_id",
+  design_paradigm: "design_paradigm_id",
+  prototype_stage: "prototype_stage_id",
+};
+
+const ICICLE_COLUMN_WIDTH = 22;
+
+function renderGroupedTree(
+  items: GroupItem<BacklogRow>[],
+  collapsed: Set<string>,
+  toggle: (path: string) => void,
+  iceLevels: number,
+  totalColumnCount: number,
+  groupBy: string[],
+  headerLabels: Record<string, string>,
+  orderedKeys: string[],
+  cellRenderers: Record<string, (row: BacklogRow) => React.ReactNode>,
+  onDelete: (row: BacklogRow) => void | Promise<void>,
+): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  const walk = (items: GroupItem<BacklogRow>[]) => {
+    for (const item of items) {
+      if (item.kind === "group") {
+        const isCollapsed = collapsed.has(item.path);
+        const Caret = isCollapsed ? ChevronRight : ChevronDown;
+        const fieldLabel = headerLabels[item.field] ?? item.field;
+        out.push(
+          <tr key={`g-${item.path}`} className="themed-group-row">
+            {Array.from({ length: item.level }).map((_, i) => (
+              <td
+                key={`ice-${i}`}
+                className="bg-[color:var(--cell-bg)]"
+                style={{ padding: 0 }}
+              />
+            ))}
+            <td
+              className="cursor-pointer select-none bg-[color:var(--cell-bg)] text-center align-middle"
+              style={{ padding: 0, width: 22 }}
+              onClick={() => toggle(item.path)}
+              title={isCollapsed ? "Expand" : "Collapse"}
+            >
+              <Caret className="inline-block w-3 h-3" />
+            </td>
+            <td
+              colSpan={totalColumnCount - item.level - 1}
+              className="themed-group-header-cell font-medium text-[color:var(--foreground)] bg-[color:var(--header-bg)] px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] cursor-pointer"
+              onClick={() => toggle(item.path)}
+            >
+              <span className="text-[color:var(--muted-foreground)] text-xs mr-2">
+                {fieldLabel}:
+              </span>
+              <span>{item.label}</span>
+              <span className="text-[color:var(--muted-foreground)] text-xs ml-2">
+                ({item.count})
+              </span>
+            </td>
+          </tr>,
+        );
+        if (!isCollapsed) walk(item.children);
+      } else {
+        const row = item.row;
+        out.push(
+          <RowContextMenu
+            key={row.id}
+            onDelete={() => onDelete(row)}
+            itemLabel={
+              row.main_entry ? `"${row.main_entry}"` : "this backlog item"
+            }
+          >
+            {Array.from({ length: iceLevels }).map((_, i) => (
+              <td
+                key={`ice-${i}`}
+                className="bg-[color:var(--cell-bg)]"
+                style={{ padding: 0 }}
+              />
+            ))}
+            {orderedKeys.map((key) => cellRenderers[key]?.(row))}
+          </RowContextMenu>,
+        );
+      }
+    }
+    // silence unused-var warning for groupBy in closure
+    void groupBy;
+  };
+  walk(items);
+  return out;
+}
+
 function NewBacklogRow({ colSpan }: { colSpan: number }) {
   const [pending, startTransition] = useTransition();
   return (
@@ -145,7 +253,57 @@ export function BacklogTable({
     deleteView,
     setColumnWidth,
     setColumnOrder,
+    setGroupBy,
   } = useTableViews(BACKLOG_STORAGE_KEY, DEFAULT_WIDTHS, initialParams);
+
+  const groupBy = useMemo(
+    () =>
+      (params.groupBy ?? []).filter((k): k is (typeof GROUPABLE_KEYS)[number] =>
+        (GROUPABLE_KEYS as readonly string[]).includes(k),
+      ),
+    [params.groupBy],
+  );
+  const iceLevels = groupBy.length;
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const toggleCollapsed = (path: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+  };
+
+  const optionsForField: Record<string, PillOption[]> = {
+    priority: priorityOptions,
+    category: categoryOptions,
+    status: statusOptions,
+    yes_or_not_yet: yesOrNotYetOptions,
+    design_paradigm: designParadigmOptions,
+    prototype_stage: prototypeStageOptions,
+  };
+
+  const specs: GroupBySpec<BacklogRow>[] = groupBy.map((field) => {
+    const rowField = ROW_FIELD_FOR_GROUP[field];
+    const options = optionsForField[field] ?? [];
+    const lookup = new Map(options.map((o) => [o.id, o.name] as const));
+    return {
+      field,
+      getKey: (row) => {
+        const v = row[rowField];
+        return typeof v === "string" && v.length > 0 ? v : null;
+      },
+      getLabel: (key) =>
+        key === null ? "Uncategorized" : lookup.get(key) ?? "(unknown)",
+    };
+  });
+
+  const tree = useMemo(
+    () => groupRows(rows, specs),
+    // specs is rebuilt on every render; include its signature instead
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rows, groupBy.join(",")],
+  );
 
   const orderedKeys = useMemo(
     () =>
@@ -169,10 +327,12 @@ export function BacklogTable({
     setColumnOrder(arrayMove(orderedKeys, oldIndex, newIndex));
   };
 
-  const totalWidth = orderedKeys.reduce(
+  const userColsWidth = orderedKeys.reduce(
     (sum, k) => sum + (params.columnWidths[k] ?? 0),
     0,
   );
+  const totalWidth = userColsWidth + iceLevels * ICICLE_COLUMN_WIDTH;
+  const totalColumnCount = iceLevels + orderedKeys.length;
 
   const headerClass =
     "relative text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
@@ -294,6 +454,14 @@ export function BacklogTable({
         onRename={renameView}
         onDelete={deleteView}
       />
+      <GroupByPicker
+        available={[...GROUPABLE_KEYS].map((k) => ({
+          key: k,
+          label: HEADER_LABELS[k] ?? k,
+        }))}
+        groupBy={groupBy}
+        onChange={setGroupBy}
+      />
       <div className="overflow-x-auto">
         <DndContext
           sensors={sensors}
@@ -311,12 +479,26 @@ export function BacklogTable({
             onKeyDown={handleGridKeyDown}
           >
             <colgroup>
+              {Array.from({ length: iceLevels }).map((_, i) => (
+                <col
+                  key={`ice-${i}`}
+                  style={{ width: ICICLE_COLUMN_WIDTH }}
+                />
+              ))}
               {orderedKeys.map((key) => (
                 <col key={key} style={{ width: params.columnWidths[key] }} />
               ))}
             </colgroup>
             <thead>
               <tr>
+                {Array.from({ length: iceLevels }).map((_, i) => (
+                  <th
+                    key={`ice-h-${i}`}
+                    aria-hidden="true"
+                    className={headerClass}
+                    style={{ width: ICICLE_COLUMN_WIDTH, padding: 0 }}
+                  />
+                ))}
                 <SortableContext
                   items={orderedKeys}
                   strategy={horizontalListSortingStrategy}
@@ -328,7 +510,7 @@ export function BacklogTable({
                       className={headerClass}
                       extras={
                         <ColumnResizer
-                          columnIndex={i}
+                          columnIndex={i + iceLevels}
                           currentWidth={params.columnWidths[key]}
                           onResize={(w) => setColumnWidth(key, w)}
                         />
@@ -343,7 +525,7 @@ export function BacklogTable({
             <tbody>
               <tr aria-hidden="true">
                 <td
-                  colSpan={orderedKeys.length}
+                  colSpan={totalColumnCount}
                   style={{
                     height: "var(--header-body-gap)",
                     padding: 0,
@@ -351,10 +533,10 @@ export function BacklogTable({
                   }}
                 />
               </tr>
-              <NewBacklogRow colSpan={orderedKeys.length} />
+              <NewBacklogRow colSpan={totalColumnCount} />
               <tr aria-hidden="true">
                 <td
-                  colSpan={orderedKeys.length}
+                  colSpan={totalColumnCount}
                   style={{
                     height: "var(--header-body-gap)",
                     padding: 0,
@@ -362,15 +544,32 @@ export function BacklogTable({
                   }}
                 />
               </tr>
-              {rows.map((row) => (
-                <RowContextMenu
-                  key={row.id}
-                  onDelete={() => deleteBacklogItem(row.id)}
-                  itemLabel={row.main_entry ? `"${row.main_entry}"` : "this backlog item"}
-                >
-                  {orderedKeys.map((key) => cellRenderers[key]?.(row))}
-                </RowContextMenu>
-              ))}
+              {iceLevels === 0
+                ? rows.map((row) => (
+                    <RowContextMenu
+                      key={row.id}
+                      onDelete={() => deleteBacklogItem(row.id)}
+                      itemLabel={
+                        row.main_entry
+                          ? `"${row.main_entry}"`
+                          : "this backlog item"
+                      }
+                    >
+                      {orderedKeys.map((key) => cellRenderers[key]?.(row))}
+                    </RowContextMenu>
+                  ))
+                : renderGroupedTree(
+                    tree,
+                    collapsed,
+                    toggleCollapsed,
+                    iceLevels,
+                    totalColumnCount,
+                    groupBy,
+                    HEADER_LABELS,
+                    orderedKeys,
+                    cellRenderers,
+                    (row) => deleteBacklogItem(row.id),
+                  )}
             </tbody>
           </table>
         </DndContext>
