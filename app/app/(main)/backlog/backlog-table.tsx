@@ -32,6 +32,7 @@ import {
   groupRows,
   type GroupBySpec,
   type GroupItem,
+  type GroupNode,
 } from "@/lib/table-grouping";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import {
@@ -123,95 +124,195 @@ const ROW_FIELD_FOR_GROUP: Record<string, keyof BacklogRow> = {
   prototype_stage: "prototype_stage_id",
 };
 
-const ICICLE_COLUMN_WIDTH = 22;
+const ICICLE_COLUMN_WIDTH = 160;
+
+type FlatRow =
+  | {
+      kind: "data";
+      row: BacklogRow;
+      /** Ancestor groups — one per active grouping level. */
+      path: GroupNode<BacklogRow>[];
+    }
+  | {
+      kind: "collapsed";
+      group: GroupNode<BacklogRow>;
+      /** Path including `group` at its own level. */
+      pathIncludingSelf: GroupNode<BacklogRow>[];
+    };
+
+function flattenTree(
+  items: GroupItem<BacklogRow>[],
+  collapsed: Set<string>,
+  parentPath: GroupNode<BacklogRow>[],
+): FlatRow[] {
+  const out: FlatRow[] = [];
+  for (const item of items) {
+    if (item.kind === "group") {
+      const pathInc = [...parentPath, item];
+      if (collapsed.has(item.path)) {
+        out.push({ kind: "collapsed", group: item, pathIncludingSelf: pathInc });
+      } else {
+        out.push(...flattenTree(item.children, collapsed, pathInc));
+      }
+    } else {
+      out.push({ kind: "data", row: item.row, path: parentPath });
+    }
+  }
+  return out;
+}
+
+interface LevelSpan {
+  startIndex: number;
+  rowSpan: number;
+  group: GroupNode<BacklogRow>;
+}
+
+function groupAtLevel(
+  row: FlatRow,
+  level: number,
+): GroupNode<BacklogRow> | null {
+  if (row.kind === "data") return row.path[level] ?? null;
+  return row.pathIncludingSelf[level] ?? null;
+}
+
+function computeLevelSpans(flat: FlatRow[], level: number): LevelSpan[] {
+  const out: LevelSpan[] = [];
+  let current: LevelSpan | null = null;
+  for (let i = 0; i < flat.length; i++) {
+    const g = groupAtLevel(flat[i], level);
+    if (!g) {
+      if (current) out.push(current);
+      current = null;
+      continue;
+    }
+    if (current && current.group.path === g.path) {
+      current.rowSpan++;
+    } else {
+      if (current) out.push(current);
+      current = { startIndex: i, rowSpan: 1, group: g };
+    }
+  }
+  if (current) out.push(current);
+  return out;
+}
 
 function renderGroupedTree(
-  items: GroupItem<BacklogRow>[],
+  tree: GroupItem<BacklogRow>[],
   collapsed: Set<string>,
   toggle: (path: string) => void,
   iceLevels: number,
-  totalColumnCount: number,
-  groupBy: string[],
   headerLabels: Record<string, string>,
   orderedKeys: string[],
   cellRenderers: Record<string, (row: BacklogRow) => React.ReactNode>,
   onDelete: (row: BacklogRow) => void | Promise<void>,
 ): React.ReactNode[] {
+  const flat = flattenTree(tree, collapsed, []);
+  const spanStartAt: Map<number, LevelSpan>[] = [];
+  for (let L = 0; L < iceLevels; L++) {
+    const spans = computeLevelSpans(flat, L);
+    const map = new Map<number, LevelSpan>();
+    for (const s of spans) map.set(s.startIndex, s);
+    spanStartAt.push(map);
+  }
+
   const out: React.ReactNode[] = [];
-  const walk = (items: GroupItem<BacklogRow>[]) => {
-    for (const item of items) {
-      if (item.kind === "group") {
-        const isCollapsed = collapsed.has(item.path);
-        const Caret = isCollapsed ? ChevronRight : ChevronDown;
-        const fieldLabel = headerLabels[item.field] ?? item.field;
-        out.push(
-          <tr key={`g-${item.path}`} className="themed-group-row">
-            {Array.from({ length: iceLevels }).map((_, i) => {
-              const isCaret = i === item.level;
-              return (
-                <td
-                  key={`ice-${i}`}
-                  className={
-                    isCaret
-                      ? "cursor-pointer select-none bg-[color:var(--header-bg)] text-center align-middle"
-                      : "bg-[color:var(--header-bg)]"
-                  }
-                  style={{ padding: 0 }}
-                  onClick={isCaret ? () => toggle(item.path) : undefined}
-                  title={
-                    isCaret
-                      ? isCollapsed
-                        ? "Expand"
-                        : "Collapse"
-                      : undefined
-                  }
-                >
-                  {isCaret && <Caret className="inline-block w-3 h-3" />}
-                </td>
-              );
-            })}
-            <td
-              colSpan={orderedKeys.length}
-              className="themed-group-header-cell font-medium text-[color:var(--foreground)] bg-[color:var(--header-bg)] px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] cursor-pointer"
-              onClick={() => toggle(item.path)}
-            >
-              <span className="text-[color:var(--muted-foreground)] text-xs mr-2">
-                {fieldLabel}:
-              </span>
-              <span>{item.label}</span>
-              <span className="text-[color:var(--muted-foreground)] text-xs ml-2">
-                ({item.count})
-              </span>
-            </td>
-          </tr>,
-        );
-        if (!isCollapsed) walk(item.children);
-      } else {
-        const row = item.row;
-        out.push(
-          <RowContextMenu
-            key={row.id}
-            onDelete={() => onDelete(row)}
-            itemLabel={
-              row.main_entry ? `"${row.main_entry}"` : "this backlog item"
-            }
+  for (let i = 0; i < flat.length; i++) {
+    const frow = flat[i];
+    const icicleCells: React.ReactNode[] = [];
+    let renderedCollapsedRight = false;
+
+    for (let L = 0; L < iceLevels; L++) {
+      const span = spanStartAt[L].get(i);
+      if (!span) continue; // covered by a prior row's rowSpan
+
+      const isOwnCollapsedLevel =
+        frow.kind === "collapsed" && frow.group.level === L;
+      const Caret = isOwnCollapsedLevel ? ChevronRight : ChevronDown;
+      const fieldLabel = headerLabels[span.group.field] ?? span.group.field;
+
+      if (isOwnCollapsedLevel) {
+        // Span this single summary row to the far right: covers remaining
+        // icicle levels AND all data columns. No more cells needed in
+        // this <tr>.
+        icicleCells.push(
+          <td
+            key={`ice-${L}`}
+            rowSpan={span.rowSpan}
+            colSpan={iceLevels - L + orderedKeys.length}
+            className="themed-group-merged-cell cursor-pointer select-none"
+            onClick={() => toggle(span.group.path)}
+            title="Expand"
           >
-            {Array.from({ length: iceLevels }).map((_, i) => (
-              <td
-                key={`ice-${i}`}
-                className="bg-[color:var(--cell-bg)]"
-                style={{ padding: 0 }}
-              />
-            ))}
-            {orderedKeys.map((key) => cellRenderers[key]?.(row))}
-          </RowContextMenu>,
+            <Caret className="inline-block w-3 h-3 mr-1 align-[-2px]" />
+            <span className="text-[color:var(--muted-foreground)] text-xs mr-2">
+              {fieldLabel}:
+            </span>
+            <span className="font-medium">{span.group.label}</span>
+            <span className="text-[color:var(--muted-foreground)] text-xs ml-2">
+              ({span.group.count})
+            </span>
+          </td>,
+        );
+        renderedCollapsedRight = true;
+        break;
+      }
+
+      // Merged-cell label spanning all rows in this expanded group.
+      icicleCells.push(
+        <td
+          key={`ice-${L}`}
+          rowSpan={span.rowSpan}
+          className="themed-group-merged-cell cursor-pointer select-none"
+          onClick={() => toggle(span.group.path)}
+          title="Collapse"
+        >
+          <div className="flex items-start gap-1">
+            <Caret className="w-3 h-3 mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <div className="font-medium">{span.group.label}</div>
+              <div className="text-[color:var(--muted-foreground)] text-xs">
+                {fieldLabel} · {span.group.count}
+              </div>
+            </div>
+          </div>
+        </td>,
+      );
+    }
+
+    if (frow.kind === "collapsed") {
+      // If the collapsed summary didn't produce its own right-spanning
+      // label (shouldn't happen given the logic above, but be defensive),
+      // emit a placeholder so the row isn't malformed.
+      if (!renderedCollapsedRight) {
+        icicleCells.push(
+          <td
+            key="placeholder"
+            colSpan={orderedKeys.length}
+            className="bg-[color:var(--cell-bg)]"
+          />,
         );
       }
+      out.push(
+        <tr key={`c-${frow.group.path}`} className="themed-group-row">
+          {icicleCells}
+        </tr>,
+      );
+      continue;
     }
-    // silence unused-var warning for groupBy in closure
-    void groupBy;
-  };
-  walk(items);
+
+    // Data row.
+    const row = frow.row;
+    out.push(
+      <RowContextMenu
+        key={row.id}
+        onDelete={() => onDelete(row)}
+        itemLabel={row.main_entry ? `"${row.main_entry}"` : "this backlog item"}
+      >
+        {icicleCells}
+        {orderedKeys.map((key) => cellRenderers[key]?.(row))}
+      </RowContextMenu>,
+    );
+  }
   return out;
 }
 
@@ -572,8 +673,6 @@ export function BacklogTable({
                     collapsed,
                     toggleCollapsed,
                     iceLevels,
-                    totalColumnCount,
-                    groupBy,
                     HEADER_LABELS,
                     orderedKeys,
                     cellRenderers,

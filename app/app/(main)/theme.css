@@ -167,6 +167,17 @@
   color: var(--link-hover-color);
 }
 
+.themed-group-merged-cell {
+  background: var(--cell-bg);
+  vertical-align: top;
+  padding: var(--cell-padding-y) var(--cell-padding-x);
+  color: var(--foreground);
+  border-right: 1px solid var(--border);
+}
+.themed-group-merged-cell:hover {
+  background: color-mix(in srgb, var(--header-bg) 60%, var(--cell-bg));
+}
+
 :root {
 
   /* ── Default status color (used when a status has no DB color) ── */
