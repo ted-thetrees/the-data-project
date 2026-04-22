@@ -341,6 +341,8 @@ export function RadialMenu() {
 
           {placements.map((p, i) => {
             const isLeaf = p.kind === "leaf";
+            const isPicklist =
+              isLeaf && (p.node as Leaf).path.startsWith("/pick-lists");
             const Icon = p.node.icon;
             const pr = Math.hypot(p.x, p.y);
             const ux = pr === 0 ? 0 : p.x / pr;
@@ -358,12 +360,26 @@ export function RadialMenu() {
                 }}
               >
                 <title>{p.node.label}</title>
-                <circle
-                  r={layout.nodeR}
-                  fill={groupFill(p.groupIdx)}
-                  stroke={groupStroke(p.groupIdx)}
-                  strokeWidth={isLeaf ? 1.5 : 2}
-                />
+                {isPicklist ? (
+                  <rect
+                    x={-layout.nodeR}
+                    y={-layout.nodeR}
+                    width={layout.nodeR * 2}
+                    height={layout.nodeR * 2}
+                    rx={5}
+                    ry={5}
+                    fill={groupFill(p.groupIdx)}
+                    stroke={groupStroke(p.groupIdx)}
+                    strokeWidth={1.5}
+                  />
+                ) : (
+                  <circle
+                    r={layout.nodeR}
+                    fill={groupFill(p.groupIdx)}
+                    stroke={groupStroke(p.groupIdx)}
+                    strokeWidth={isLeaf ? 1.5 : 2}
+                  />
+                )}
                 <foreignObject
                   x={-(layout.nodeR - 6)}
                   y={-(layout.nodeR - 6)}
