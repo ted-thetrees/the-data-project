@@ -75,6 +75,12 @@ export interface GroupBySpec<T> {
   field: string;
   getKey: (row: T) => string | null;
   getLabel: (key: string | null, rows: T[]) => string;
+  /**
+   * Canonical order of group keys (e.g., the picklist's sort_order). Keys
+   * not in this list follow, in their encounter order. The null/Uncategorized
+   * bucket always lands last regardless.
+   */
+  keyOrder?: readonly string[];
 }
 
 export interface GroupNode<T> {
@@ -124,8 +130,24 @@ export function groupRows<T>(
     }
     bucket.rows.push(row);
   }
+  const bucketEntries = Array.from(buckets.entries());
+  if (spec.keyOrder) {
+    const orderIndex = new Map<string, number>();
+    spec.keyOrder.forEach((k, i) => orderIndex.set(k, i));
+    const LAST = Number.MAX_SAFE_INTEGER;
+    bucketEntries.sort((a, b) => {
+      const [aKey] = a;
+      const [bKey] = b;
+      const aUncat = aKey === UNCATEGORIZED_KEY;
+      const bUncat = bKey === UNCATEGORIZED_KEY;
+      if (aUncat !== bUncat) return aUncat ? 1 : -1;
+      const ai = orderIndex.get(aKey) ?? LAST;
+      const bi = orderIndex.get(bKey) ?? LAST;
+      return ai - bi;
+    });
+  }
   const out: GroupNode<T>[] = [];
-  for (const [bucketKey, bucket] of buckets) {
+  for (const [bucketKey, bucket] of bucketEntries) {
     const path = parentPath
       ? `${parentPath}|${spec.field}:${bucketKey}`
       : `${spec.field}:${bucketKey}`;

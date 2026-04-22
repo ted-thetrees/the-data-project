@@ -451,6 +451,7 @@ export function BacklogTable({
       },
       getLabel: (key) =>
         key === null ? "Uncategorized" : lookup.get(key) ?? "(unknown)",
+      keyOrder: options.map((o) => o.id),
     };
   });
 
