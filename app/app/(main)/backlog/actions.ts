@@ -82,6 +82,33 @@ export async function createBacklogItem() {
   revalidateBacklogPage();
 }
 
+const CREATE_PREFILL_COLUMNS = new Set([
+  "priority_id",
+  "primary_category_id",
+  "status_id",
+  "yes_or_not_yet_id",
+  "design_paradigm_id",
+  "prototype_stage_id",
+]);
+
+export async function createBacklogItemInGroup(
+  prefill: Record<string, string | null>,
+) {
+  const cols: string[] = ["main_entry"];
+  const values: (string | number | null)[] = ["Untitled"];
+  for (const [k, v] of Object.entries(prefill)) {
+    if (!CREATE_PREFILL_COLUMNS.has(k)) continue;
+    cols.push(k);
+    values.push(v == null || v === "" ? null : Number(v));
+  }
+  const placeholders = values.map((_, i) => `$${i + 1}`).join(", ");
+  await poolV002.query(
+    `INSERT INTO backlog (${cols.join(", ")}) VALUES (${placeholders})`,
+    values,
+  );
+  revalidateBacklogPage();
+}
+
 export async function deleteBacklogItem(id: string) {
   await poolV002.query(`DELETE FROM backlog WHERE id = $1`, [id]);
   revalidateBacklogPage();

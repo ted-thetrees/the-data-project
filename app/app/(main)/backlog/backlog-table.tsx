@@ -45,6 +45,7 @@ import {
   updateBacklogStatus,
   updateBacklogPrototypeStage,
   createBacklogItem,
+  createBacklogItemInGroup,
   deleteBacklogItem,
 } from "./actions";
 import { createPicklistOptionNamed } from "../pick-lists/actions";
@@ -138,6 +139,13 @@ type FlatRow =
       group: GroupNode<BacklogRow>;
       /** Path including `group` at its own level. */
       pathIncludingSelf: GroupNode<BacklogRow>[];
+    }
+  | {
+      kind: "add";
+      /** Innermost group this add-row belongs to. */
+      group: GroupNode<BacklogRow>;
+      /** Path including the innermost group itself. */
+      path: GroupNode<BacklogRow>[];
     };
 
 function flattenTree(
@@ -152,6 +160,10 @@ function flattenTree(
       if (collapsed.has(item.path)) {
         out.push({ kind: "collapsed", group: item, pathIncludingSelf: pathInc });
       } else {
+        const isInnermost = item.children.every((c) => c.kind === "row");
+        if (isInnermost) {
+          out.push({ kind: "add", group: item, path: pathInc });
+        }
         out.push(...flattenTree(item.children, collapsed, pathInc));
       }
     } else {
@@ -172,7 +184,19 @@ function groupAtLevel(
   level: number,
 ): GroupNode<BacklogRow> | null {
   if (row.kind === "data") return row.path[level] ?? null;
+  if (row.kind === "add") return row.path[level] ?? null;
   return row.pathIncludingSelf[level] ?? null;
+}
+
+function prefillFromPath(
+  path: GroupNode<BacklogRow>[],
+): Record<string, string | null> {
+  const out: Record<string, string | null> = {};
+  for (const g of path) {
+    const col = ROW_FIELD_FOR_GROUP[g.field];
+    if (col) out[col as string] = g.value;
+  }
+  return out;
 }
 
 function computeLevelSpans(flat: FlatRow[], level: number): LevelSpan[] {
@@ -206,6 +230,7 @@ function renderGroupedTree(
   cellRenderers: Record<string, (row: BacklogRow) => React.ReactNode>,
   onDelete: (row: BacklogRow) => void | Promise<void>,
   colorLookup: Record<string, Map<string, string | null>>,
+  onAddInGroup: (prefill: Record<string, string | null>) => void,
 ): React.ReactNode[] {
   const flat = flattenTree(tree, collapsed, []);
   const spanStartAt: Map<number, LevelSpan>[] = [];
@@ -294,6 +319,24 @@ function renderGroupedTree(
       continue;
     }
 
+    if (frow.kind === "add") {
+      const prefill = prefillFromPath(frow.path);
+      out.push(
+        <tr key={`add-${frow.group.path}`}>
+          {icicleCells}
+          <td
+            colSpan={orderedKeys.length}
+            className="themed-new-row-cell"
+            onClick={() => onAddInGroup(prefill)}
+            title="Add a backlog item in this group"
+          >
+            + Add
+          </td>
+        </tr>,
+      );
+      continue;
+    }
+
     // Data row.
     const row = frow.row;
     out.push(
@@ -369,6 +412,7 @@ export function BacklogTable({
   );
   const iceLevels = groupBy.length;
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [, startCreateInGroup] = useTransition();
   const toggleCollapsed = (path: string) => {
     setCollapsed((prev) => {
       const next = new Set(prev);
@@ -694,6 +738,11 @@ export function BacklogTable({
                     cellRenderers,
                     (row) => deleteBacklogItem(row.id),
                     colorLookup,
+                    (prefill) => {
+                      startCreateInGroup(() =>
+                        createBacklogItemInGroup(prefill),
+                      );
+                    },
                   )}
             </tbody>
           </table>
