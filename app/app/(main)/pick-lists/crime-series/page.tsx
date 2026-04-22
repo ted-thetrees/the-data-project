@@ -40,6 +40,7 @@ export default async function PickListsCrimeSeriesPage() {
             rows={crimeSeriesStatuses}
             palettes={palettes}
             storageKey="pick-lists:crime_series_statuses"
+            sortable
           />
         </PickListSection>
       </div>

@@ -58,6 +58,7 @@ export default async function PickListsTalentPage() {
             rows={categories}
             palettes={palettes}
             storageKey="pick-lists:talent_categories"
+            sortable
           />
         </PickListSection>
 
@@ -67,6 +68,7 @@ export default async function PickListsTalentPage() {
             rows={ratingLevels}
             palettes={palettes}
             storageKey="pick-lists:talent_rating_levels"
+            sortable
           />
         </PickListSection>
 
@@ -76,6 +78,7 @@ export default async function PickListsTalentPage() {
             rows={areas}
             palettes={palettes}
             storageKey="pick-lists:talent_areas"
+            sortable
           />
         </PickListSection>
 

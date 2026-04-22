@@ -54,6 +54,7 @@ export default async function PickListsGetPage() {
             rows={categories}
             palettes={palettes}
             storageKey="pick-lists:get_categories"
+            sortable
           />
         </PickListSection>
 
@@ -63,6 +64,7 @@ export default async function PickListsGetPage() {
             rows={statuses}
             palettes={palettes}
             storageKey="pick-lists:get_statuses"
+            sortable
           />
         </PickListSection>
 
@@ -72,6 +74,7 @@ export default async function PickListsGetPage() {
             rows={sources}
             palettes={palettes}
             storageKey="pick-lists:get_sources"
+            sortable
           />
         </PickListSection>
       </div>

@@ -51,6 +51,7 @@ export default async function PickListsUserStoriesPage() {
             rows={roles}
             palettes={palettes}
             storageKey="pick-lists:user_story_roles"
+            sortable
           />
         </PickListSection>
 
@@ -60,6 +61,7 @@ export default async function PickListsUserStoriesPage() {
             rows={categories}
             palettes={palettes}
             storageKey="pick-lists:user_story_categories"
+            sortable
           />
         </PickListSection>
       </div>

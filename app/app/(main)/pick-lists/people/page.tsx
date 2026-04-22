@@ -71,6 +71,7 @@ export default async function PickListsPeoplePage() {
             rows={familiarity}
             palettes={palettes}
             storageKey="pick-lists:people_familiarity_levels"
+            sortable
           />
         </PickListSection>
 
@@ -80,6 +81,7 @@ export default async function PickListsPeoplePage() {
             rows={genders}
             palettes={palettes}
             storageKey="pick-lists:people_genders"
+            sortable
           />
         </PickListSection>
 
@@ -89,6 +91,7 @@ export default async function PickListsPeoplePage() {
             rows={tellerStatuses}
             palettes={palettes}
             storageKey="pick-lists:people_teller_statuses"
+            sortable
           />
         </PickListSection>
 
@@ -98,6 +101,7 @@ export default async function PickListsPeoplePage() {
             rows={orgFillStatuses}
             palettes={palettes}
             storageKey="pick-lists:people_org_fill_statuses"
+            sortable
           />
         </PickListSection>
 
@@ -108,6 +112,7 @@ export default async function PickListsPeoplePage() {
             palettes={palettes}
             showFullName
             storageKey="pick-lists:people_metro_areas"
+            sortable
           />
         </PickListSection>
 
