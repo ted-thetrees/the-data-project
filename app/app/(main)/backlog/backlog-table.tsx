@@ -146,23 +146,32 @@ function renderGroupedTree(
         const fieldLabel = headerLabels[item.field] ?? item.field;
         out.push(
           <tr key={`g-${item.path}`} className="themed-group-row">
-            {Array.from({ length: item.level }).map((_, i) => (
-              <td
-                key={`ice-${i}`}
-                className="bg-[color:var(--cell-bg)]"
-                style={{ padding: 0 }}
-              />
-            ))}
+            {Array.from({ length: iceLevels }).map((_, i) => {
+              const isCaret = i === item.level;
+              return (
+                <td
+                  key={`ice-${i}`}
+                  className={
+                    isCaret
+                      ? "cursor-pointer select-none bg-[color:var(--header-bg)] text-center align-middle"
+                      : "bg-[color:var(--header-bg)]"
+                  }
+                  style={{ padding: 0 }}
+                  onClick={isCaret ? () => toggle(item.path) : undefined}
+                  title={
+                    isCaret
+                      ? isCollapsed
+                        ? "Expand"
+                        : "Collapse"
+                      : undefined
+                  }
+                >
+                  {isCaret && <Caret className="inline-block w-3 h-3" />}
+                </td>
+              );
+            })}
             <td
-              className="cursor-pointer select-none bg-[color:var(--cell-bg)] text-center align-middle"
-              style={{ padding: 0, width: 22 }}
-              onClick={() => toggle(item.path)}
-              title={isCollapsed ? "Expand" : "Collapse"}
-            >
-              <Caret className="inline-block w-3 h-3" />
-            </td>
-            <td
-              colSpan={totalColumnCount - item.level - 1}
+              colSpan={orderedKeys.length}
               className="themed-group-header-cell font-medium text-[color:var(--foreground)] bg-[color:var(--header-bg)] px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] cursor-pointer"
               onClick={() => toggle(item.path)}
             >
