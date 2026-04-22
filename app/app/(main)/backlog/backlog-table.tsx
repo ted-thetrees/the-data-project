@@ -14,7 +14,7 @@ import {
   arrayMove,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { PillSelect, type PillOption } from "@/components/pill";
+import { Pill, PillSelect, type PillOption } from "@/components/pill";
 import { EditableText, EditableTextWrap } from "@/components/editable-text";
 import { Empty } from "@/components/empty";
 import {
@@ -205,6 +205,7 @@ function renderGroupedTree(
   orderedKeys: string[],
   cellRenderers: Record<string, (row: BacklogRow) => React.ReactNode>,
   onDelete: (row: BacklogRow) => void | Promise<void>,
+  colorLookup: Record<string, Map<string, string | null>>,
 ): React.ReactNode[] {
   const flat = flattenTree(tree, collapsed, []);
   const spanStartAt: Map<number, LevelSpan>[] = [];
@@ -228,12 +229,12 @@ function renderGroupedTree(
       const isOwnCollapsedLevel =
         frow.kind === "collapsed" && frow.group.level === L;
       const Caret = isOwnCollapsedLevel ? ChevronRight : ChevronDown;
-      const fieldLabel = headerLabels[span.group.field] ?? span.group.field;
+      const color =
+        span.group.value != null
+          ? colorLookup[span.group.field]?.get(span.group.value) ?? null
+          : null;
 
       if (isOwnCollapsedLevel) {
-        // Span this single summary row to the far right: covers remaining
-        // icicle levels AND all data columns. No more cells needed in
-        // this <tr>.
         icicleCells.push(
           <td
             key={`ice-${L}`}
@@ -243,21 +244,19 @@ function renderGroupedTree(
             onClick={() => toggle(span.group.path)}
             title="Expand"
           >
-            <Caret className="inline-block w-3 h-3 mr-1 align-[-2px]" />
-            <span className="text-[color:var(--muted-foreground)] text-xs mr-2">
-              {fieldLabel}:
-            </span>
-            <span className="font-medium">{span.group.label}</span>
-            <span className="text-[color:var(--muted-foreground)] text-xs ml-2">
-              ({span.group.count})
-            </span>
+            <div className="flex items-center gap-2">
+              <Caret className="w-3 h-3 shrink-0" />
+              <Pill color={color}>{span.group.label}</Pill>
+              <span className="text-[color:var(--muted-foreground)] text-xs">
+                ({span.group.count})
+              </span>
+            </div>
           </td>,
         );
         renderedCollapsedRight = true;
         break;
       }
 
-      // Merged-cell label spanning all rows in this expanded group.
       icicleCells.push(
         <td
           key={`ice-${L}`}
@@ -267,13 +266,8 @@ function renderGroupedTree(
           title="Collapse"
         >
           <div className="flex items-start gap-1">
-            <Caret className="w-3 h-3 mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <div className="font-medium">{span.group.label}</div>
-              <div className="text-[color:var(--muted-foreground)] text-xs">
-                {fieldLabel} · {span.group.count}
-              </div>
-            </div>
+            <Caret className="w-3 h-3 mt-1 shrink-0" />
+            <Pill color={color}>{span.group.label}</Pill>
           </div>
         </td>,
       );
@@ -392,6 +386,14 @@ export function BacklogTable({
     design_paradigm: designParadigmOptions,
     prototype_stage: prototypeStageOptions,
   };
+
+  const colorLookup: Record<string, Map<string, string | null>> =
+    Object.fromEntries(
+      Object.entries(optionsForField).map(([field, opts]) => [
+        field,
+        new Map(opts.map((o) => [o.id, o.color])),
+      ]),
+    );
 
   const specs: GroupBySpec<BacklogRow>[] = groupBy.map((field) => {
     const rowField = ROW_FIELD_FOR_GROUP[field];
@@ -677,6 +679,7 @@ export function BacklogTable({
                     orderedKeys,
                     cellRenderers,
                     (row) => deleteBacklogItem(row.id),
+                    colorLookup,
                   )}
             </tbody>
           </table>
