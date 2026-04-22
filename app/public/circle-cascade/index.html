@@ -831,7 +831,7 @@ $("preset-revert").addEventListener("click", () => {
   flashBtn("preset-revert", "reverted");
 });
 $("preset-saveas").addEventListener("click", () => {
-  const name = prompt("Name this preset:", "");
+  const name = prompt("Name this preset:", presetState.selected || "");
   if (!name) return;
   const trimmed = name.trim();
   if (!trimmed) return;
