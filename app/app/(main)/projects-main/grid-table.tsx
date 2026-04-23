@@ -450,9 +450,9 @@ export function GridTable({
       const bv = keyId(k, b);
       if (av === bv) return 0;
       if (k === "tickle") {
-        // null dates sort last
-        if (av === "__null__") return 1;
-        if (bv === "__null__") return -1;
+        // null dates sort first
+        if (av === "__null__") return -1;
+        if (bv === "__null__") return 1;
         return av < bv ? -1 : 1;
       }
       const m = firstIndexByPath[k]!;
