@@ -39,28 +39,28 @@ export async function getProjectsMainData(): Promise<TaskRow[]> {
 
 export async function getTaskStatuses(): Promise<StatusOption[]> {
   const result = await poolV002.query(
-    `SELECT id, name, color FROM task_statuses ORDER BY name`
+    `SELECT id, name, color FROM task_statuses ORDER BY sort_order NULLS LAST, name`
   );
   return result.rows;
 }
 
 export async function getProjectStatuses(): Promise<StatusOption[]> {
   const result = await poolV002.query(
-    `SELECT id, name, color FROM project_statuses ORDER BY name`
+    `SELECT id, name, color FROM project_statuses ORDER BY sort_order NULLS LAST, name`
   );
   return result.rows;
 }
 
 export async function getActionOrderStatuses(): Promise<StatusOption[]> {
   const result = await poolV002.query(
-    `SELECT id, name, color FROM project_action_order_statuses ORDER BY name`
+    `SELECT id, name, color FROM project_action_order_statuses ORDER BY sort_order NULLS LAST, name`
   );
   return result.rows;
 }
 
 export async function getUberProjects(): Promise<StatusOption[]> {
   const result = await poolV002.query(
-    `SELECT id, name, color FROM uber_projects ORDER BY name`
+    `SELECT id, name, color FROM uber_projects ORDER BY sort_order NULLS LAST, name`
   );
   return result.rows;
 }

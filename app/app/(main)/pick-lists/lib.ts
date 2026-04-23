@@ -27,12 +27,15 @@ async function getStatusesByName(
 
 export function getProjectStatuses() {
   return poolV002
-    .query(`SELECT id::text, name, color, visible FROM project_statuses ORDER BY name`)
+    .query(
+      `SELECT id::text, name, color, visible FROM project_statuses
+       ORDER BY sort_order NULLS LAST, name`,
+    )
     .then((r) => r.rows as Status[]);
 }
 
 export function getTaskStatuses() {
-  return getStatusesByName("task_statuses");
+  return getStatusesByName("task_statuses", "ORDER BY sort_order NULLS LAST, name");
 }
 
 export function getCrimeSeriesStatuses() {
@@ -40,11 +43,14 @@ export function getCrimeSeriesStatuses() {
 }
 
 export function getUberProjectsForPickList() {
-  return getStatusesByName("uber_projects");
+  return getStatusesByName("uber_projects", "ORDER BY sort_order NULLS LAST, name");
 }
 
 export function getProjectActionOrderStatuses() {
-  return getStatusesByName("project_action_order_statuses");
+  return getStatusesByName(
+    "project_action_order_statuses",
+    "ORDER BY sort_order NULLS LAST, name",
+  );
 }
 
 export function getTalentCategories() {

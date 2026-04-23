@@ -6,19 +6,23 @@ import { revalidatePath } from "next/cache";
 type SourceConfig = {
   table: string;
   hasSortOrder: boolean;
+  /** Postgres type of the table's id column. Defaults to "bigint" — the
+   *  Projects-family picklists use "uuid", so reorder needs the right cast. */
+  idType?: "bigint" | "uuid";
   // Extra NOT NULL columns that need defaults on insert
   extraInsertDefaults?: Record<string, string>;
 };
 
 const SOURCE_TABLES: Record<string, SourceConfig> = {
-  project_statuses: { table: "project_statuses", hasSortOrder: false },
+  project_statuses: { table: "project_statuses", hasSortOrder: true, idType: "uuid" },
   project_action_order_statuses: {
     table: "project_action_order_statuses",
-    hasSortOrder: false,
+    hasSortOrder: true,
+    idType: "uuid",
   },
-  task_statuses: { table: "task_statuses", hasSortOrder: false },
+  task_statuses: { table: "task_statuses", hasSortOrder: true, idType: "uuid" },
   crime_series_statuses: { table: "crime_series_statuses", hasSortOrder: true },
-  uber_projects: { table: "uber_projects", hasSortOrder: false },
+  uber_projects: { table: "uber_projects", hasSortOrder: true, idType: "uuid" },
   talent_categories: { table: "talent_categories", hasSortOrder: true },
   talent_rating_levels: { table: "talent_rating_levels", hasSortOrder: true },
   talent_areas: { table: "talent_areas", hasSortOrder: true },
@@ -190,10 +194,11 @@ export async function reorderPicklistOptions(
     throw new Error(`${source} does not support reordering`);
   }
   if (orderedIds.length === 0) return;
+  const arrayType = config.idType === "uuid" ? "uuid[]" : "bigint[]";
   await poolV002.query(
     `UPDATE ${config.table} AS t
        SET sort_order = u.ord
-       FROM unnest($1::bigint[]) WITH ORDINALITY AS u(id, ord)
+       FROM unnest($1::${arrayType}) WITH ORDINALITY AS u(id, ord)
        WHERE t.id = u.id`,
     [orderedIds],
   );

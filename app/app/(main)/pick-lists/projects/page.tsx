@@ -67,6 +67,7 @@ export default async function PickListsProjectsPage() {
             rows={projectStatuses}
             palettes={palettes}
             showVisible
+            sortable
             storageKey="pick-lists:project_statuses"
           />
         </PickListSection>
@@ -76,6 +77,7 @@ export default async function PickListsProjectsPage() {
             source="project_action_order_statuses"
             rows={actionOrderStatuses}
             palettes={palettes}
+            sortable
             storageKey="pick-lists:project_action_order_statuses"
           />
         </PickListSection>
@@ -85,6 +87,7 @@ export default async function PickListsProjectsPage() {
             source="task_statuses"
             rows={taskStatuses}
             palettes={palettes}
+            sortable
             storageKey="pick-lists:task_statuses"
           />
         </PickListSection>
@@ -94,6 +97,7 @@ export default async function PickListsProjectsPage() {
             source="uber_projects"
             rows={uberProjects}
             palettes={palettes}
+            sortable
             storageKey="pick-lists:uber_projects"
           />
         </PickListSection>
