@@ -192,7 +192,11 @@ function CalendarDayButton({
 
   const ref = React.useRef<HTMLButtonElement>(null)
   React.useEffect(() => {
-    if (modifiers.focused) ref.current?.focus()
+    // preventScroll: the popover is portaled to the document root, so the
+    // day button's initial document-space position is near (0,0). A plain
+    // .focus() would scroll the document to bring it into view, yanking
+    // the page to the top. Same class of fix as pill.tsx.
+    if (modifiers.focused) ref.current?.focus({ preventScroll: true })
   }, [modifiers.focused])
 
   return (
