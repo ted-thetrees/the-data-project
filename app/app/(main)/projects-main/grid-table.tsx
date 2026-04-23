@@ -100,7 +100,7 @@ const HEADER_LABELS: Record<string, string> = {
   tickle: "Tickle",
   uber_project: "Uber Project",
   project_status: "Project Status",
-  action_order_status: "Action Order Status",
+  action_order_status: "Action Order",
   task: "Task",
   task_status: "Task Status",
   result: "Result",

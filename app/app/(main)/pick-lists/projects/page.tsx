@@ -71,7 +71,7 @@ export default async function PickListsProjectsPage() {
           />
         </PickListSection>
 
-        <PickListSection title="Action Order Status" usedBy="Projects">
+        <PickListSection title="Action Order" usedBy="Projects">
           <PicklistStatusTable
             source="project_action_order_statuses"
             rows={actionOrderStatuses}
