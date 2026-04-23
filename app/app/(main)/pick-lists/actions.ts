@@ -12,6 +12,10 @@ type SourceConfig = {
 
 const SOURCE_TABLES: Record<string, SourceConfig> = {
   project_statuses: { table: "project_statuses", hasSortOrder: false },
+  project_action_order_statuses: {
+    table: "project_action_order_statuses",
+    hasSortOrder: false,
+  },
   task_statuses: { table: "task_statuses", hasSortOrder: false },
   crime_series_statuses: { table: "crime_series_statuses", hasSortOrder: true },
   uber_projects: { table: "uber_projects", hasSortOrder: false },

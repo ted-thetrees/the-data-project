@@ -48,6 +48,8 @@ const createUberProjectOption = (name: string) =>
   createPicklistOptionNamed("uber_projects", name);
 const createProjectStatusOption = (name: string) =>
   createPicklistOptionNamed("project_statuses", name);
+const createActionOrderStatusOption = (name: string) =>
+  createPicklistOptionNamed("project_action_order_statuses", name);
 const createTaskStatusOption = (name: string) =>
   createPicklistOptionNamed("task_statuses", name);
 import {
@@ -79,6 +81,7 @@ import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
 import { handleGridKeyDown } from "@/components/grid-keyboard-nav";
+import { GroupByPicker } from "@/components/group-by-picker";
 
 // Project-level icicle columns (rowspan-merged, pinned — not reorderable).
 const PROJECT_ICICLE_KEYS = [
@@ -86,6 +89,7 @@ const PROJECT_ICICLE_KEYS = [
   "tickle",
   "uber_project",
   "project_status",
+  "action_order_status",
 ] as const;
 
 // Task-level columns (per-row, user-reorderable).
@@ -96,11 +100,45 @@ const HEADER_LABELS: Record<string, string> = {
   tickle: "Tickle",
   uber_project: "Uber Project",
   project_status: "Project Status",
+  action_order_status: "Action Order Status",
   task: "Task",
   task_status: "Task Status",
   result: "Result",
   notes: "Notes",
 };
+
+// Project-level fields that users may nest the grid under. Grouping re-sorts
+// projects (as a block of task rows) by the picked field(s) and renders a
+// left-side icicle for each level above the existing project icicles.
+const GROUPABLE_KEYS = [
+  "uber_project",
+  "project_status",
+  "action_order_status",
+] as const;
+type GroupableKey = (typeof GROUPABLE_KEYS)[number];
+
+const GROUP_ACCESSORS: Record<
+  GroupableKey,
+  { id: (r: TaskRow) => string | null; label: (r: TaskRow) => string; color: (r: TaskRow) => string | null | undefined }
+> = {
+  uber_project: {
+    id: (r) => r.uber_project_id ?? null,
+    label: (r) => r.uber_project ?? "(none)",
+    color: (r) => r.uber_color,
+  },
+  project_status: {
+    id: (r) => r.project_status_id ?? null,
+    label: (r) => r.project_status ?? "(none)",
+    color: (r) => r.project_color,
+  },
+  action_order_status: {
+    id: (r) => r.action_order_status_id ?? null,
+    label: (r) => r.action_order_status ?? "Uncategorized",
+    color: (r) => r.action_order_color,
+  },
+};
+
+const ICICLE_GROUP_WIDTH = 160;
 
 const DEFAULT_COLUMN_WIDTHS = PROJECTS_MAIN_DEFAULT_WIDTHS;
 
@@ -151,6 +189,7 @@ export function GridTable({
   data,
   taskStatuses,
   projectStatuses,
+  actionOrderStatuses,
   uberProjects,
   wrapped = true,
   title = "Projects",
@@ -159,6 +198,7 @@ export function GridTable({
   data: TaskRow[];
   taskStatuses: StatusOption[];
   projectStatuses: StatusOption[];
+  actionOrderStatuses: StatusOption[];
   uberProjects: StatusOption[];
   wrapped?: boolean;
   title?: string;
@@ -288,6 +328,27 @@ export function GridTable({
     [dirtyProjectIds],
   );
 
+  const {
+    views,
+    activeViewId,
+    params,
+    switchView,
+    createView,
+    renameView,
+    deleteView,
+    setColumnWidth,
+    setColumnOrder,
+    setGroupBy,
+  } = useTableViews(PROJECTS_MAIN_STORAGE_KEY, DEFAULT_COLUMN_WIDTHS, initialParams);
+
+  const groupBy = useMemo(
+    () =>
+      (params.groupBy ?? []).filter((k): k is GroupableKey =>
+        (GROUPABLE_KEYS as readonly string[]).includes(k),
+      ),
+    [params.groupBy],
+  );
+
   const orderedData = useMemo(() => {
     // Server now returns all projects regardless of status; hide non-Active
     // projects on the client UNLESS they're dirty (so setting a project's
@@ -331,10 +392,82 @@ export function GridTable({
     return result;
   }, [data, dirtyProjectIds, dirtySet]);
 
+  // When grouping is active, re-sort projects (preserving task order within a
+  // project) so that rows sharing group-by keys are consecutive. That lets us
+  // use rowSpan for group icicles the same way project icicles work. Within a
+  // group we preserve the upstream `orderedData` order so dirty-tray pinning
+  // and SQL ordering both carry through — just partitioned by group.
+  const groupedData = useMemo(() => {
+    if (groupBy.length === 0) return orderedData;
+
+    // First: group rows by project_id while preserving original order.
+    const projectBlocks: { id: string; rows: TaskRow[] }[] = [];
+    const blockIndex = new Map<string, number>();
+    for (const row of orderedData) {
+      let idx = blockIndex.get(row.project_id);
+      if (idx === undefined) {
+        idx = projectBlocks.length;
+        blockIndex.set(row.project_id, idx);
+        projectBlocks.push({ id: row.project_id, rows: [] });
+      }
+      projectBlocks[idx].rows.push(row);
+    }
+
+    // Build a group path for each project from the first row (project-level
+    // fields are identical across all tasks of the same project).
+    const pathFor = (r: TaskRow) =>
+      groupBy.map((k) => `${k}:${GROUP_ACCESSORS[k].id(r) ?? "__null__"}`).join("|");
+
+    // Collect unique group paths in first-occurrence order. That preserves the
+    // upstream ordering semantics (tickle/name) at the group level without us
+    // having to pick an alphabetical tiebreaker.
+    const pathOrder = new Map<string, number>();
+    for (const block of projectBlocks) {
+      const key = pathFor(block.rows[0]);
+      if (!pathOrder.has(key)) pathOrder.set(key, pathOrder.size);
+    }
+
+    const sorted = [...projectBlocks].sort((a, b) => {
+      const ai = pathOrder.get(pathFor(a.rows[0]))!;
+      const bi = pathOrder.get(pathFor(b.rows[0]))!;
+      if (ai !== bi) return ai - bi;
+      return 0;
+    });
+    return sorted.flatMap((b) => b.rows);
+  }, [orderedData, groupBy]);
+
+  // Compute icicle spans for each active group-by level. Each span covers the
+  // consecutive `groupedData` rows that share the same accumulated group path
+  // up to that level, so rowSpan math for nested group cells stays coherent.
+  const groupSpans = useMemo<GroupSpan[][]>(() => {
+    if (groupBy.length === 0) return [];
+    const levels: GroupSpan[][] = [];
+    for (let level = 0; level < groupBy.length; level++) {
+      const key = groupBy[level];
+      const accessor = GROUP_ACCESSORS[key];
+      const parents = groupBy.slice(0, level).map((k) => (r: TaskRow) => {
+        const id = GROUP_ACCESSORS[k].id(r);
+        return id ?? "__null__";
+      });
+      const spans = computeGroupSpans(
+        groupedData,
+        (r) => accessor.id(r) ?? "__null__",
+        undefined,
+        (r) => ({
+          label: accessor.label(r),
+          color: accessor.color(r) ?? null,
+        }),
+        parents.length > 0 ? parents : undefined,
+      );
+      levels.push(spans);
+    }
+    return levels;
+  }, [groupedData, groupBy]);
+
   const projectSpans = useMemo(
     () =>
       computeGroupSpans(
-        orderedData,
+        groupedData,
         projectAccessor,
         (r) => r.project_color,
         (r) => ({
@@ -342,9 +475,10 @@ export function GridTable({
           notes: r.project_notes,
           is_draft: r.project_is_draft,
           project_id: r.project_id,
-        })
+        }),
+        groupBy.map((k) => (r: TaskRow) => GROUP_ACCESSORS[k].id(r) ?? "__null__"),
       ),
-    [orderedData]
+    [groupedData, groupBy]
   );
 
   const projectStartSet = new Set(projectSpans.map((s) => s.startIndex));
@@ -355,6 +489,13 @@ export function GridTable({
     projectSpans.map((s) => [s.startIndex + s.rowSpan - 1, s])
   );
   const projectByIndex = Object.fromEntries(projectSpans.map((s) => [s.startIndex, s]));
+
+  // Index group spans by level + startIndex for quick lookup during render.
+  const groupStartMaps: Map<number, GroupSpan>[] = groupSpans.map((spans) => {
+    const m = new Map<number, GroupSpan>();
+    for (const s of spans) m.set(s.startIndex, s);
+    return m;
+  });
 
   const TASK_COL_COUNT = 4; // task, task_status, result, notes
 
@@ -381,18 +522,6 @@ export function GridTable({
     handleGridKeyDown(e);
   };
 
-  const {
-    views,
-    activeViewId,
-    params,
-    switchView,
-    createView,
-    renameView,
-    deleteView,
-    setColumnWidth,
-    setColumnOrder,
-  } = useTableViews(PROJECTS_MAIN_STORAGE_KEY, DEFAULT_COLUMN_WIDTHS, initialParams);
-
   const orderedTaskKeys = useMemo(
     () =>
       resolveColumnOrder(
@@ -402,7 +531,13 @@ export function GridTable({
     [params.columnOrder],
   );
 
-  const columnKeys = [...PROJECT_ICICLE_KEYS, ...orderedTaskKeys];
+  const groupColumnKeys = groupBy.map((k) => `__group:${k}`);
+  const columnKeys = [...groupColumnKeys, ...PROJECT_ICICLE_KEYS, ...orderedTaskKeys];
+
+  const groupWidth = (level: number) => {
+    const key = groupColumnKeys[level];
+    return params.columnWidths[key] ?? ICICLE_GROUP_WIDTH;
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -451,6 +586,15 @@ export function GridTable({
         )}
       </ViewSwitcher>
 
+      <GroupByPicker
+        available={[...GROUPABLE_KEYS].map((k) => ({
+          key: k,
+          label: HEADER_LABELS[k] ?? k,
+        }))}
+        groupBy={groupBy}
+        onChange={setGroupBy}
+      />
+
       <div className="overflow-x-auto">
         <DndContext
           sensors={sensors}
@@ -462,21 +606,42 @@ export function GridTable({
           onKeyDown={handleProjectsKeyDown}
           style={{
             tableLayout: "fixed",
-            width: columnKeys.reduce(
-              (sum, k) => sum + (params.columnWidths[k] ?? 0),
-              0,
-            ),
+            width: columnKeys.reduce((sum, k) => {
+              if (k.startsWith("__group:")) return sum + (params.columnWidths[k] ?? ICICLE_GROUP_WIDTH);
+              return sum + (params.columnWidths[k] ?? 0);
+            }, 0),
             borderCollapse: "separate",
             borderSpacing: "var(--row-gap)",
           }}
         >
           <colgroup>
             {columnKeys.map((key) => (
-              <col key={key} style={{ width: params.columnWidths[key] }} />
+              <col
+                key={key}
+                style={{
+                  width: key.startsWith("__group:")
+                    ? params.columnWidths[key] ?? ICICLE_GROUP_WIDTH
+                    : params.columnWidths[key],
+                }}
+              />
             ))}
           </colgroup>
           <thead>
             <tr>
+              {groupBy.map((k, level) => (
+                <th
+                  key={`gh-${k}`}
+                  className={headerClass}
+                  style={{ position: "relative" }}
+                >
+                  {HEADER_LABELS[k] ?? k}
+                  <ColumnResizer
+                    columnIndex={level}
+                    currentWidth={groupWidth(level)}
+                    onResize={(w) => setColumnWidth(`__group:${k}`, w)}
+                  />
+                </th>
+              ))}
               {PROJECT_ICICLE_KEYS.map((key, i) => (
                 <th
                   key={key}
@@ -485,7 +650,7 @@ export function GridTable({
                 >
                   {HEADER_LABELS[key]}
                   <ColumnResizer
-                    columnIndex={i}
+                    columnIndex={i + groupBy.length}
                     currentWidth={params.columnWidths[key]}
                     onResize={(w) => setColumnWidth(key, w)}
                   />
@@ -503,7 +668,7 @@ export function GridTable({
                     style={{ position: "relative" }}
                     extras={
                       <ColumnResizer
-                        columnIndex={i + PROJECT_ICICLE_KEYS.length}
+                        columnIndex={i + groupBy.length + PROJECT_ICICLE_KEYS.length}
                         currentWidth={params.columnWidths[key]}
                         onResize={(w) => setColumnWidth(key, w)}
                       />
@@ -529,8 +694,8 @@ export function GridTable({
                 style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }}
               />
             </tr>
-            {orderedData.map((row, i) => {
-              const prev = i > 0 ? orderedData[i - 1] : null;
+            {groupedData.map((row, i) => {
+              const prev = i > 0 ? groupedData[i - 1] : null;
               const tickleChanged =
                 prev !== null && prev.tickle_date !== row.tickle_date;
               return (
@@ -545,6 +710,27 @@ export function GridTable({
               )}
               <ContextMenu>
                 <ContextMenuTrigger render={<tr data-project-id={row.project_id} data-task-id={row.id} />}>
+                {/* Group icicles (one per active group-by level). rowSpan
+                   covers every task of every project in that group. Stretch
+                   to cover the per-project add-row only when the group ends
+                   on a project boundary. */}
+                {groupBy.map((k, level) => {
+                  const start = groupStartMaps[level]?.get(i);
+                  if (!start) return null;
+                  const spanEndIdx = start.startIndex + start.rowSpan - 1;
+                  const extendForAddRow = projectEndSet.has(spanEndIdx);
+                  const color = (start.extra?.color as string | null) ?? null;
+                  const label = (start.extra?.label as string) ?? start.value;
+                  return (
+                    <td
+                      key={`group-${level}-${start.startIndex}`}
+                      rowSpan={start.rowSpan + (extendForAddRow ? 1 : 0)}
+                      className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
+                    >
+                      <Pill color={color}>{label}</Pill>
+                    </td>
+                  );
+                })}
                 {/* Icicle: Project (rowspan-merged, +1 to span add-row) */}
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
@@ -646,6 +832,30 @@ export function GridTable({
                           changeProjectStatus(row.project_id, v)
                         }
                         onCreate={createProjectStatusOption}
+                      />
+                    </td>
+                  );
+                })()}
+
+                {/* Icicle: Action Order Status (rowspan-merged pill select, +1) */}
+                {projectStartSet.has(i) && (() => {
+                  const span = projectByIndex[i];
+                  return (
+                    <td
+                      rowSpan={span.rowSpan + 1}
+                      className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
+                    >
+                      <PillSelect
+                        value={row.action_order_status_id ?? ""}
+                        options={actionOrderStatuses}
+                        onSave={(v) =>
+                          updateProjectField(
+                            row.project_id,
+                            "action_order_status_id",
+                            v || null,
+                          )
+                        }
+                        onCreate={createActionOrderStatusOption}
                       />
                     </td>
                   );
@@ -813,7 +1023,7 @@ export function GridTable({
 
   if (!wrapped) return body;
   return (
-    <PageShell title={title} count={orderedData.length} maxWidth="">
+    <PageShell title={title} count={groupedData.length} maxWidth="">
       {body}
     </PageShell>
   );

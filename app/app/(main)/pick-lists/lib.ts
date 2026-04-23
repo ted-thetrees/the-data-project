@@ -43,6 +43,10 @@ export function getUberProjectsForPickList() {
   return getStatusesByName("uber_projects");
 }
 
+export function getProjectActionOrderStatuses() {
+  return getStatusesByName("project_action_order_statuses");
+}
+
 export function getTalentCategories() {
   return getStatusesByName("talent_categories", "ORDER BY sort_order NULLS LAST, name");
 }

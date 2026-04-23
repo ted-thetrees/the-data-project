@@ -10,6 +10,7 @@ const PROJECT_FIELDS = new Set([
   "notes",
   "status_id",
   "uber_project_id",
+  "action_order_status_id",
 ]);
 const UBER_FIELDS = new Set(["name"]);
 

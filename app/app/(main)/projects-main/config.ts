@@ -5,6 +5,7 @@ export const PROJECTS_MAIN_DEFAULT_WIDTHS: Record<string, number> = {
   project: 220,
   tickle: 110,
   project_status: 110,
+  action_order_status: 140,
   task: 280,
   task_status: 100,
   result: 220,
