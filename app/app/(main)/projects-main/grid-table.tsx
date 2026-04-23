@@ -424,19 +424,17 @@ export function GridTable({
     }
 
     // Per level, decide how two group keys should compare:
-    //   - "tickle": compare the yyyy-mm-dd string chronologically, null last.
-    //   - Picklist fields: first-occurrence order in orderedData, so the group
-    //     order follows whatever sort the SQL produced (e.g. uber_project.order).
-    const firstIndexByPath: Record<string, Map<string, number>> = {};
-    for (const k of groupBy) {
-      if (k === "tickle") continue;
-      const m = new Map<string, number>();
-      projectBlocks.forEach((block, i) => {
-        const id = GROUP_ACCESSORS[k].id(block.rows[0]) ?? "__null__";
-        if (!m.has(id)) m.set(id, i);
-      });
-      firstIndexByPath[k] = m;
-    }
+    //   - "tickle": compare the yyyy-mm-dd string chronologically, null first.
+    //   - Picklist fields: follow the picklist's sort_order (option index from
+    //     the options array, which the server already ordered by sort_order).
+    //     Unknown/null options go last.
+    const optionIndexByField: Record<string, Map<string, number>> = {
+      uber_project: new Map(uberProjects.map((o, i) => [o.id, i])),
+      project_status: new Map(projectStatuses.map((o, i) => [o.id, i])),
+      action_order_status: new Map(
+        actionOrderStatuses.map((o, i) => [o.id, i]),
+      ),
+    };
 
     const keyId = (k: GroupableKey, r: TaskRow) =>
       GROUP_ACCESSORS[k].id(r) ?? "__null__";
@@ -455,9 +453,14 @@ export function GridTable({
         if (bv === "__null__") return 1;
         return av < bv ? -1 : 1;
       }
-      const m = firstIndexByPath[k]!;
-      return (m.get(av) ?? Number.MAX_SAFE_INTEGER) -
-        (m.get(bv) ?? Number.MAX_SAFE_INTEGER);
+      const m = optionIndexByField[k];
+      const ai = m && av !== "__null__"
+        ? m.get(av) ?? Number.MAX_SAFE_INTEGER
+        : Number.MAX_SAFE_INTEGER;
+      const bi = m && bv !== "__null__"
+        ? m.get(bv) ?? Number.MAX_SAFE_INTEGER
+        : Number.MAX_SAFE_INTEGER;
+      return ai - bi;
     };
 
     const sorted = [...projectBlocks].sort((a, b) => {
@@ -468,7 +471,7 @@ export function GridTable({
       return 0;
     });
     return sorted.flatMap((b) => b.rows);
-  }, [orderedData, groupBy]);
+  }, [orderedData, groupBy, uberProjects, projectStatuses, actionOrderStatuses]);
 
   // Compute icicle spans for each active group-by level. Each span covers the
   // consecutive `groupedData` rows that share the same accumulated group path
