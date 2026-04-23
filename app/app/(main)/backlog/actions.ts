@@ -43,38 +43,6 @@ export async function updateBacklogCategory(id: string, categoryId: string) {
   revalidateBacklogPage();
 }
 
-export async function updateBacklogYesOrNotYet(id: string, yesId: string) {
-  await poolV002.query(
-    `UPDATE backlog SET yes_or_not_yet_id = $1, updated_at = now() WHERE id = $2`,
-    [parseLookupId(yesId), id],
-  );
-  revalidateBacklogPage();
-}
-
-export async function updateBacklogDesignParadigm(id: string, paradigmId: string) {
-  await poolV002.query(
-    `UPDATE backlog SET design_paradigm_id = $1, updated_at = now() WHERE id = $2`,
-    [parseLookupId(paradigmId), id],
-  );
-  revalidateBacklogPage();
-}
-
-export async function updateBacklogStatus(id: string, statusId: string) {
-  await poolV002.query(
-    `UPDATE backlog SET status_id = $1, updated_at = now() WHERE id = $2`,
-    [parseLookupId(statusId), id],
-  );
-  revalidateBacklogPage();
-}
-
-export async function updateBacklogPrototypeStage(id: string, stageId: string) {
-  await poolV002.query(
-    `UPDATE backlog SET prototype_stage_id = $1, updated_at = now() WHERE id = $2`,
-    [parseLookupId(stageId), id],
-  );
-  revalidateBacklogPage();
-}
-
 export async function createBacklogItem() {
   await poolV002.query(
     `INSERT INTO backlog (main_entry) VALUES ('Untitled')`,
@@ -85,10 +53,6 @@ export async function createBacklogItem() {
 const CREATE_PREFILL_COLUMNS = new Set([
   "priority_id",
   "primary_category_id",
-  "status_id",
-  "yes_or_not_yet_id",
-  "design_paradigm_id",
-  "prototype_stage_id",
 ]);
 
 export async function createBacklogItemInGroup(

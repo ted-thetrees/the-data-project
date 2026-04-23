@@ -18,11 +18,7 @@ async function getBacklog(): Promise<BacklogRow[]> {
       b.image_url,
       b.sort_order,
       b.priority_id::text           AS priority_id,
-      b.primary_category_id::text   AS primary_category_id,
-      b.yes_or_not_yet_id::text     AS yes_or_not_yet_id,
-      b.design_paradigm_id::text    AS design_paradigm_id,
-      b.status_id::text             AS status_id,
-      b.prototype_stage_id::text    AS prototype_stage_id
+      b.primary_category_id::text   AS primary_category_id
     FROM backlog b
     LEFT JOIN backlog_priorities p ON p.id = b.priority_id
     LEFT JOIN backlog_categories c ON c.id = b.primary_category_id
@@ -50,19 +46,11 @@ export default async function BacklogPage() {
     rows,
     priorityOptions,
     categoryOptions,
-    yesOrNotYetOptions,
-    designParadigmOptions,
-    statusOptions,
-    prototypeStageOptions,
     initialParams,
   ] = await Promise.all([
     getBacklog(),
     getLookupOptions("backlog_priorities"),
     getLookupOptions("backlog_categories"),
-    getLookupOptions("backlog_yes_or_not_yet"),
-    getLookupOptions("backlog_design_paradigms"),
-    getLookupOptions("backlog_statuses"),
-    getLookupOptions("backlog_prototype_stages"),
     getInitialViewParams(BACKLOG_STORAGE_KEY, BACKLOG_DEFAULT_WIDTHS),
   ]);
 
@@ -73,20 +61,12 @@ export default async function BacklogPage() {
           "backlog",
           "backlog_priorities",
           "backlog_categories",
-          "backlog_yes_or_not_yet",
-          "backlog_design_paradigms",
-          "backlog_statuses",
-          "backlog_prototype_stages",
         ]}
       />
       <BacklogTable
         rows={rows}
         priorityOptions={priorityOptions}
         categoryOptions={categoryOptions}
-        yesOrNotYetOptions={yesOrNotYetOptions}
-        designParadigmOptions={designParadigmOptions}
-        statusOptions={statusOptions}
-        prototypeStageOptions={prototypeStageOptions}
         initialParams={initialParams}
       />
     </PageShell>

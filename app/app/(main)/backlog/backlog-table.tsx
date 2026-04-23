@@ -44,10 +44,6 @@ import {
   updateBacklogDetails,
   updateBacklogPriority,
   updateBacklogCategory,
-  updateBacklogYesOrNotYet,
-  updateBacklogDesignParadigm,
-  updateBacklogStatus,
-  updateBacklogPrototypeStage,
   createBacklogItem,
   createBacklogItemInGroup,
   deleteBacklogItem,
@@ -59,14 +55,6 @@ const createPriority = (name: string) =>
   createPicklistOptionNamed("backlog_priorities", name);
 const createCategory = (name: string) =>
   createPicklistOptionNamed("backlog_categories", name);
-const createYesOrNotYet = (name: string) =>
-  createPicklistOptionNamed("backlog_yes_or_not_yet", name);
-const createDesignParadigm = (name: string) =>
-  createPicklistOptionNamed("backlog_design_paradigms", name);
-const createStatus = (name: string) =>
-  createPicklistOptionNamed("backlog_statuses", name);
-const createPrototypeStage = (name: string) =>
-  createPicklistOptionNamed("backlog_prototype_stages", name);
 
 export interface BacklogRow {
   id: string;
@@ -76,20 +64,12 @@ export interface BacklogRow {
   sort_order: number | null;
   priority_id: string | null;
   primary_category_id: string | null;
-  yes_or_not_yet_id: string | null;
-  design_paradigm_id: string | null;
-  status_id: string | null;
-  prototype_stage_id: string | null;
 }
 
 const COLUMN_KEYS = [
   "main_entry",
   "priority",
   "category",
-  "status",
-  "yes_or_not_yet",
-  "design_paradigm",
-  "prototype_stage",
   "details",
   "image",
 ] as const;
@@ -105,10 +85,6 @@ const HEADER_LABELS: Record<string, string> = {
   main_entry: "Main Entry",
   priority: "Priority",
   category: "Primary Category",
-  status: "Status",
-  yes_or_not_yet: "Yes or Not Yet",
-  design_paradigm: "Design Paradigm",
-  prototype_stage: "Prototype Stage",
   details: "Details",
   image: "Image",
 };
@@ -116,19 +92,11 @@ const HEADER_LABELS: Record<string, string> = {
 const GROUPABLE_KEYS = [
   "priority",
   "category",
-  "status",
-  "yes_or_not_yet",
-  "design_paradigm",
-  "prototype_stage",
 ] as const;
 
 const ROW_FIELD_FOR_GROUP: Record<string, keyof BacklogRow> = {
   priority: "priority_id",
   category: "primary_category_id",
-  status: "status_id",
-  yes_or_not_yet: "yes_or_not_yet_id",
-  design_paradigm: "design_paradigm_id",
-  prototype_stage: "prototype_stage_id",
 };
 
 const ICICLE_COLUMN_WIDTH = 160;
@@ -492,19 +460,11 @@ export function BacklogTable({
   rows,
   priorityOptions,
   categoryOptions,
-  yesOrNotYetOptions,
-  designParadigmOptions,
-  statusOptions,
-  prototypeStageOptions,
   initialParams,
 }: {
   rows: BacklogRow[];
   priorityOptions: PillOption[];
   categoryOptions: PillOption[];
-  yesOrNotYetOptions: PillOption[];
-  designParadigmOptions: PillOption[];
-  statusOptions: PillOption[];
-  prototypeStageOptions: PillOption[];
   initialParams?: ViewParams;
 }) {
   const {
@@ -542,10 +502,6 @@ export function BacklogTable({
   const optionsForField: Record<string, PillOption[]> = {
     priority: priorityOptions,
     category: categoryOptions,
-    status: statusOptions,
-    yes_or_not_yet: yesOrNotYetOptions,
-    design_paradigm: designParadigmOptions,
-    prototype_stage: prototypeStageOptions,
   };
 
   const colorLookup: Record<string, Map<string, string | null>> =
@@ -694,46 +650,6 @@ export function BacklogTable({
           options={categoryOptions}
           onSave={(v) => updateBacklogCategory(row.id, v)}
           onCreate={createCategory}
-        />
-      </td>
-    ),
-    status: (row) => (
-      <td key="status" className={cellClass}>
-        <PillSelect
-          value={row.status_id ?? ""}
-          options={statusOptions}
-          onSave={(v) => updateBacklogStatus(row.id, v)}
-          onCreate={createStatus}
-        />
-      </td>
-    ),
-    yes_or_not_yet: (row) => (
-      <td key="yes_or_not_yet" className={cellClass}>
-        <PillSelect
-          value={row.yes_or_not_yet_id ?? ""}
-          options={yesOrNotYetOptions}
-          onSave={(v) => updateBacklogYesOrNotYet(row.id, v)}
-          onCreate={createYesOrNotYet}
-        />
-      </td>
-    ),
-    design_paradigm: (row) => (
-      <td key="design_paradigm" className={cellClass}>
-        <PillSelect
-          value={row.design_paradigm_id ?? ""}
-          options={designParadigmOptions}
-          onSave={(v) => updateBacklogDesignParadigm(row.id, v)}
-          onCreate={createDesignParadigm}
-        />
-      </td>
-    ),
-    prototype_stage: (row) => (
-      <td key="prototype_stage" className={cellClass}>
-        <PillSelect
-          value={row.prototype_stage_id ?? ""}
-          options={prototypeStageOptions}
-          onSave={(v) => updateBacklogPrototypeStage(row.id, v)}
-          onCreate={createPrototypeStage}
         />
       </td>
     ),
