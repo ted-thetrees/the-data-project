@@ -93,17 +93,32 @@ function matchesSearch(name: string, search: string): boolean {
 // Focus the cmdk input after the popover portal mounts.
 // Base UI popover doesn't auto-focus portal content, so without this
 // keystrokes go to the trigger button instead of the search field.
-// preventScroll stops the browser from yanking the page so the
-// portaled input is scrolled into view.
+//
+// The portal also triggers a document-scroll jump: cmdk calls
+// scrollIntoView({ block: 'nearest' }) on the initially-selected command
+// item as it syncs state. Because the popup is portaled, the nearest
+// scroll ancestor that scrollIntoView finds is the document itself —
+// and the popup's initial document-space position is near (0, 0), so
+// the page scrolls to the top. We snapshot scroll before open and
+// undo any shift across the next few frames.
 function useFocusCmdkInput(open: boolean) {
   useEffect(() => {
     if (!open) return;
-    const id = requestAnimationFrame(() => {
+    const saved = { x: window.scrollX, y: window.scrollY };
+    const restore = () => {
+      if (window.scrollX !== saved.x || window.scrollY !== saved.y) {
+        window.scrollTo(saved.x, saved.y);
+      }
+    };
+    restore();
+    const raf1 = requestAnimationFrame(() => {
+      restore();
       document
         .querySelector<HTMLInputElement>('[data-slot="command-input"]')
         ?.focus({ preventScroll: true });
+      requestAnimationFrame(restore);
     });
-    return () => cancelAnimationFrame(id);
+    return () => cancelAnimationFrame(raf1);
   }, [open]);
 }
 
