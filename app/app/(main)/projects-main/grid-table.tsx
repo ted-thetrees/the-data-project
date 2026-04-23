@@ -745,20 +745,34 @@ export function GridTable({
               <ContextMenu>
                 <ContextMenuTrigger render={<tr data-project-id={row.project_id} data-task-id={row.id} />}>
                 {/* Group icicles (one per active group-by level). rowSpan
-                   covers every task of every project in that group. Stretch
-                   to cover the per-project add-row only when the group ends
-                   on a project boundary. */}
+                   counts EVERY <tr> inside the span: task rows, the per-project
+                   `+ Add task` rows, and tickle-change gap rows that fall
+                   inside the group. Missing any of those lets a trailing row
+                   snake back into column 0 and render "other stuff" under the
+                   group header. */}
                 {groupBy.map((k, level) => {
                   const start = groupStartMaps[level]?.get(i);
                   if (!start) return null;
-                  const spanEndIdx = start.startIndex + start.rowSpan - 1;
-                  const extendForAddRow = projectEndSet.has(spanEndIdx);
+                  const spanStart = start.startIndex;
+                  const spanEnd = start.startIndex + start.rowSpan - 1;
+                  let trCount = start.rowSpan;
+                  for (let j = spanStart; j <= spanEnd; j++) {
+                    if (projectEndSet.has(j)) trCount++;
+                  }
+                  for (let j = spanStart + 1; j <= spanEnd; j++) {
+                    if (
+                      groupedData[j].tickle_date !==
+                      groupedData[j - 1].tickle_date
+                    ) {
+                      trCount++;
+                    }
+                  }
                   const color = (start.extra?.color as string | null) ?? null;
                   const label = (start.extra?.label as string) ?? start.value;
                   return (
                     <td
                       key={`group-${level}-${start.startIndex}`}
-                      rowSpan={start.rowSpan + (extendForAddRow ? 1 : 0)}
+                      rowSpan={trCount}
                       className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
                     >
                       <Pill color={color}>{label}</Pill>
