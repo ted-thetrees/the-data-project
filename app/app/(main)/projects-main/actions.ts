@@ -164,20 +164,28 @@ export async function createTask(projectId: string) {
 }
 
 export async function createProject() {
-  const [projectStatus, taskStatus, uberProject] = await Promise.all([
-    poolV002.query(`SELECT id FROM project_statuses WHERE name = 'Active' LIMIT 1`),
-    poolV002.query(`SELECT id FROM task_statuses WHERE name = 'Tickled' LIMIT 1`),
-    poolV002.query(`SELECT id FROM uber_projects ORDER BY name LIMIT 1`),
-  ]);
+  const [projectStatus, taskStatus, uberProject, actionOrder] =
+    await Promise.all([
+      poolV002.query(`SELECT id FROM project_statuses WHERE name = 'Active' LIMIT 1`),
+      poolV002.query(`SELECT id FROM task_statuses WHERE name = 'Tickled' LIMIT 1`),
+      poolV002.query(`SELECT id FROM uber_projects ORDER BY name LIMIT 1`),
+      poolV002.query(
+        `SELECT id FROM project_action_order_statuses WHERE name = 'Needs Ordering' LIMIT 1`,
+      ),
+    ]);
   if (!projectStatus.rows[0]) throw new Error("Active project status missing");
   if (!taskStatus.rows[0]) throw new Error("Tickled task status missing");
   if (!uberProject.rows[0]) throw new Error("No uber projects available");
 
   const project = await poolV002.query(
-    `INSERT INTO projects (name, status_id, uber_project_id, is_draft)
-     VALUES ('Untitled Project', $1, $2, true)
+    `INSERT INTO projects (name, status_id, uber_project_id, action_order_status_id, is_draft)
+     VALUES ('Untitled Project', $1, $2, $3, true)
      RETURNING id`,
-    [projectStatus.rows[0].id, uberProject.rows[0].id],
+    [
+      projectStatus.rows[0].id,
+      uberProject.rows[0].id,
+      actionOrder.rows[0]?.id ?? null,
+    ],
   );
   await poolV002.query(
     `INSERT INTO tasks (name, project_id, status_id) VALUES ('', $1, $2)`,
