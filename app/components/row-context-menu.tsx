@@ -6,6 +6,8 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
   type CSSProperties,
+  type HTMLAttributes,
+  type Ref,
 } from "react";
 import {
   ContextMenu,
@@ -26,6 +28,10 @@ interface RowContextMenuProps {
   onDelete: () => void | Promise<void>;
   itemLabel?: string;
   rowStyle?: CSSProperties;
+  /** Extra props spread onto the rendered <tr> (e.g., setNodeRef, dnd-kit attributes). */
+  trProps?: HTMLAttributes<HTMLTableRowElement> & {
+    ref?: Ref<HTMLTableRowElement>;
+  };
   children: ReactNode;
 }
 
@@ -33,6 +39,7 @@ export function RowContextMenu({
   onDelete,
   itemLabel = "this record",
   rowStyle,
+  trProps,
   children,
 }: RowContextMenuProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -59,7 +66,15 @@ export function RowContextMenu({
   return (
     <>
       <ContextMenu>
-        <ContextMenuTrigger render={<tr style={rowStyle} onKeyDown={onRowKeyDown} />}>
+        <ContextMenuTrigger
+          render={
+            <tr
+              {...trProps}
+              style={{ ...rowStyle, ...trProps?.style }}
+              onKeyDown={onRowKeyDown}
+            />
+          }
+        >
           {children}
         </ContextMenuTrigger>
         <ContextMenuContent>

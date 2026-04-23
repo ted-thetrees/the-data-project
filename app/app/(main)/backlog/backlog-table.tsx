@@ -13,7 +13,11 @@ import {
   SortableContext,
   arrayMove,
   horizontalListSortingStrategy,
+  verticalListSortingStrategy,
+  useSortable,
 } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
 import { Pill, PillSelect, type PillOption } from "@/components/pill";
 import { EditableText, EditableTextWrap } from "@/components/editable-text";
 import { Empty } from "@/components/empty";
@@ -47,6 +51,7 @@ import {
   createBacklogItem,
   createBacklogItemInGroup,
   deleteBacklogItem,
+  reorderBacklogRows,
 } from "./actions";
 import { createPicklistOptionNamed } from "../pick-lists/actions";
 
@@ -232,6 +237,7 @@ function renderGroupedTree(
   onDelete: (row: BacklogRow) => void | Promise<void>,
   colorLookup: Record<string, Map<string, string | null>>,
   onAddInGroup: (prefill: Record<string, string | null>) => void,
+  gripCols: number,
 ): React.ReactNode[] {
   const flat = flattenTree(tree, collapsed, []);
   const spanStartAt: Map<number, LevelSpan>[] = [];
@@ -265,7 +271,7 @@ function renderGroupedTree(
           <td
             key={`ice-${L}`}
             rowSpan={span.rowSpan}
-            colSpan={iceLevels - L + orderedKeys.length}
+            colSpan={iceLevels - L + gripCols + orderedKeys.length}
             className="themed-group-merged-cell cursor-pointer select-none"
             onClick={() => toggle(span.group.path)}
             title="Expand"
@@ -307,7 +313,7 @@ function renderGroupedTree(
         icicleCells.push(
           <td
             key="placeholder"
-            colSpan={orderedKeys.length}
+            colSpan={gripCols + orderedKeys.length}
             className="bg-[color:var(--cell-bg)]"
           />,
         );
@@ -326,7 +332,7 @@ function renderGroupedTree(
         <tr key={`add-${frow.group.path}`}>
           {icicleCells}
           <td
-            colSpan={orderedKeys.length}
+            colSpan={gripCols + orderedKeys.length}
             className="themed-new-row-cell"
             onClick={() => onAddInGroup(prefill)}
             title="Add a backlog item in this group"
@@ -341,17 +347,127 @@ function renderGroupedTree(
     // Data row.
     const row = frow.row;
     out.push(
-      <RowContextMenu
+      <SortableDataRow
         key={row.id}
+        rowId={row.id}
+        draggable={gripCols > 0}
         onDelete={() => onDelete(row)}
         itemLabel={row.main_entry ? `"${row.main_entry}"` : "this backlog item"}
+        leadingCells={icicleCells}
       >
-        {icicleCells}
         {orderedKeys.map((key) => cellRenderers[key]?.(row))}
-      </RowContextMenu>,
+      </SortableDataRow>,
     );
   }
-  return out;
+
+  // Wrap every innermost group's rows in their own SortableContext so drag
+  // is scoped to that sub-table (strict-within-group reorder).
+  if (gripCols === 0) return out;
+  const wrapped: React.ReactNode[] = [];
+  const groupToIds = new Map<string, string[]>();
+  for (const f of flat) {
+    if (f.kind !== "data") continue;
+    const path = f.path[iceLevels - 1]?.path ?? "__none__";
+    const arr = groupToIds.get(path) ?? [];
+    arr.push(f.row.id);
+    groupToIds.set(path, arr);
+  }
+  let segment: React.ReactNode[] = [];
+  let segmentPath: string | null = null;
+  const flushSegment = () => {
+    if (segment.length === 0) return;
+    const ids = groupToIds.get(segmentPath ?? "") ?? [];
+    wrapped.push(
+      <SortableContext
+        key={`sc-${segmentPath}`}
+        items={ids}
+        strategy={verticalListSortingStrategy}
+      >
+        {segment}
+      </SortableContext>,
+    );
+    segment = [];
+    segmentPath = null;
+  };
+  for (let i = 0; i < flat.length; i++) {
+    const f = flat[i];
+    const node = out[i];
+    if (f.kind === "collapsed") {
+      flushSegment();
+      wrapped.push(node);
+      continue;
+    }
+    const path =
+      f.kind === "add"
+        ? f.group.path
+        : f.path[iceLevels - 1]?.path ?? "__none__";
+    if (segmentPath !== path) {
+      flushSegment();
+      segmentPath = path;
+    }
+    segment.push(node);
+  }
+  flushSegment();
+  return wrapped;
+}
+
+function SortableDataRow({
+  rowId,
+  draggable,
+  onDelete,
+  itemLabel,
+  leadingCells,
+  children,
+}: {
+  rowId: string;
+  draggable: boolean;
+  onDelete: () => void | Promise<void>;
+  itemLabel: string;
+  /** Cells that come before the grip (typically icicle cells starting a span). */
+  leadingCells: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: rowId, disabled: !draggable });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.85 : undefined,
+    position: isDragging ? "relative" : undefined,
+    zIndex: isDragging ? 2 : undefined,
+  };
+  return (
+    <RowContextMenu
+      onDelete={onDelete}
+      itemLabel={itemLabel}
+      rowStyle={style}
+      trProps={draggable ? { ref: setNodeRef, ...attributes } : undefined}
+    >
+      {leadingCells}
+      {draggable && (
+        <td
+          {...listeners}
+          className="cursor-grab select-none bg-[color:var(--cell-bg)] text-[color:var(--muted-foreground)] align-middle"
+          style={{
+            width: 22,
+            padding: 0,
+            textAlign: "center",
+            touchAction: "none",
+          }}
+          title="Drag to reorder"
+        >
+          <GripVertical className="inline-block w-3 h-3 opacity-60 hover:opacity-100" />
+        </td>
+      )}
+      {children}
+    </RowContextMenu>
+  );
 }
 
 function NewBacklogRow({ colSpan }: { colSpan: number }) {
@@ -490,13 +606,43 @@ export function BacklogTable({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
+  const [, startRowReorder] = useTransition();
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = orderedKeys.indexOf(String(active.id));
-    const newIndex = orderedKeys.indexOf(String(over.id));
-    if (oldIndex < 0 || newIndex < 0) return;
-    setColumnOrder(arrayMove(orderedKeys, oldIndex, newIndex));
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    // Column drag: ids come from orderedKeys.
+    if (orderedKeys.includes(activeId)) {
+      const oldIndex = orderedKeys.indexOf(activeId);
+      const newIndex = orderedKeys.indexOf(overId);
+      if (oldIndex < 0 || newIndex < 0) return;
+      setColumnOrder(arrayMove(orderedKeys, oldIndex, newIndex));
+      return;
+    }
+
+    // Row drag: ids are numeric backlog row ids. Restrict to the innermost
+    // group the active row belongs to; ignore cross-group drops.
+    const rowById = new Map(rows.map((r) => [r.id, r]));
+    const activeRow = rowById.get(activeId);
+    const overRow = rowById.get(overId);
+    if (!activeRow || !overRow) return;
+    const groupKeyFor = (r: BacklogRow) =>
+      groupBy
+        .map((field) => `${field}:${r[ROW_FIELD_FOR_GROUP[field]] ?? "null"}`)
+        .join("|");
+    if (groupKeyFor(activeRow) !== groupKeyFor(overRow)) return;
+    const key = groupKeyFor(activeRow);
+    const groupIds = rowsForGrouping
+      .filter((r) => groupKeyFor(r) === key)
+      .map((r) => r.id);
+    const oldIdx = groupIds.indexOf(activeId);
+    const newIdx = groupIds.indexOf(overId);
+    if (oldIdx < 0 || newIdx < 0) return;
+    const nextIds = arrayMove(groupIds, oldIdx, newIdx);
+    startRowReorder(() => reorderBacklogRows(nextIds));
   };
 
   const iceWidth = (level: number) => {
@@ -512,8 +658,10 @@ export function BacklogTable({
     (sum, _, i) => sum + iceWidth(i),
     0,
   );
-  const totalWidth = userColsWidth + iceColsWidth;
-  const totalColumnCount = iceLevels + orderedKeys.length;
+  const gripCols = iceLevels > 0 ? 1 : 0;
+  const gripWidth = 22;
+  const totalWidth = userColsWidth + iceColsWidth + gripCols * gripWidth;
+  const totalColumnCount = iceLevels + gripCols + orderedKeys.length;
 
   const headerClass =
     "relative text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
@@ -663,6 +811,9 @@ export function BacklogTable({
               {Array.from({ length: iceLevels }).map((_, i) => (
                 <col key={`ice-${i}`} style={{ width: iceWidth(i) }} />
               ))}
+              {gripCols > 0 && (
+                <col key="grip" style={{ width: gripWidth }} />
+              )}
               {orderedKeys.map((key) => (
                 <col key={key} style={{ width: params.columnWidths[key] }} />
               ))}
@@ -685,6 +836,14 @@ export function BacklogTable({
                     />
                   </th>
                 ))}
+                {gripCols > 0 && (
+                  <th
+                    key="grip-h"
+                    className={headerClass}
+                    style={{ width: gripWidth }}
+                    aria-hidden
+                  />
+                )}
                 <SortableContext
                   items={orderedKeys}
                   strategy={horizontalListSortingStrategy}
@@ -759,6 +918,7 @@ export function BacklogTable({
                         createBacklogItemInGroup(prefill),
                       );
                     },
+                    gripCols,
                   )}
             </tbody>
           </table>

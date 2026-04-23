@@ -116,3 +116,16 @@ export async function deleteBacklogItem(id: string) {
   await poolV002.query(`DELETE FROM backlog WHERE id = $1`, [id]);
   revalidateBacklogPage();
 }
+
+export async function reorderBacklogRows(orderedIds: string[]) {
+  if (orderedIds.length === 0) return;
+  const ids = orderedIds.map((v) => Number(v));
+  await poolV002.query(
+    `UPDATE backlog AS t
+       SET sort_order = u.ord
+       FROM unnest($1::bigint[]) WITH ORDINALITY AS u(id, ord)
+       WHERE t.id = u.id`,
+    [ids],
+  );
+  revalidateBacklogPage();
+}
