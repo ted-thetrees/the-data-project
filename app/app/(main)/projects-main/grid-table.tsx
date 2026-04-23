@@ -42,7 +42,7 @@ import {
   moveTask,
 } from "./actions";
 import { createPicklistOptionNamed } from "../pick-lists/actions";
-import { Pill, PillSelect } from "@/components/pill";
+import { Pill, PillSelect, PILL_CLASS } from "@/components/pill";
 
 const createUberProjectOption = (name: string) =>
   createPicklistOptionNamed("uber_projects", name);
@@ -775,7 +775,27 @@ export function GridTable({
                       rowSpan={trCount}
                       className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
                     >
-                      <Pill color={color}>{label}</Pill>
+                      {k === "tickle" ? (
+                        <span
+                          className={PILL_CLASS}
+                          style={{
+                            borderRadius: "var(--pill-radius)",
+                            padding:
+                              "var(--pill-padding-y) var(--pill-padding-x)",
+                            fontSize: "var(--pill-font-size)",
+                            fontWeight:
+                              "var(--pill-font-weight)" as React.CSSProperties["fontWeight"],
+                            backgroundColor: "#fff",
+                            color: "var(--foreground)",
+                            border: "1px solid var(--foreground)",
+                            width: "fit-content",
+                          }}
+                        >
+                          {label}
+                        </span>
+                      ) : (
+                        <Pill color={color}>{label}</Pill>
+                      )}
                     </td>
                   );
                 })}
