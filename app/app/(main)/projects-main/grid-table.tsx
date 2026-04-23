@@ -111,6 +111,7 @@ const HEADER_LABELS: Record<string, string> = {
 // projects (as a block of task rows) by the picked field(s) and renders a
 // left-side icicle for each level above the existing project icicles.
 const GROUPABLE_KEYS = [
+  "tickle",
   "uber_project",
   "project_status",
   "action_order_status",
@@ -121,6 +122,15 @@ const GROUP_ACCESSORS: Record<
   GroupableKey,
   { id: (r: TaskRow) => string | null; label: (r: TaskRow) => string; color: (r: TaskRow) => string | null | undefined }
 > = {
+  tickle: {
+    id: (r) => r.tickle_date ?? null,
+    label: (r) => {
+      if (!r.tickle_date) return "No tickle date";
+      const d = parse(r.tickle_date, "yyyy-MM-dd", new Date());
+      return format(d, "EEE, MMM d");
+    },
+    color: () => null,
+  },
   uber_project: {
     id: (r) => r.uber_project_id ?? null,
     label: (r) => r.uber_project ?? "(none)",
@@ -413,24 +423,48 @@ export function GridTable({
       projectBlocks[idx].rows.push(row);
     }
 
-    // Build a group path for each project from the first row (project-level
-    // fields are identical across all tasks of the same project).
-    const pathFor = (r: TaskRow) =>
-      groupBy.map((k) => `${k}:${GROUP_ACCESSORS[k].id(r) ?? "__null__"}`).join("|");
-
-    // Collect unique group paths in first-occurrence order. That preserves the
-    // upstream ordering semantics (tickle/name) at the group level without us
-    // having to pick an alphabetical tiebreaker.
-    const pathOrder = new Map<string, number>();
-    for (const block of projectBlocks) {
-      const key = pathFor(block.rows[0]);
-      if (!pathOrder.has(key)) pathOrder.set(key, pathOrder.size);
+    // Per level, decide how two group keys should compare:
+    //   - "tickle": compare the yyyy-mm-dd string chronologically, null last.
+    //   - Picklist fields: first-occurrence order in orderedData, so the group
+    //     order follows whatever sort the SQL produced (e.g. uber_project.order).
+    const firstIndexByPath: Record<string, Map<string, number>> = {};
+    for (const k of groupBy) {
+      if (k === "tickle") continue;
+      const m = new Map<string, number>();
+      projectBlocks.forEach((block, i) => {
+        const id = GROUP_ACCESSORS[k].id(block.rows[0]) ?? "__null__";
+        if (!m.has(id)) m.set(id, i);
+      });
+      firstIndexByPath[k] = m;
     }
 
+    const keyId = (k: GroupableKey, r: TaskRow) =>
+      GROUP_ACCESSORS[k].id(r) ?? "__null__";
+
+    const compareLevel = (
+      k: GroupableKey,
+      a: TaskRow,
+      b: TaskRow,
+    ): number => {
+      const av = keyId(k, a);
+      const bv = keyId(k, b);
+      if (av === bv) return 0;
+      if (k === "tickle") {
+        // null dates sort last
+        if (av === "__null__") return 1;
+        if (bv === "__null__") return -1;
+        return av < bv ? -1 : 1;
+      }
+      const m = firstIndexByPath[k]!;
+      return (m.get(av) ?? Number.MAX_SAFE_INTEGER) -
+        (m.get(bv) ?? Number.MAX_SAFE_INTEGER);
+    };
+
     const sorted = [...projectBlocks].sort((a, b) => {
-      const ai = pathOrder.get(pathFor(a.rows[0]))!;
-      const bi = pathOrder.get(pathFor(b.rows[0]))!;
-      if (ai !== bi) return ai - bi;
+      for (const k of groupBy) {
+        const c = compareLevel(k, a.rows[0], b.rows[0]);
+        if (c !== 0) return c;
+      }
       return 0;
     });
     return sorted.flatMap((b) => b.rows);
