@@ -93,13 +93,15 @@ function matchesSearch(name: string, search: string): boolean {
 // Focus the cmdk input after the popover portal mounts.
 // Base UI popover doesn't auto-focus portal content, so without this
 // keystrokes go to the trigger button instead of the search field.
+// preventScroll stops the browser from yanking the page so the
+// portaled input is scrolled into view.
 function useFocusCmdkInput(open: boolean) {
   useEffect(() => {
     if (!open) return;
     const id = requestAnimationFrame(() => {
       document
         .querySelector<HTMLInputElement>('[data-slot="command-input"]')
-        ?.focus();
+        ?.focus({ preventScroll: true });
     });
     return () => cancelAnimationFrame(id);
   }, [open]);
