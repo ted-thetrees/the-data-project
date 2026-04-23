@@ -68,6 +68,7 @@ export interface BacklogRow {
   main_entry: string | null;
   details: string | null;
   image_url: string | null;
+  sort_order: number | null;
   priority_id: string | null;
   primary_category_id: string | null;
   yes_or_not_yet_id: string | null;
@@ -455,11 +456,25 @@ export function BacklogTable({
     };
   });
 
+  const rowsForGrouping = useMemo(() => {
+    if (iceLevels === 0) return rows;
+    return [...rows].sort((a, b) => {
+      const aso = a.sort_order;
+      const bso = b.sort_order;
+      if (aso == null && bso == null) {
+        return (a.main_entry ?? "").localeCompare(b.main_entry ?? "");
+      }
+      if (aso == null) return 1;
+      if (bso == null) return -1;
+      return aso - bso;
+    });
+  }, [rows, iceLevels]);
+
   const tree = useMemo(
-    () => groupRows(rows, specs),
+    () => groupRows(rowsForGrouping, specs),
     // specs is rebuilt on every render; include its signature instead
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rows, groupBy.join(",")],
+    [rowsForGrouping, groupBy.join(",")],
   );
 
   const orderedKeys = useMemo(

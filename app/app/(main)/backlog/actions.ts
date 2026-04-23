@@ -102,8 +102,11 @@ export async function createBacklogItemInGroup(
     values.push(v == null || v === "" ? null : Number(v));
   }
   const placeholders = values.map((_, i) => `$${i + 1}`).join(", ");
+  // sort_order = MIN(existing) - 1 so the new row lands above every other
+  // backlog row in any in-memory sort_order-based ordering.
   await poolV002.query(
-    `INSERT INTO backlog (${cols.join(", ")}) VALUES (${placeholders})`,
+    `INSERT INTO backlog (${cols.join(", ")}, sort_order)
+     VALUES (${placeholders}, (SELECT COALESCE(MIN(sort_order), 0) - 1 FROM backlog))`,
     values,
   );
   revalidateBacklogPage();

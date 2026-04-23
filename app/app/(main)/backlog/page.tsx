@@ -16,6 +16,7 @@ async function getBacklog(): Promise<BacklogRow[]> {
       b.main_entry,
       b.details,
       b.image_url,
+      b.sort_order,
       b.priority_id::text           AS priority_id,
       b.primary_category_id::text   AS primary_category_id,
       b.yes_or_not_yet_id::text     AS yes_or_not_yet_id,
