@@ -771,7 +771,7 @@ export function BacklogTable({
                       className={headerClass}
                       extras={
                         <ColumnResizer
-                          columnIndex={i + iceLevels}
+                          columnIndex={i + iceLevels + gripCols}
                           currentWidth={params.columnWidths[key]}
                           onResize={(w) => setColumnWidth(key, w)}
                         />
