@@ -67,6 +67,7 @@ const NAV: Branch[] = [
   ] },
   { kind: "branch", label: "Eagle", icon: ImageIcon, children: [
     { kind: "leaf", label: "Images", path: "/eagle-images", key: "e", icon: ImageIcon },
+    { kind: "leaf", label: "Masonry", path: "/eagle-images/masonry", key: "E", icon: ImageIcon },
   ] },
   { kind: "branch", label: "Calories", icon: Apple, children: [
     { kind: "leaf", label: "Everything", path: "/calories", key: "a", icon: Apple },
