@@ -89,7 +89,7 @@ export function TableFeaturesGrid({
     features.length * FEATURE_COL_WIDTH;
 
   const headerClass =
-    "relative text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x-narrow)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
+    "relative text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--cell-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
   const cellClass =
     "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]";
   const compactCellClass =
@@ -208,7 +208,6 @@ export function TableFeaturesGrid({
                   whiteSpace: "normal",
                   wordBreak: "normal",
                   overflowWrap: "break-word",
-                  padding: "10px 8px",
                 }}
               >
                 <Tooltip>
@@ -216,7 +215,6 @@ export function TableFeaturesGrid({
                     render={<span className="cursor-help" />}
                   >
                     {f.label}
-                    {f.default_for_new ? " ★" : ""}
                   </TooltipTrigger>
                   <TooltipContent
                     sideOffset={8}
