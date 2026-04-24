@@ -41,6 +41,7 @@ import {
   deleteTask,
   deleteProject,
   moveTask,
+  reorderProjectsInTickleDate,
 } from "./actions";
 import { createPicklistOptionNamed } from "../pick-lists/actions";
 import { Pill, PillSelect, PILL_CLASS } from "@/components/pill";
@@ -809,10 +810,50 @@ export function GridTable({
                   const isDraft = Boolean(span.extra?.is_draft);
                   const isDirty = dirtySet.has(row.project_id);
                   const isAutoOrder = row.project_sort_order == null;
+                  const myTickle = row.tickle_date ?? null;
+                  const handleDragStart = (e: React.DragEvent) => {
+                    e.dataTransfer.setData("projectId", row.project_id);
+                    e.dataTransfer.setData("tickleDate", myTickle ?? "");
+                    e.dataTransfer.effectAllowed = "move";
+                  };
+                  const handleDragOver = (e: React.DragEvent) => {
+                    const srcTickle = e.dataTransfer.getData("tickleDate");
+                    // Same tickle-date group only
+                    if (srcTickle === (myTickle ?? "")) {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                    }
+                  };
+                  const handleDrop = (e: React.DragEvent) => {
+                    e.preventDefault();
+                    const srcId = e.dataTransfer.getData("projectId");
+                    if (!srcId || srcId === row.project_id) return;
+                    // Gather current order of projects in this tickle-date group
+                    const seen = new Set<string>();
+                    const ids: string[] = [];
+                    for (const r of orderedData) {
+                      if (r.project_is_draft) continue;
+                      if ((r.tickle_date ?? null) !== myTickle) continue;
+                      if (!seen.has(r.project_id)) {
+                        seen.add(r.project_id);
+                        ids.push(r.project_id);
+                      }
+                    }
+                    const from = ids.indexOf(srcId);
+                    const to = ids.indexOf(row.project_id);
+                    if (from < 0 || to < 0) return;
+                    ids.splice(from, 1);
+                    ids.splice(to, 0, srcId);
+                    void reorderProjectsInTickleDate(ids);
+                  };
                   return (
                     <td
                       rowSpan={span.rowSpan + 1}
                       className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
+                      draggable={!isDraft}
+                      onDragStart={isDraft ? undefined : handleDragStart}
+                      onDragOver={isDraft ? undefined : handleDragOver}
+                      onDrop={isDraft ? undefined : handleDrop}
                     >
                       <div className="flex items-start gap-2">
                         <div
@@ -828,7 +869,7 @@ export function GridTable({
                           title={
                             isAutoOrder
                               ? "Auto-ordered alphabetically. Drag to set a manual order."
-                              : undefined
+                              : "Drag to reorder within this tickle date."
                           }
                         >
                           <EditableTextWrap
