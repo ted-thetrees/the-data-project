@@ -243,10 +243,8 @@ export function TableFeaturesGrid({
                 {t.path ? (
                   <a
                     href={t.path}
-                    target="_blank"
-                    rel="noreferrer"
                     className="themed-link"
-                    title={`Open ${t.path}`}
+                    title={`Open ${t.path} in Data`}
                   >
                     {t.path}
                   </a>
