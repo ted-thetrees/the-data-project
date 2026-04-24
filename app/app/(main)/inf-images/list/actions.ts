@@ -122,3 +122,14 @@ export async function deleteImageFromList(imageId: string) {
   revalidatePath("/inf-images");
   revalidatePath("/inf-images/masonry");
 }
+
+export async function bulkDeleteImages(imageIds: string[]) {
+  if (imageIds.length === 0) return;
+  await poolV002.query(
+    `DELETE FROM inf_images WHERE id = ANY($1::uuid[])`,
+    [imageIds],
+  );
+  revalidatePath("/inf-images/list");
+  revalidatePath("/inf-images");
+  revalidatePath("/inf-images/masonry");
+}

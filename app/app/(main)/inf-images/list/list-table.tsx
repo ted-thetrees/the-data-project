@@ -28,6 +28,7 @@ import { RowContextMenu } from "@/components/row-context-menu";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
 import { handleGridKeyDown } from "@/components/grid-keyboard-nav";
 import {
+  bulkDeleteImages,
   bulkSetBubbleDistribution,
   bulkSetImageFolderStatus,
   deleteImageFromList,
@@ -497,6 +498,15 @@ export function ListTable({
           onPickFolder={(f) =>
             setBulkPicker({ kind: "folder", folderId: f.id, folderName: f.name })
           }
+          onDelete={() => {
+            const ids = [...selectedIds];
+            if (ids.length === 0) return;
+            const ok = window.confirm(
+              `Delete ${ids.length} image${ids.length === 1 ? "" : "s"}? This cannot be undone.`,
+            );
+            if (!ok) return;
+            void bulkDeleteImages(ids).then(() => clearSelection());
+          }}
         />
       )}
       <div ref={tableWrapperRef} className="overflow-x-auto">
@@ -961,6 +971,7 @@ function BulkActionBar({
   folders,
   onPickBubble,
   onPickFolder,
+  onDelete,
 }: {
   count: number;
   totalCount: number;
@@ -969,6 +980,7 @@ function BulkActionBar({
   folders: FolderOption[];
   onPickBubble: () => void;
   onPickFolder: (f: FolderOption) => void;
+  onDelete: () => void;
 }) {
   return (
     <div
@@ -1031,6 +1043,17 @@ function BulkActionBar({
       <button
         type="button"
         className="themed-button-sm ml-auto"
+        onClick={onDelete}
+        style={{
+          color: "var(--destructive, #b91c1c)",
+          borderColor: "var(--destructive, #b91c1c)",
+        }}
+      >
+        Delete…
+      </button>
+      <button
+        type="button"
+        className="themed-button-sm"
         onClick={onClear}
       >
         Clear selection
