@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import {
   DndContext,
@@ -253,11 +253,17 @@ export function ListTable({
   const totalColumnCount = iceLevels + orderedKeys.length;
 
   const tableWrapperRef = useRef<HTMLDivElement>(null);
+  const [scrollMargin, setScrollMargin] = useState(0);
+  useEffect(() => {
+    if (tableWrapperRef.current) {
+      setScrollMargin(tableWrapperRef.current.offsetTop);
+    }
+  }, []);
   const rowVirtualizer = useWindowVirtualizer({
     count: iceLevels === 0 ? rows.length : 0,
     estimateSize: () => 116,
     overscan: 8,
-    scrollMargin: tableWrapperRef.current?.offsetTop ?? 0,
+    scrollMargin,
   });
 
   const headerClass =
