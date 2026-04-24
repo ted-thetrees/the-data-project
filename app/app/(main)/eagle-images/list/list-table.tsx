@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Tag } from "@/components/tag";
 import { Empty } from "@/components/empty";
+import { PillSelect, type PillOption } from "@/components/pill";
+import { updateBubbleDistribution } from "./actions";
+import { createPicklistOptionNamed } from "../../pick-lists/actions";
 import {
   useTableViews,
   resolveColumnOrder,
@@ -29,6 +32,7 @@ export interface ListRow {
   is_video: boolean;
   width: number | null;
   height: number | null;
+  bubble_distribution_id: string | null;
   folder_ids: string[];
   tag_ids: string[];
 }
@@ -45,19 +49,20 @@ export interface TagOption {
   name: string;
 }
 
-const GROUPABLE_KEYS = ["folder", "tag"] as const;
+const GROUPABLE_KEYS = ["folder", "tag", "bubble_distribution"] as const;
 type GroupField = (typeof GROUPABLE_KEYS)[number];
 
 const HEADER_LABELS: Record<string, string> = {
   folder: "Folder",
   tag: "Tag",
+  bubble_distribution: "Bubble Distribution",
   image: "Image",
   name: "Name",
   folders: "Folders",
   tags: "Tags",
 };
 
-const COLUMN_KEYS = ["image", "name", "folders", "tags"] as const;
+const COLUMN_KEYS = ["image", "name", "bubble_distribution", "folders", "tags"] as const;
 
 const ICICLE_WIDTH_DEFAULT = 200;
 
@@ -65,11 +70,13 @@ export function ListTable({
   rows,
   folders,
   tags,
+  bubbleDistributionOptions,
   initialParams,
 }: {
   rows: ListRow[];
   folders: FolderOption[];
   tags: TagOption[];
+  bubbleDistributionOptions: PillOption[];
   initialParams?: ViewParams;
 }) {
   const {
@@ -119,6 +126,11 @@ export function ListTable({
     return sorted.map((t) => t.id);
   }, [tags]);
 
+  const bubbleById = useMemo(
+    () => new Map(bubbleDistributionOptions.map((b) => [b.id, b])),
+    [bubbleDistributionOptions],
+  );
+
   const specs: GroupBySpec<ListRow>[] = useMemo(
     () =>
       groupBy.map((field) => {
@@ -134,6 +146,17 @@ export function ListTable({
                   "Unknown",
           };
         }
+        if (field === "bubble_distribution") {
+          return {
+            field,
+            getKey: (row) => row.bubble_distribution_id ?? null,
+            getLabel: (key) =>
+              key == null
+                ? "Unassigned"
+                : bubbleById.get(key)?.name ?? "Unknown",
+            keyOrder: bubbleDistributionOptions.map((b) => b.id),
+          };
+        }
         return {
           field: "tag",
           // Surface "Yes" first, otherwise first tag id
@@ -147,7 +170,15 @@ export function ListTable({
           keyOrder: tagKeyOrder,
         };
       }),
-    [groupBy, folderById, tagById, tags, tagKeyOrder],
+    [
+      groupBy,
+      folderById,
+      tagById,
+      tags,
+      tagKeyOrder,
+      bubbleById,
+      bubbleDistributionOptions,
+    ],
   );
 
   const tree = useMemo(() => groupRows(rows, specs), [rows, specs]);
@@ -214,6 +245,18 @@ export function ListTable({
         <span className="text-[color:var(--muted-foreground)] text-xs ml-1">
           .{row.ext}
         </span>
+      </td>
+    ),
+    bubble_distribution: (row) => (
+      <td key="bubble_distribution" className={cellClass}>
+        <PillSelect
+          value={row.bubble_distribution_id ?? ""}
+          options={bubbleDistributionOptions}
+          onSave={(v) => updateBubbleDistribution(row.image_id, v)}
+          onCreate={(name) =>
+            createPicklistOptionNamed("eagle_bubble_distributions", name)
+          }
+        />
       </td>
     ),
     folders: (row) => (

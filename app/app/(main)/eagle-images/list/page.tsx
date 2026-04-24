@@ -5,6 +5,8 @@ import { Subtitle } from "@/components/subtitle";
 import { getInitialViewParams } from "@/lib/table-views-cookie";
 import { ListTable, type ListRow, type FolderOption, type TagOption } from "./list-table";
 import { LIST_STORAGE_KEY, LIST_DEFAULT_WIDTHS } from "./config";
+import { getEagleBubbleDistributions } from "../../pick-lists/lib";
+import type { PillOption } from "@/components/pill";
 
 export const metadata = { title: "Eagle Images — List" };
 export const dynamic = "force-dynamic";
@@ -12,14 +14,15 @@ export const dynamic = "force-dynamic";
 async function getRows(): Promise<ListRow[]> {
   const r = await poolV002.query<ListRow>(`
     SELECT
-      i.id::text     AS image_id,
+      i.id::text                          AS image_id,
       i.eagle_id,
-      i.name         AS image_name,
+      i.name                              AS image_name,
       i.ext,
       i.public_url,
       i.is_video,
       i.width,
       i.height,
+      i.bubble_distribution_id::text      AS bubble_distribution_id,
       COALESCE(
         (SELECT array_agg(folder_id) FROM eagle_image_folders WHERE image_id = i.id),
         ARRAY[]::text[]
@@ -49,10 +52,11 @@ async function getTags(): Promise<TagOption[]> {
 }
 
 export default async function EagleListPage() {
-  const [rows, folders, tags, initialParams] = await Promise.all([
+  const [rows, folders, tags, bubbleDistributions, initialParams] = await Promise.all([
     getRows(),
     getFolders(),
     getTags(),
+    getEagleBubbleDistributions() as unknown as Promise<PillOption[]>,
     getInitialViewParams(LIST_STORAGE_KEY, LIST_DEFAULT_WIDTHS),
   ]);
 
@@ -65,13 +69,15 @@ export default async function EagleListPage() {
           "eagle_image_tags",
           "eagle_folders",
           "eagle_tags",
+          "eagle_bubble_distributions",
         ]}
       />
-      <Subtitle>One row per image. Group by Folder or Tag — images in Eagle&rsquo;s &ldquo;Yes&rdquo; folder are tagged <code>Yes</code>.</Subtitle>
+      <Subtitle>One row per image. Group by Folder, Tag, or Bubble Distribution.</Subtitle>
       <ListTable
         rows={rows}
         folders={folders}
         tags={tags}
+        bubbleDistributionOptions={bubbleDistributions}
         initialParams={initialParams}
       />
     </PageShell>

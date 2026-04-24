@@ -143,6 +143,13 @@ export function getGetSources() {
   return getStatusesByName("get_sources", "ORDER BY sort_order NULLS LAST, name");
 }
 
+export function getEagleBubbleDistributions() {
+  return getStatusesByName(
+    "eagle_bubble_distributions",
+    "ORDER BY sort_order NULLS LAST, name",
+  );
+}
+
 export async function getPeopleMetroAreas(): Promise<Status[]> {
   const result = await poolV002.query(
     `SELECT id::text, name, full_name, COALESCE(color, '') as color

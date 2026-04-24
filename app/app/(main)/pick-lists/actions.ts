@@ -46,6 +46,10 @@ const SOURCE_TABLES: Record<string, SourceConfig> = {
   get_categories: { table: "get_categories", hasSortOrder: true },
   get_statuses: { table: "get_statuses", hasSortOrder: true },
   get_sources: { table: "get_sources", hasSortOrder: true },
+  eagle_bubble_distributions: {
+    table: "eagle_bubble_distributions",
+    hasSortOrder: true,
+  },
 };
 
 function revalidate() {
@@ -65,6 +69,9 @@ function revalidate() {
   revalidatePath("/user-stories");
   revalidatePath("/people");
   revalidatePath("/get");
+  revalidatePath("/pick-lists/eagle-images");
+  revalidatePath("/eagle-images");
+  revalidatePath("/eagle-images/list");
 }
 
 export async function createPicklistOptionNamed(
