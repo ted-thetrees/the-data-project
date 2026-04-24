@@ -2,6 +2,8 @@
 
 import { Fragment, useMemo, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { GroupByPicker } from "@/components/group-by-picker";
 import {
   DndContext,
   PointerSensor,
@@ -158,39 +160,24 @@ function GroupByControl({
 }: {
   current: "category" | "area" | "none";
 }) {
-  const items: Array<{
-    key: "category" | "area" | "none";
-    label: string;
-    href: string;
-  }> = [
-    { key: "none", label: "None", href: "/talent?groupBy=none" },
-    { key: "category", label: "Category & Rating", href: "/talent" },
-    { key: "area", label: "Area", href: "/talent?groupBy=area" },
-  ];
+  const router = useRouter();
+  const groupByForPicker =
+    current === "area" ? ["area"] : current === "none" ? [] : ["category"];
+  const handleChange = (next: string[]) => {
+    const first = next[0];
+    if (!first) router.push("/talent?groupBy=none");
+    else if (first === "area") router.push("/talent?groupBy=area");
+    else router.push("/talent");
+  };
   return (
-    <div
-      className="mb-3 flex items-center gap-2"
-      style={{ fontSize: "var(--cell-font-size)" }}
-    >
-      <span className="text-muted-foreground">Group by:</span>
-      {items.map((it) => {
-        const active = it.key === current;
-        return (
-          <Link
-            key={it.key}
-            href={it.href}
-            replace
-            className={`px-2 py-1 rounded-sm border ${
-              active
-                ? "bg-foreground text-background border-foreground"
-                : "border-muted-foreground/30 hover:border-foreground/50"
-            }`}
-          >
-            {it.label}
-          </Link>
-        );
-      })}
-    </div>
+    <GroupByPicker
+      available={[
+        { key: "category", label: "Category & Rating" },
+        { key: "area", label: "Area" },
+      ]}
+      groupBy={groupByForPicker}
+      onChange={handleChange}
+    />
   );
 }
 
