@@ -1,0 +1,10 @@
+export const LIST_STORAGE_KEY = "eagle-images-list";
+
+export const LIST_DEFAULT_WIDTHS: Record<string, number> = {
+  image: 140,
+  name: 280,
+  folders: 260,
+  tags: 200,
+  "__ice:folder": 220,
+  "__ice:tag": 180,
+};
