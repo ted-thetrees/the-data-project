@@ -40,6 +40,22 @@ export async function deleteNote(noteId: string) {
   revalidatePath(PATH);
 }
 
+export async function updateBubbleDistribution(
+  imageId: string,
+  bubbleDistributionId: string,
+) {
+  const value =
+    bubbleDistributionId && bubbleDistributionId.length > 0
+      ? Number(bubbleDistributionId)
+      : null;
+  await poolV002.query(
+    `UPDATE eagle_images SET bubble_distribution_id = $1, updated_at = now() WHERE id = $2`,
+    [value, imageId],
+  );
+  revalidatePath(PATH);
+  revalidatePath("/eagle-images/list");
+}
+
 export async function deleteImage(imageId: string) {
   // Cascades to notes + tag/folder links; Storage object is left in the bucket.
   await poolV002.query(`DELETE FROM eagle_images WHERE id = $1`, [imageId]);

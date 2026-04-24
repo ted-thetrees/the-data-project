@@ -16,6 +16,8 @@ import {
 } from "@dnd-kit/sortable";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { EditableTextWrap } from "@/components/editable-text";
+import { PillSelect, type PillOption } from "@/components/pill";
+import { createPicklistOptionNamed } from "../pick-lists/actions";
 import {
   useTableViews,
   resolveColumnOrder,
@@ -37,6 +39,7 @@ import {
   createNote,
   deleteImage,
   deleteNote,
+  updateBubbleDistribution,
   updateNote,
   upsertNoteForImage,
 } from "./actions";
@@ -51,6 +54,7 @@ export interface EagleRow {
   height: number | null;
   public_url: string;
   is_video: boolean;
+  bubble_distribution_id: string | null;
   folder_ids: string[];
   tag_ids: string[];
   note_id: string | null;
@@ -78,22 +82,25 @@ const HEADER_LABELS: Record<string, string> = {
   tag: "Tag",
   image: "Image",
   note: "Note",
+  bubble_distribution: "Bubble Distribution",
 };
 
 const ICICLE_WIDTH_DEFAULT = 200;
 const IMAGE_ICICLE_WIDTH_DEFAULT = 280;
 
-const COLUMN_KEYS = ["note"] as const;
+const COLUMN_KEYS = ["bubble_distribution", "note"] as const;
 
 export function EagleImagesTable({
   rows,
   folders,
   tags,
+  bubbleDistributionOptions,
   initialParams,
 }: {
   rows: EagleRow[];
   folders: FolderOption[];
   tags: TagOption[];
+  bubbleDistributionOptions: PillOption[];
   initialParams?: ViewParams;
 }) {
   const {
@@ -219,6 +226,33 @@ export function EagleImagesTable({
   const cellClass =
     "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]";
 
+  const cellRenderers: Record<string, (row: EagleRow) => React.ReactNode> = {
+    bubble_distribution: (row) => (
+      <td key="bubble_distribution" className={cellClass}>
+        <PillSelect
+          value={row.bubble_distribution_id ?? ""}
+          options={bubbleDistributionOptions}
+          onSave={(v) => updateBubbleDistribution(row.image_id, v)}
+          onCreate={(name) =>
+            createPicklistOptionNamed("eagle_bubble_distributions", name)
+          }
+        />
+      </td>
+    ),
+    note: (row) => (
+      <td key="note" className={cellClass}>
+        <EditableTextWrap
+          value={row.note ?? ""}
+          onSave={(v) =>
+            row.note_id
+              ? updateNote(row.note_id, v)
+              : upsertNoteForImage(row.image_id, v)
+          }
+        />
+      </td>
+    ),
+  };
+
   return (
     <>
       <ViewSwitcher
@@ -324,6 +358,7 @@ export function EagleImagesTable({
               orderedKeys,
               cellClass,
               totalColumnCount,
+              cellRenderers,
             )}
           </tbody>
         </table>
@@ -414,6 +449,7 @@ function renderTree(
   orderedKeys: string[],
   cellClass: string,
   totalColumnCount: number,
+  cellRenderers: Record<string, (row: EagleRow) => React.ReactNode>,
 ): React.ReactNode[] {
   const flat = flatten(tree, collapsed, []);
 
@@ -547,16 +583,7 @@ function renderTree(
         itemLabel={row.note_id ? "this note" : `"${row.image_name}"`}
       >
         {icicleCells}
-        <td className={cellClass}>
-          <EditableTextWrap
-            value={row.note ?? ""}
-            onSave={(v) =>
-              row.note_id
-                ? updateNote(row.note_id, v)
-                : upsertNoteForImage(row.image_id, v)
-            }
-          />
-        </td>
+        {orderedKeys.map((k) => cellRenderers[k]?.(row))}
       </RowContextMenu>,
     );
   }

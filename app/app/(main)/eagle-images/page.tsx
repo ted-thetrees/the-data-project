@@ -5,6 +5,8 @@ import { Subtitle } from "@/components/subtitle";
 import { getInitialViewParams } from "@/lib/table-views-cookie";
 import { EagleImagesTable, type EagleRow, type FolderOption, type TagOption } from "./eagle-images-table";
 import { EAGLE_STORAGE_KEY, EAGLE_DEFAULT_WIDTHS } from "./config";
+import { getEagleBubbleDistributions } from "../pick-lists/lib";
+import type { PillOption } from "@/components/pill";
 
 export const metadata = { title: "Eagle Images" };
 export const dynamic = "force-dynamic";
@@ -20,6 +22,7 @@ async function getRows(): Promise<EagleRow[]> {
       i.height,
       i.public_url,
       i.is_video,
+      i.bubble_distribution_id::text AS bubble_distribution_id,
       COALESCE(
         (SELECT array_agg(folder_id ORDER BY folder_id) FROM eagle_image_folders WHERE image_id = i.id),
         ARRAY[]::text[]
@@ -53,10 +56,11 @@ async function getTags(): Promise<TagOption[]> {
 }
 
 export default async function EagleImagesPage() {
-  const [rows, folders, tags, initialParams] = await Promise.all([
+  const [rows, folders, tags, bubbleDistributions, initialParams] = await Promise.all([
     getRows(),
     getFolders(),
     getTags(),
+    getEagleBubbleDistributions() as unknown as Promise<PillOption[]>,
     getInitialViewParams(EAGLE_STORAGE_KEY, EAGLE_DEFAULT_WIDTHS),
   ]);
 
@@ -71,6 +75,7 @@ export default async function EagleImagesPage() {
           "eagle_image_folders",
           "eagle_image_tags",
           "eagle_folders",
+          "eagle_bubble_distributions",
         ]}
       />
       <Subtitle>
@@ -80,6 +85,7 @@ export default async function EagleImagesPage() {
         rows={rows}
         folders={folders}
         tags={tags}
+        bubbleDistributionOptions={bubbleDistributions}
         initialParams={initialParams}
       />
     </PageShell>
