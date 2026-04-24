@@ -31,7 +31,7 @@ async function getUserStories(): Promise<UserStoryRow[]> {
         '[]'::json
       ) AS roles
     FROM user_stories us
-    ORDER BY us.id DESC
+    ORDER BY us.sort_order NULLS LAST, us.id DESC
   `);
   return result.rows.map((r) => ({
     ...r,

@@ -14,7 +14,11 @@ import {
   SortableContext,
   arrayMove,
   horizontalListSortingStrategy,
+  verticalListSortingStrategy,
+  useSortable,
 } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
 import {
   Pill,
   PillSelect,
@@ -48,6 +52,7 @@ import {
   createUserStory,
   createUserStoryInGroup,
   deleteUserStory,
+  reorderUserStoryRows,
 } from "./actions";
 import { createPicklistOptionNamed } from "../pick-lists/actions";
 
@@ -166,6 +171,59 @@ function prefillFromPath(
   return out;
 }
 
+function SortableUserStoryRow({
+  rowId,
+  onDelete,
+  itemLabel,
+  gripWidth,
+  children,
+}: {
+  rowId: string;
+  onDelete: () => void | Promise<void>;
+  itemLabel: string;
+  gripWidth: number;
+  children: React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: rowId });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.85 : undefined,
+    position: isDragging ? "relative" : undefined,
+    zIndex: isDragging ? 2 : undefined,
+  };
+  return (
+    <RowContextMenu
+      onDelete={onDelete}
+      itemLabel={itemLabel}
+      rowStyle={style}
+      trProps={{ ref: setNodeRef, ...attributes }}
+    >
+      <td
+        {...listeners}
+        className="cursor-grab select-none bg-[color:var(--cell-bg)] text-[color:var(--muted-foreground)] align-middle"
+        style={{
+          width: gripWidth,
+          padding: 0,
+          textAlign: "center",
+          touchAction: "none",
+        }}
+        title="Drag to reorder"
+      >
+        <GripVertical className="inline-block w-3 h-3 opacity-60 hover:opacity-100" />
+      </td>
+      {children}
+    </RowContextMenu>
+  );
+}
+
 function NewUserStoryRow({ colSpan }: { colSpan: number }) {
   const [pending, startTransition] = useTransition();
   return (
@@ -273,13 +331,29 @@ export function UserStoriesTable({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
+  const [, startReorder] = useTransition();
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = orderedKeys.indexOf(String(active.id));
-    const newIndex = orderedKeys.indexOf(String(over.id));
-    if (oldIndex < 0 || newIndex < 0) return;
-    setColumnOrder(arrayMove(orderedKeys, oldIndex, newIndex));
+    const activeId = String(active.id);
+    const overId = String(over.id);
+    // Column drag
+    if (orderedKeys.includes(activeId)) {
+      const oldIndex = orderedKeys.indexOf(activeId);
+      const newIndex = orderedKeys.indexOf(overId);
+      if (oldIndex < 0 || newIndex < 0) return;
+      setColumnOrder(arrayMove(orderedKeys, oldIndex, newIndex));
+      return;
+    }
+    // Row drag (only in ungrouped view)
+    if (iceLevels === 0) {
+      const ids = rows.map((r) => r.id);
+      const oldIdx = ids.indexOf(activeId);
+      const newIdx = ids.indexOf(overId);
+      if (oldIdx < 0 || newIdx < 0) return;
+      const next = arrayMove(ids, oldIdx, newIdx);
+      startReorder(() => reorderUserStoryRows(next));
+    }
   };
 
   const userColsWidth = orderedKeys.reduce(
@@ -290,8 +364,10 @@ export function UserStoriesTable({
     (sum, _, i) => sum + iceWidth(i),
     0,
   );
-  const totalWidth = userColsWidth + iceColsWidth;
-  const totalColumnCount = iceLevels + orderedKeys.length;
+  const gripCols = iceLevels === 0 ? 1 : 0;
+  const gripWidth = 22;
+  const totalWidth = userColsWidth + iceColsWidth + gripCols * gripWidth;
+  const totalColumnCount = iceLevels + gripCols + orderedKeys.length;
 
   const headerClass =
     "relative text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
@@ -377,6 +453,7 @@ export function UserStoriesTable({
               {Array.from({ length: iceLevels }).map((_, i) => (
                 <col key={`ice-${i}`} style={{ width: iceWidth(i) }} />
               ))}
+              {gripCols > 0 && <col key="grip" style={{ width: gripWidth }} />}
               {orderedKeys.map((key) => (
                 <col key={key} style={{ width: params.columnWidths[key] }} />
               ))}
@@ -397,6 +474,14 @@ export function UserStoriesTable({
                     />
                   </th>
                 ))}
+                {gripCols > 0 && (
+                  <th
+                    key="grip-h"
+                    className={headerClass}
+                    style={{ width: gripWidth }}
+                    aria-hidden
+                  />
+                )}
                 <SortableContext
                   items={orderedKeys}
                   strategy={horizontalListSortingStrategy}
@@ -408,7 +493,7 @@ export function UserStoriesTable({
                       className={headerClass}
                       extras={
                         <ColumnResizer
-                          columnIndex={i + iceLevels}
+                          columnIndex={i + iceLevels + gripCols}
                           currentWidth={params.columnWidths[key]}
                           onResize={(w) => setColumnWidth(key, w)}
                         />
@@ -442,17 +527,25 @@ export function UserStoriesTable({
                   }}
                 />
               </tr>
-              {iceLevels === 0
-                ? rows.map((row) => (
-                    <RowContextMenu
+              {iceLevels === 0 ? (
+                <SortableContext
+                  items={rows.map((r) => r.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {rows.map((row) => (
+                    <SortableUserStoryRow
                       key={row.id}
+                      rowId={row.id}
                       onDelete={() => deleteUserStory(row.id)}
                       itemLabel={row.title ? `"${row.title}"` : "this user story"}
+                      gripWidth={gripWidth}
                     >
                       {orderedKeys.map((key) => cellRenderers[key]?.(row))}
-                    </RowContextMenu>
-                  ))
-                : renderGroupedTree(
+                    </SortableUserStoryRow>
+                  ))}
+                </SortableContext>
+              ) : (
+                renderGroupedTree(
                     tree,
                     collapsed,
                     toggleCollapsed,
@@ -466,7 +559,8 @@ export function UserStoriesTable({
                         createUserStoryInGroup(prefill),
                       );
                     },
-                  )}
+                  )
+              )}
             </tbody>
           </table>
         </DndContext>

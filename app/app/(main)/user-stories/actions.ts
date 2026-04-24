@@ -53,7 +53,24 @@ export async function removeUserStoryRole(storyId: string, roleId: string) {
 
 export async function createUserStory() {
   await poolV002.query(
-    `INSERT INTO user_stories (title) VALUES ('Untitled')`,
+    `INSERT INTO user_stories (title, sort_order)
+     VALUES ('Untitled', (SELECT COALESCE(MIN(sort_order), 0) - 1 FROM user_stories))`,
+  );
+  revalidateUserStoriesPage();
+}
+
+export async function reorderUserStoryRows(orderedIds: string[]) {
+  if (orderedIds.length === 0) return;
+  const values = orderedIds.map((_, i) => `($${i * 2 + 1}::bigint, $${i * 2 + 2}::int)`).join(",");
+  const params: (string | number)[] = [];
+  orderedIds.forEach((id, i) => {
+    params.push(id, i);
+  });
+  await poolV002.query(
+    `UPDATE user_stories us SET sort_order = v.sort_order
+     FROM (VALUES ${values}) AS v(id, sort_order)
+     WHERE us.id = v.id`,
+    params,
   );
   revalidateUserStoriesPage();
 }
