@@ -101,22 +101,26 @@ export function TableFeaturesGrid({
     GAP + FIXED_COL_PAGE + GAP,
     GAP + FIXED_COL_PAGE + GAP + FIXED_COL_GO + GAP,
   ];
-  // After Display, the outer divider is the natural border-spacing — but since
-  // scrolling cells slide under, also draw a 1px line so the boundary is crisp.
-  const outerShadow = "1px 0 0 var(--border)";
+  // Paint the column divider explicitly on each sticky cell's right edge so
+  // it stays visible no matter what scrolls underneath. Inner gaps use the
+  // page-bg color (matching the natural border-spacing tile look). The outer
+  // gap (after Display) gets a thin border line for a crisp boundary.
+  const innerShadow = "2px 0 0 0 var(--background)";
+  const outerShadow =
+    "2px 0 0 0 var(--background), 3px 0 0 0 var(--border)";
   const stickyCellStyle = (col: 0 | 1 | 2): React.CSSProperties => ({
     position: "sticky",
     left: stickyOffsets[col],
     zIndex: 2,
     background: "var(--cell-bg)",
-    boxShadow: col === 2 ? outerShadow : undefined,
+    boxShadow: col === 2 ? outerShadow : innerShadow,
   });
   const stickyHeaderStyle = (col: 0 | 1 | 2): React.CSSProperties => ({
     position: "sticky",
     left: stickyOffsets[col],
     zIndex: 4,
     background: "var(--header-bg)",
-    boxShadow: col === 2 ? outerShadow : undefined,
+    boxShadow: col === 2 ? outerShadow : innerShadow,
   });
   const stickySpanHeaderStyle: React.CSSProperties = {
     position: "sticky",
