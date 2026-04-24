@@ -58,6 +58,24 @@ export async function createUserStory() {
   revalidateUserStoriesPage();
 }
 
+export async function createUserStoryInGroup(
+  prefill: Record<string, string | null>,
+) {
+  const cols: string[] = ["title"];
+  const placeholders: string[] = [`'Untitled'`];
+  const params: (string | null)[] = [];
+  if (prefill.category_id !== undefined) {
+    params.push(prefill.category_id);
+    cols.push("category_id");
+    placeholders.push(`$${params.length}`);
+  }
+  await poolV002.query(
+    `INSERT INTO user_stories (${cols.join(",")}) VALUES (${placeholders.join(",")})`,
+    params,
+  );
+  revalidateUserStoriesPage();
+}
+
 export async function deleteUserStory(id: string) {
   await poolV002.query(`DELETE FROM user_stories WHERE id = $1`, [id]);
   revalidateUserStoriesPage();

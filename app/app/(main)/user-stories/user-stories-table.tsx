@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import {
   DndContext,
   PointerSensor,
@@ -15,10 +16,18 @@ import {
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import {
+  Pill,
   PillSelect,
   MultiPillSelect,
   type PillOption,
 } from "@/components/pill";
+import { GroupByPicker } from "@/components/group-by-picker";
+import {
+  groupRows,
+  type GroupBySpec,
+  type GroupItem,
+  type GroupNode,
+} from "@/lib/table-grouping";
 import { EditableText, EditableTextWrap } from "@/components/editable-text";
 import {
   useTableViews,
@@ -37,6 +46,7 @@ import {
   addUserStoryRole,
   removeUserStoryRole,
   createUserStory,
+  createUserStoryInGroup,
   deleteUserStory,
 } from "./actions";
 import { createPicklistOptionNamed } from "../pick-lists/actions";
@@ -69,6 +79,92 @@ const HEADER_LABELS: Record<string, string> = {
   title: "Title",
   category: "Category",
 };
+
+const GROUPABLE_KEYS = ["category"] as const;
+
+const ROW_FIELD_FOR_GROUP: Record<string, keyof UserStoryRow> = {
+  category: "category_id",
+};
+
+const ICICLE_COLUMN_WIDTH = 200;
+
+type FlatRow =
+  | { kind: "data"; row: UserStoryRow; path: GroupNode<UserStoryRow>[] }
+  | {
+      kind: "collapsed";
+      group: GroupNode<UserStoryRow>;
+      pathIncludingSelf: GroupNode<UserStoryRow>[];
+    }
+  | {
+      kind: "add";
+      group: GroupNode<UserStoryRow>;
+      path: GroupNode<UserStoryRow>[];
+    };
+
+function flatten(
+  items: GroupItem<UserStoryRow>[],
+  collapsed: Set<string>,
+  parentPath: GroupNode<UserStoryRow>[],
+): FlatRow[] {
+  const out: FlatRow[] = [];
+  for (const item of items) {
+    if (item.kind === "group") {
+      const pathInc = [...parentPath, item];
+      if (collapsed.has(item.path)) {
+        out.push({ kind: "collapsed", group: item, pathIncludingSelf: pathInc });
+      } else {
+        const isInnermost = item.children.every((c) => c.kind === "row");
+        if (isInnermost) out.push({ kind: "add", group: item, path: pathInc });
+        out.push(...flatten(item.children, collapsed, pathInc));
+      }
+    } else {
+      out.push({ kind: "data", row: item.row, path: parentPath });
+    }
+  }
+  return out;
+}
+
+interface LevelSpan {
+  startIndex: number;
+  rowSpan: number;
+  group: GroupNode<UserStoryRow>;
+}
+
+function computeSpans(flat: FlatRow[], level: number): LevelSpan[] {
+  const out: LevelSpan[] = [];
+  let current: LevelSpan | null = null;
+  for (let i = 0; i < flat.length; i++) {
+    const f = flat[i];
+    const g =
+      f.kind === "collapsed"
+        ? f.pathIncludingSelf[level] ?? null
+        : f.path[level] ?? null;
+    if (!g) {
+      if (current) out.push(current);
+      current = null;
+      continue;
+    }
+    if (current && current.group.path === g.path) {
+      current.rowSpan++;
+    } else {
+      if (current) out.push(current);
+      current = { startIndex: i, rowSpan: 1, group: g };
+    }
+  }
+  if (current) out.push(current);
+  return out;
+}
+
+function prefillFromPath(
+  path: GroupNode<UserStoryRow>[],
+): Record<string, string | null> {
+  const out: Record<string, string | null> = {};
+  for (const g of path) {
+    const col = ROW_FIELD_FOR_GROUP[g.field];
+    if (col) out[col as string] = g.value;
+  }
+  return out;
+}
 
 function NewUserStoryRow({ colSpan }: { colSpan: number }) {
   const [pending, startTransition] = useTransition();
@@ -109,7 +205,60 @@ export function UserStoriesTable({
     deleteView,
     setColumnWidth,
     setColumnOrder,
+    setGroupBy,
   } = useTableViews(USER_STORIES_STORAGE_KEY, DEFAULT_WIDTHS, initialParams);
+
+  const groupBy = useMemo(
+    () =>
+      (params.groupBy ?? []).filter((k): k is (typeof GROUPABLE_KEYS)[number] =>
+        (GROUPABLE_KEYS as readonly string[]).includes(k),
+      ),
+    [params.groupBy],
+  );
+  const iceLevels = groupBy.length;
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [, startCreateInGroup] = useTransition();
+  const toggleCollapsed = (path: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+  };
+
+  const colorByCategoryId = useMemo(
+    () => new Map(categoryOptions.map((o) => [o.id, o.color])),
+    [categoryOptions],
+  );
+
+  const specs: GroupBySpec<UserStoryRow>[] = groupBy.map((field) => {
+    const rowField = ROW_FIELD_FOR_GROUP[field];
+    const opts = field === "category" ? categoryOptions : [];
+    const lookup = new Map(opts.map((o) => [o.id, o.name] as const));
+    return {
+      field,
+      getKey: (row) => {
+        const v = row[rowField];
+        return typeof v === "string" && v.length > 0 ? v : null;
+      },
+      getLabel: (key) =>
+        key === null ? "Uncategorized" : lookup.get(key) ?? "(unknown)",
+      keyOrder: opts.map((o) => o.id),
+    };
+  });
+
+  const tree = useMemo(
+    () => groupRows(rows, specs),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rows, groupBy.join(",")],
+  );
+
+  const iceWidth = (level: number) => {
+    const field = groupBy[level];
+    if (!field) return ICICLE_COLUMN_WIDTH;
+    return params.columnWidths[`__ice:${field}`] ?? ICICLE_COLUMN_WIDTH;
+  };
 
   const orderedKeys = useMemo(
     () =>
@@ -133,10 +282,16 @@ export function UserStoriesTable({
     setColumnOrder(arrayMove(orderedKeys, oldIndex, newIndex));
   };
 
-  const totalWidth = orderedKeys.reduce(
+  const userColsWidth = orderedKeys.reduce(
     (sum, k) => sum + (params.columnWidths[k] ?? 0),
     0,
   );
+  const iceColsWidth = Array.from({ length: iceLevels }).reduce<number>(
+    (sum, _, i) => sum + iceWidth(i),
+    0,
+  );
+  const totalWidth = userColsWidth + iceColsWidth;
+  const totalColumnCount = iceLevels + orderedKeys.length;
 
   const headerClass =
     "relative text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
@@ -194,6 +349,14 @@ export function UserStoriesTable({
         onRename={renameView}
         onDelete={deleteView}
       />
+      <GroupByPicker
+        available={[...GROUPABLE_KEYS].map((k) => ({
+          key: k,
+          label: HEADER_LABELS[k] ?? k,
+        }))}
+        groupBy={groupBy}
+        onChange={setGroupBy}
+      />
       <div className="overflow-x-auto">
         <DndContext
           sensors={sensors}
@@ -211,12 +374,29 @@ export function UserStoriesTable({
             }}
           >
             <colgroup>
+              {Array.from({ length: iceLevels }).map((_, i) => (
+                <col key={`ice-${i}`} style={{ width: iceWidth(i) }} />
+              ))}
               {orderedKeys.map((key) => (
                 <col key={key} style={{ width: params.columnWidths[key] }} />
               ))}
             </colgroup>
             <thead>
               <tr>
+                {Array.from({ length: iceLevels }).map((_, i) => (
+                  <th
+                    key={`ice-h-${i}`}
+                    className={headerClass}
+                    style={{ position: "relative" }}
+                  >
+                    {HEADER_LABELS[groupBy[i]] ?? groupBy[i]}
+                    <ColumnResizer
+                      columnIndex={i}
+                      currentWidth={iceWidth(i)}
+                      onResize={(w) => setColumnWidth(`__ice:${groupBy[i]}`, w)}
+                    />
+                  </th>
+                ))}
                 <SortableContext
                   items={orderedKeys}
                   strategy={horizontalListSortingStrategy}
@@ -228,7 +408,7 @@ export function UserStoriesTable({
                       className={headerClass}
                       extras={
                         <ColumnResizer
-                          columnIndex={i}
+                          columnIndex={i + iceLevels}
                           currentWidth={params.columnWidths[key]}
                           onResize={(w) => setColumnWidth(key, w)}
                         />
@@ -243,7 +423,7 @@ export function UserStoriesTable({
             <tbody>
               <tr aria-hidden="true">
                 <td
-                  colSpan={orderedKeys.length}
+                  colSpan={totalColumnCount}
                   style={{
                     height: "var(--header-body-gap)",
                     padding: 0,
@@ -251,10 +431,10 @@ export function UserStoriesTable({
                   }}
                 />
               </tr>
-              <NewUserStoryRow colSpan={orderedKeys.length} />
+              <NewUserStoryRow colSpan={totalColumnCount} />
               <tr aria-hidden="true">
                 <td
-                  colSpan={orderedKeys.length}
+                  colSpan={totalColumnCount}
                   style={{
                     height: "var(--header-body-gap)",
                     padding: 0,
@@ -262,19 +442,163 @@ export function UserStoriesTable({
                   }}
                 />
               </tr>
-              {rows.map((row) => (
-                <RowContextMenu
-                  key={row.id}
-                  onDelete={() => deleteUserStory(row.id)}
-                  itemLabel={row.title ? `"${row.title}"` : "this user story"}
-                >
-                  {orderedKeys.map((key) => cellRenderers[key]?.(row))}
-                </RowContextMenu>
-              ))}
+              {iceLevels === 0
+                ? rows.map((row) => (
+                    <RowContextMenu
+                      key={row.id}
+                      onDelete={() => deleteUserStory(row.id)}
+                      itemLabel={row.title ? `"${row.title}"` : "this user story"}
+                    >
+                      {orderedKeys.map((key) => cellRenderers[key]?.(row))}
+                    </RowContextMenu>
+                  ))
+                : renderGroupedTree(
+                    tree,
+                    collapsed,
+                    toggleCollapsed,
+                    iceLevels,
+                    orderedKeys,
+                    cellRenderers,
+                    (row) => deleteUserStory(row.id),
+                    colorByCategoryId,
+                    (prefill) => {
+                      startCreateInGroup(() =>
+                        createUserStoryInGroup(prefill),
+                      );
+                    },
+                  )}
             </tbody>
           </table>
         </DndContext>
       </div>
     </>
   );
+}
+
+function renderGroupedTree(
+  tree: GroupItem<UserStoryRow>[],
+  collapsed: Set<string>,
+  toggle: (path: string) => void,
+  iceLevels: number,
+  orderedKeys: string[],
+  cellRenderers: Record<string, (row: UserStoryRow) => React.ReactNode>,
+  onDelete: (row: UserStoryRow) => void | Promise<void>,
+  colorByCategoryId: Map<string, string | null>,
+  onAddInGroup: (prefill: Record<string, string | null>) => void,
+): React.ReactNode[] {
+  const flat = flatten(tree, collapsed, []);
+  const spanStartAt: Map<number, LevelSpan>[] = [];
+  for (let L = 0; L < iceLevels; L++) {
+    const spans = computeSpans(flat, L);
+    const map = new Map<number, LevelSpan>();
+    for (const s of spans) map.set(s.startIndex, s);
+    spanStartAt.push(map);
+  }
+
+  const out: React.ReactNode[] = [];
+  for (let i = 0; i < flat.length; i++) {
+    const frow = flat[i];
+    const icicleCells: React.ReactNode[] = [];
+    let collapsedRight = false;
+
+    for (let L = 0; L < iceLevels; L++) {
+      const span = spanStartAt[L].get(i);
+      if (!span) continue;
+      const isCollapsedLevel =
+        frow.kind === "collapsed" && frow.group.level === L;
+      const color =
+        span.group.value != null
+          ? colorByCategoryId.get(span.group.value) ?? null
+          : null;
+      if (isCollapsedLevel) {
+        icicleCells.push(
+          <td
+            key={`ice-${L}`}
+            rowSpan={span.rowSpan}
+            colSpan={iceLevels - L + orderedKeys.length}
+            className="themed-group-merged-cell cursor-pointer select-none"
+            onClick={() => toggle(span.group.path)}
+            title="Expand"
+          >
+            <div className="flex items-center gap-2">
+              <ChevronRight className="w-3 h-3 shrink-0" />
+              <Pill color={color}>{span.group.label}</Pill>
+              <span className="text-[color:var(--muted-foreground)] text-xs">
+                ({span.group.count})
+              </span>
+            </div>
+          </td>,
+        );
+        collapsedRight = true;
+        break;
+      }
+      icicleCells.push(
+        <td
+          key={`ice-${L}`}
+          rowSpan={span.rowSpan}
+          className="themed-group-merged-cell cursor-pointer select-none"
+          onClick={() => toggle(span.group.path)}
+          title="Collapse"
+        >
+          <div className="flex items-start gap-1">
+            <ChevronDown className="w-3 h-3 mt-1 shrink-0" />
+            <Pill color={color}>{span.group.label}</Pill>
+          </div>
+        </td>,
+      );
+    }
+
+    if (frow.kind === "collapsed") {
+      if (!collapsedRight) {
+        icicleCells.push(
+          <td
+            key="placeholder"
+            colSpan={orderedKeys.length}
+            className="bg-[color:var(--cell-bg)]"
+          />,
+        );
+      }
+      out.push(
+        <tr key={`c-${frow.group.path}`} className="themed-group-row">
+          {icicleCells}
+        </tr>,
+      );
+      continue;
+    }
+
+    if (frow.kind === "add") {
+      const prefill: Record<string, string | null> = {};
+      for (const g of frow.path) {
+        const col = ROW_FIELD_FOR_GROUP[g.field];
+        if (col) prefill[col as string] = g.value;
+      }
+      out.push(
+        <tr key={`add-${frow.group.path}`}>
+          {icicleCells}
+          <td
+            colSpan={orderedKeys.length}
+            className="themed-new-row-cell"
+            onClick={() => onAddInGroup(prefill)}
+            title="Add a user story in this group"
+          >
+            + Add
+          </td>
+        </tr>,
+      );
+      continue;
+    }
+
+    const row = frow.row;
+    out.push(
+      <RowContextMenu
+        key={row.id}
+        onDelete={() => onDelete(row)}
+        itemLabel={row.title ? `"${row.title}"` : "this user story"}
+      >
+        {icicleCells}
+        {orderedKeys.map((key) => cellRenderers[key]?.(row))}
+      </RowContextMenu>,
+    );
+  }
+  return out;
 }

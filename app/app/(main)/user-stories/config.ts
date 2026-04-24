@@ -5,4 +5,5 @@ export const USER_STORIES_DEFAULT_WIDTHS: Record<string, number> = {
   narrative: 560,
   title: 240,
   category: 180,
+  "__ice:category": 200,
 };
