@@ -1,5 +1,6 @@
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
+import { Realtime } from "@/components/realtime";
 import { UserStoriesTable, type UserStoryRow } from "./user-stories-table";
 import {
   USER_STORIES_STORAGE_KEY,
@@ -55,6 +56,14 @@ export default async function UserStoriesPage() {
   ]);
   return (
     <PageShell title="User Stories" count={rows.length} maxWidth="">
+      <Realtime
+        tables={[
+          "user_stories",
+          "user_story_roles",
+          "user_story_categories",
+          "user_story_role_links",
+        ]}
+      />
       <UserStoriesTable
         rows={rows}
         roleOptions={roleOptions}

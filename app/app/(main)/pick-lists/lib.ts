@@ -150,6 +150,13 @@ export function getEagleBubbleDistributions() {
   );
 }
 
+export function getTablesFeatureStatuses() {
+  return getStatusesByName(
+    "tables_feature_statuses",
+    "ORDER BY sort_order NULLS LAST, name",
+  );
+}
+
 export async function getPeopleMetroAreas(): Promise<Status[]> {
   const result = await poolV002.query(
     `SELECT id::text, name, full_name, COALESCE(color, '') as color

@@ -6,9 +6,10 @@ import { revalidatePath } from "next/cache";
 const PATH = "/eagle-images";
 
 export async function createNote(imageId: string, note = "") {
+  // Insert at the top of the image's note group (smallest sort_order).
   await poolV002.query(
     `INSERT INTO eagle_image_notes (image_id, note, sort_order)
-     VALUES ($1, $2, COALESCE((SELECT MAX(sort_order) + 1 FROM eagle_image_notes WHERE image_id = $1), 0))`,
+     VALUES ($1, $2, COALESCE((SELECT MIN(sort_order) FROM eagle_image_notes WHERE image_id = $1), 1) - 1)`,
     [imageId, note],
   );
   revalidatePath(PATH);

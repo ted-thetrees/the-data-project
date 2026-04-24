@@ -22,7 +22,7 @@ async function getTodayLog(): Promise<LogRow[]> {
     FROM calorie_log l
     LEFT JOIN calorie_foods f ON l.food_id = f.id
     WHERE l.logged_on = CURRENT_DATE
-    ORDER BY l.created_at ASC
+    ORDER BY l.created_at DESC
   `);
   return result.rows;
 }

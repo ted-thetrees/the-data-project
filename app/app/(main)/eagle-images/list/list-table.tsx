@@ -2,9 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { Tag } from "@/components/tag";
 import { Empty } from "@/components/empty";
-import { PillSelect, type PillOption } from "@/components/pill";
+import { Pill, PillSelect, type PillOption } from "@/components/pill";
 import { updateBubbleDistribution } from "./actions";
 import { createPicklistOptionNamed } from "../../pick-lists/actions";
 import {
@@ -267,7 +266,11 @@ export function ListTable({
           <div className="flex flex-wrap gap-1">
             {row.folder_ids.map((fid) => {
               const f = folderById.get(fid);
-              return <Tag key={fid}>{f?.name ?? fid}</Tag>;
+              return (
+                <Pill key={fid} color={f?.color ?? null}>
+                  {f?.name ?? fid}
+                </Pill>
+              );
             })}
           </div>
         )}
@@ -281,7 +284,11 @@ export function ListTable({
           <div className="flex flex-wrap gap-1">
             {row.tag_ids.map((tid) => {
               const t = tagById.get(tid);
-              return <Tag key={tid}>{t?.name ?? tid}</Tag>;
+              return (
+                <Pill key={tid} color={null}>
+                  {t?.name ?? tid}
+                </Pill>
+              );
             })}
           </div>
         )}

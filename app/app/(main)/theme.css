@@ -183,13 +183,13 @@
   /* ── Default status color (used when a status has no DB color) ── */
   --status-default: #727272;
 
-  /* ── Neutral tags (for non-status pill-like labels) ── */
+  /* ── Neutral tags (deprecated — all tags should be picklist-backed pills) ── */
   --tag-bg: #ede9de;
   --tag-text: #535146;
-  --tag-padding-x: 6px;
-  --tag-padding-y: 2px;
-  --tag-radius: var(--radius-sm);
-  --tag-font-size: var(--font-size-xs);
+  --tag-padding-x: var(--pill-padding-x);
+  --tag-padding-y: var(--pill-padding-y);
+  --tag-radius: var(--pill-radius);
+  --tag-font-size: var(--cell-font-size);
 
   /* ── Pills (status-colored chips) ── */
   --pill-radius: 9999px;
