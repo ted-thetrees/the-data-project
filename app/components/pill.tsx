@@ -102,47 +102,39 @@ function matchesSearch(name: string, search: string): boolean {
 // the page scrolls to the top. We snapshot scroll before open and
 // undo any shift across the next few frames.
 function useFocusCmdkInput(open: boolean) {
-  // The pre-open scroll position. Captured synchronously on the trigger's
-  // click via the savedScrollRef below so the snapshot is BEFORE cmdk's
-  // layout-time scrollIntoView. (Prior implementation snapshotted in a
-  // useEffect, which ran after the scroll had already jumped.)
   useLayoutEffect(() => {
     if (!open) return;
-    const saved = (window as unknown as Window & {
-      __pillSavedScroll?: { x: number; y: number };
-    }).__pillSavedScroll ?? { x: window.scrollX, y: window.scrollY };
-    const restore = () => {
-      if (window.scrollX !== saved.x || window.scrollY !== saved.y) {
-        window.scrollTo(saved.x, saved.y);
-      }
+    // Suppress scrollIntoView calls (cmdk and friends call this when the
+    // popup mounts, which jumps the page to the popup's portal location —
+    // disastrous when the trigger is inside a virtualized scroll region:
+    // the page scrolls, the virtualizer re-renders, and the trigger
+    // disappears from the DOM mid-flight).
+    const proto = Element.prototype as Element & {
+      scrollIntoView: (...args: unknown[]) => void;
     };
-    restore();
+    const original = proto.scrollIntoView;
+    proto.scrollIntoView = function () {
+      /* no-op while pill popover is open */
+    };
     const raf1 = requestAnimationFrame(() => {
-      restore();
       document
         .querySelector<HTMLInputElement>('[data-slot="command-input"]')
         ?.focus({ preventScroll: true });
-      requestAnimationFrame(restore);
     });
-    const raf2 = requestAnimationFrame(restore);
-    const t = setTimeout(restore, 50);
+    const restoreSIV = setTimeout(() => {
+      proto.scrollIntoView = original;
+    }, 200);
     return () => {
       cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
-      clearTimeout(t);
+      clearTimeout(restoreSIV);
+      proto.scrollIntoView = original;
     };
   }, [open]);
 }
 
-/**
- * Snapshot the page scroll position the moment the user pointer-downs on a
- * pill trigger, BEFORE the popup mounts and cmdk's scrollIntoView fires.
- * useFocusCmdkInput then reads from this stash for its restore baseline.
- */
 function captureScrollOnPointerDown() {
-  (window as unknown as Window & {
-    __pillSavedScroll?: { x: number; y: number };
-  }).__pillSavedScroll = { x: window.scrollX, y: window.scrollY };
+  // No-op kept for compatibility with existing trigger props; the real fix
+  // is now to neutralize scrollIntoView while the popup is open.
 }
 
 export function MultiPillSelect({
