@@ -11,11 +11,15 @@ import {
 } from "react";
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
   closestCenter,
+  useDraggable,
+  useDroppable,
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -345,14 +349,6 @@ export function GridTable({
     [dirtyProjectIds],
   );
 
-  // Tracks the in-flight drag across dragstart/dragover/drop. Can't use
-  // dataTransfer.getData() inside dragover in Chrome for security reasons,
-  // so a ref holds what we need.
-  const dragState = useRef<{
-    projectId: string;
-    tickleDate: string | null;
-  } | null>(null);
-  const [dragActive, setDragActive] = useState<string | null>(null);
 
   const {
     views,
@@ -596,13 +592,71 @@ export function GridTable({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
+  const [dragPreview, setDragPreview] = useState<{
+    projectId: string;
+    name: string;
+  } | null>(null);
+  const [activeOver, setActiveOver] = useState<string | null>(null);
+  const handleDragStart = (e: DragStartEvent) => {
+    const id = String(e.active.id);
+    if (id.startsWith("proj:")) {
+      const projectId = id.slice("proj:".length);
+      const projectRow = orderedData.find((r) => r.project_id === projectId);
+      setDragPreview({
+        projectId,
+        name: projectRow?.project ?? "(unnamed)",
+      });
+    }
+  };
+  const handleDragOver = (e: { over: { id: string | number } | null }) => {
+    setActiveOver(e.over ? String(e.over.id) : null);
+  };
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    setDragPreview(null);
+    setActiveOver(null);
     if (!over || active.id === over.id) return;
-    const oldIndex = orderedTaskKeys.indexOf(String(active.id));
-    const newIndex = orderedTaskKeys.indexOf(String(over.id));
-    if (oldIndex < 0 || newIndex < 0) return;
-    setColumnOrder(arrayMove(orderedTaskKeys, oldIndex, newIndex));
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    // Column header reorder
+    if (
+      orderedTaskKeys.includes(activeId) &&
+      orderedTaskKeys.includes(overId)
+    ) {
+      const oldIndex = orderedTaskKeys.indexOf(activeId);
+      const newIndex = orderedTaskKeys.indexOf(overId);
+      if (oldIndex < 0 || newIndex < 0) return;
+      setColumnOrder(arrayMove(orderedTaskKeys, oldIndex, newIndex));
+      return;
+    }
+
+    // Project row reorder within same tickle-date group
+    if (activeId.startsWith("proj:") && overId.startsWith("drop-proj:")) {
+      const srcId = activeId.slice("proj:".length);
+      const dstId = overId.slice("drop-proj:".length);
+      const srcRow = orderedData.find((r) => r.project_id === srcId);
+      const dstRow = orderedData.find((r) => r.project_id === dstId);
+      if (!srcRow || !dstRow) return;
+      const myTickle = srcRow.tickle_date ?? null;
+      if ((dstRow.tickle_date ?? null) !== myTickle) return;
+      const seen = new Set<string>();
+      const ids: string[] = [];
+      for (const r of orderedData) {
+        if (r.project_is_draft) continue;
+        if ((r.tickle_date ?? null) !== myTickle) continue;
+        if (!seen.has(r.project_id)) {
+          seen.add(r.project_id);
+          ids.push(r.project_id);
+        }
+      }
+      const from = ids.indexOf(srcId);
+      const to = ids.indexOf(dstId);
+      if (from < 0 || to < 0) return;
+      ids.splice(from, 1);
+      ids.splice(to, 0, srcId);
+      void reorderProjectsInTickleDate(ids);
+    }
   };
 
   const headerClass =
@@ -652,6 +706,8 @@ export function GridTable({
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
         <table
@@ -831,100 +887,14 @@ export function GridTable({
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
                   const isDraft = Boolean(span.extra?.is_draft);
-                  const myTickle = row.tickle_date ?? null;
-                  const handleDragStart = (e: React.DragEvent) => {
-                    dragState.current = {
-                      projectId: row.project_id,
-                      tickleDate: myTickle,
-                    };
-                    e.dataTransfer.effectAllowed = "move";
-                    try {
-                      e.dataTransfer.setData("text/plain", row.project_id);
-                    } catch {}
-                    // Drag preview: clone the project-name cell so the user
-                    // sees something meaningful following the cursor, not
-                    // just the tiny grip icon.
-                    const gripEl = e.currentTarget as HTMLElement;
-                    const td = gripEl.closest("td");
-                    const nameTd = td?.nextElementSibling as HTMLElement | null;
-                    if (nameTd) {
-                      const preview = document.createElement("div");
-                      preview.textContent = span.value ?? "";
-                      preview.style.padding = "6px 10px";
-                      preview.style.background = "var(--cell-bg)";
-                      preview.style.border = "1px solid var(--border)";
-                      preview.style.borderRadius = "var(--radius-md)";
-                      preview.style.boxShadow = "var(--dropdown-shadow)";
-                      preview.style.font = getComputedStyle(nameTd).font;
-                      preview.style.color = "var(--foreground)";
-                      preview.style.position = "absolute";
-                      preview.style.top = "-9999px";
-                      preview.style.left = "-9999px";
-                      document.body.appendChild(preview);
-                      e.dataTransfer.setDragImage(preview, 8, 8);
-                      setTimeout(() => {
-                        document.body.removeChild(preview);
-                      }, 0);
-                    }
-                    setDragActive(row.project_id);
-                  };
-                  const handleDragEndRow = () => {
-                    dragState.current = null;
-                    setDragActive(null);
-                  };
-                  const handleDragOver = (e: React.DragEvent) => {
-                    const src = dragState.current;
-                    if (!src) return;
-                    if ((src.tickleDate ?? null) !== myTickle) return;
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = "move";
-                  };
-                  const handleDrop = (e: React.DragEvent) => {
-                    e.preventDefault();
-                    const src = dragState.current;
-                    dragState.current = null;
-                    if (!src || src.projectId === row.project_id) return;
-                    if ((src.tickleDate ?? null) !== myTickle) return;
-                    const seen = new Set<string>();
-                    const ids: string[] = [];
-                    for (const r of orderedData) {
-                      if (r.project_is_draft) continue;
-                      if ((r.tickle_date ?? null) !== myTickle) continue;
-                      if (!seen.has(r.project_id)) {
-                        seen.add(r.project_id);
-                        ids.push(r.project_id);
-                      }
-                    }
-                    const from = ids.indexOf(src.projectId);
-                    const to = ids.indexOf(row.project_id);
-                    if (from < 0 || to < 0) return;
-                    ids.splice(from, 1);
-                    ids.splice(to, 0, src.projectId);
-                    void reorderProjectsInTickleDate(ids);
-                  };
-                  const isSourceDragging = dragActive === row.project_id;
                   return (
-                    <td
+                    <ProjectGripCell
+                      projectId={row.project_id}
                       rowSpan={span.rowSpan + 1}
-                      className="align-top px-0 py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-center"
-                      onDragOver={isDraft ? undefined : handleDragOver}
-                      onDrop={isDraft ? undefined : handleDrop}
-                      style={isSourceDragging ? { opacity: 0.4 } : undefined}
-                    >
-                      {!isDraft && (
-                        <span
-                          draggable
-                          onDragStart={handleDragStart}
-                          onDragEnd={handleDragEndRow}
-                          className="cursor-grab select-none inline-block text-[color:var(--muted-foreground)] hover:text-foreground"
-                          style={{ touchAction: "none", padding: "0 2px" }}
-                          title="Drag to reorder within this tickle date"
-                          aria-label="Drag to reorder"
-                        >
-                          <GripVertical className="w-3 h-3" />
-                        </span>
-                      )}
-                    </td>
+                      isDraft={isDraft}
+                      isDragging={dragPreview?.projectId === row.project_id}
+                      isOver={activeOver === `drop-proj:${row.project_id}`}
+                    />
                   );
                 })()}
 
@@ -1182,6 +1152,26 @@ export function GridTable({
             })}
           </tbody>
         </table>
+        <DragOverlay dropAnimation={null}>
+          {dragPreview ? (
+            <div
+              style={{
+                padding: "6px 12px",
+                background: "var(--cell-bg)",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius-md)",
+                boxShadow: "var(--dropdown-shadow)",
+                fontSize: "var(--cell-font-size)",
+                fontWeight: "var(--font-weight-medium)",
+                color: "var(--foreground)",
+                whiteSpace: "nowrap",
+                cursor: "grabbing",
+              }}
+            >
+              {dragPreview.name}
+            </div>
+          ) : null}
+        </DragOverlay>
         </DndContext>
       </div>
       <Dialog
@@ -1242,6 +1232,62 @@ export function GridTable({
       </Subtitle>
       {body}
     </PageShell>
+  );
+}
+
+function ProjectGripCell({
+  projectId,
+  rowSpan,
+  isDraft,
+  isDragging,
+  isOver,
+}: {
+  projectId: string;
+  rowSpan: number;
+  isDraft: boolean;
+  isDragging: boolean;
+  isOver: boolean;
+}) {
+  // Draggable attached only to the grip handle span (so the name cell's
+  // click-to-edit still works). Droppable attached to the whole grip cell
+  // so users can drop on a neighbor with a generous target area.
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setDragRef,
+  } = useDraggable({
+    id: `proj:${projectId}`,
+    disabled: isDraft,
+  });
+  const { setNodeRef: setDropRef } = useDroppable({
+    id: `drop-proj:${projectId}`,
+    disabled: isDraft,
+  });
+  return (
+    <td
+      ref={setDropRef}
+      rowSpan={rowSpan}
+      className="align-top px-0 py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-center"
+      style={{
+        opacity: isDragging ? 0.4 : undefined,
+        outline: isOver ? "2px solid var(--primary)" : undefined,
+        outlineOffset: isOver ? -2 : undefined,
+      }}
+    >
+      {!isDraft && (
+        <span
+          ref={setDragRef}
+          {...attributes}
+          {...listeners}
+          className="cursor-grab select-none inline-block text-[color:var(--muted-foreground)] hover:text-foreground"
+          style={{ touchAction: "none", padding: "0 2px" }}
+          title="Drag to reorder within this tickle date"
+          aria-label="Drag to reorder"
+        >
+          <GripVertical className="w-3 h-3" />
+        </span>
+      )}
+    </td>
   );
 }
 
