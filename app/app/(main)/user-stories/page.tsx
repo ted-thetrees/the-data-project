@@ -1,6 +1,7 @@
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
+import { Subtitle } from "@/components/subtitle";
 import { UserStoriesTable, type UserStoryRow } from "./user-stories-table";
 import {
   USER_STORIES_STORAGE_KEY,
@@ -64,6 +65,7 @@ export default async function UserStoriesPage() {
           "user_story_role_links",
         ]}
       />
+      <Subtitle>Universal human-needs stories, tagged by role and category.</Subtitle>
       <UserStoriesTable
         rows={rows}
         roleOptions={roleOptions}

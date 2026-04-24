@@ -1,6 +1,7 @@
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
+import { Subtitle } from "@/components/subtitle";
 import { CaloriesClient, type LogRow, type FoodRow } from "./calories-client";
 import {
   CALORIES_LOG_STORAGE_KEY,
@@ -51,6 +52,7 @@ export default async function CaloriesPage() {
   return (
     <PageShell title="Calories" count={log.length} maxWidth="">
       <Realtime tables={["calorie_log", "calorie_foods"]} />
+      <Subtitle>Today&rsquo;s food log, plus reusable food definitions with their default calorie counts.</Subtitle>
       <CaloriesClient
         log={log}
         foods={foods}

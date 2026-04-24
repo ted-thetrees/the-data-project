@@ -1,6 +1,7 @@
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
+import { Subtitle } from "@/components/subtitle";
 import { PeopleTable, type PersonRow } from "./people-table";
 import { PEOPLE_STORAGE_KEY, PEOPLE_DEFAULT_WIDTHS } from "./config";
 import type { PillOption } from "@/components/pill";
@@ -68,6 +69,7 @@ export default async function PeoplePage() {
           "people_metro_areas",
         ]}
       />
+      <Subtitle>The people in my life — most-recently-updated first.</Subtitle>
       <PeopleTable
         rows={rows}
         genderOptions={genderOptions}

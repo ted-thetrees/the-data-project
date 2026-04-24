@@ -1,6 +1,7 @@
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
+import { Subtitle } from "@/components/subtitle";
 import { BacklogTable, type BacklogRow } from "./backlog-table";
 import { BACKLOG_STORAGE_KEY, BACKLOG_DEFAULT_WIDTHS } from "./config";
 import type { PillOption } from "@/components/pill";
@@ -63,6 +64,7 @@ export default async function BacklogPage() {
           "backlog_categories",
         ]}
       />
+      <Subtitle>A running list of things I might build — ranked by priority and grouped by category.</Subtitle>
       <BacklogTable
         rows={rows}
         priorityOptions={priorityOptions}
