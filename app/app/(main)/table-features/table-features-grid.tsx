@@ -12,7 +12,9 @@ import {
   updateCatalogName,
   updateCatalogPath,
   updateCoverage,
+  updateDisplayType,
 } from "./actions";
+import { createPicklistOptionNamed } from "../pick-lists/actions";
 
 export interface CatalogRow {
   id: string;
@@ -20,6 +22,7 @@ export interface CatalogRow {
   path: string | null;
   notes: string | null;
   sort_order: number | null;
+  display_type_id: string | null;
 }
 
 export interface FeatureRow {
@@ -38,8 +41,9 @@ export interface CoverageRow {
   status_id: string | null;
 }
 
-const FIXED_COL_TABLE = 240;
+const FIXED_COL_PAGE = 240;
 const FIXED_COL_GO = 80;
+const FIXED_COL_DISPLAY = 160;
 const FEATURE_COL_WIDTH = 140;
 const PROD_BASE_URL = "https://data.ifnotfor.com";
 
@@ -48,11 +52,13 @@ export function TableFeaturesGrid({
   features,
   coverage,
   statusOptions,
+  displayTypeOptions,
 }: {
   catalog: CatalogRow[];
   features: FeatureRow[];
   coverage: CoverageRow[];
   statusOptions: PillOption[];
+  displayTypeOptions: PillOption[];
 }) {
   const coverageMap = useMemo(() => {
     const m = new Map<string, string | null>();
@@ -72,8 +78,9 @@ export function TableFeaturesGrid({
   }, [features]);
 
   const totalWidth =
-    FIXED_COL_TABLE +
+    FIXED_COL_PAGE +
     FIXED_COL_GO +
+    FIXED_COL_DISPLAY +
     features.length * FEATURE_COL_WIDTH;
 
   const headerClass =
@@ -83,7 +90,7 @@ export function TableFeaturesGrid({
   const compactCellClass =
     "px-1 py-1 bg-[color:var(--cell-bg)] text-center";
 
-  const totalColSpan = 2 + features.length;
+  const totalColSpan = 3 + features.length;
 
   return (
     <div className="overflow-x-auto">
@@ -97,8 +104,9 @@ export function TableFeaturesGrid({
         }}
       >
         <colgroup>
-          <col style={{ width: FIXED_COL_TABLE }} />
+          <col style={{ width: FIXED_COL_PAGE }} />
           <col style={{ width: FIXED_COL_GO }} />
+          <col style={{ width: FIXED_COL_DISPLAY }} />
           {features.map((f) => (
             <col key={f.id} style={{ width: FEATURE_COL_WIDTH }} />
           ))}
@@ -107,7 +115,7 @@ export function TableFeaturesGrid({
         <thead>
           {/* Category super-header */}
           <tr>
-            <th className={headerClass} colSpan={2}></th>
+            <th className={headerClass} colSpan={3}></th>
             {byCategory.map(([category, fs]) => (
               <th
                 key={`cat-${category}`}
@@ -122,10 +130,11 @@ export function TableFeaturesGrid({
 
           {/* Feature labels */}
           <tr>
-            <th className={headerClass}>Table</th>
+            <th className={headerClass}>Page</th>
             <th className={headerClass} style={{ textAlign: "center" }}>
               Go
             </th>
+            <th className={headerClass}>Display</th>
             {features.map((f) => (
               <th
                 key={f.id}
@@ -166,7 +175,7 @@ export function TableFeaturesGrid({
           <tr>
             <td
               className={cellClass}
-              colSpan={2}
+              colSpan={3}
               style={{
                 fontStyle: "italic",
                 color: "var(--muted-foreground)",
@@ -213,8 +222,9 @@ export function TableFeaturesGrid({
               className={cellClass}
               style={{ fontStyle: "italic", color: "var(--muted-foreground)" }}
             >
-              Default for new tables
+              Default for new pages
             </td>
+            <td className={cellClass} />
             <td className={cellClass} />
             {features.map((f) => (
               <td key={`def-${f.id}`} className={compactCellClass}>
@@ -275,6 +285,16 @@ export function TableFeaturesGrid({
                     placeholder="/path"
                   />
                 )}
+              </td>
+              <td className={cellClass}>
+                <PillSelect
+                  value={t.display_type_id ?? ""}
+                  options={displayTypeOptions}
+                  onSave={(v) => updateDisplayType(t.id, v)}
+                  onCreate={(name) =>
+                    createPicklistOptionNamed("tables_display_types", name)
+                  }
+                />
               </td>
               {features.map((f) => {
                 const statusId = coverageMap.get(`${t.id}:${f.id}`) ?? null;

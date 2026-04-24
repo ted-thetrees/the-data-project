@@ -54,6 +54,15 @@ export async function updateCatalogPath(tableId: string, path: string) {
   revalidatePath(PATH);
 }
 
+export async function updateDisplayType(tableId: string, displayTypeId: string) {
+  const value = displayTypeId && displayTypeId.length > 0 ? Number(displayTypeId) : null;
+  await poolV002.query(
+    `UPDATE tables_catalog SET display_type_id = $1, updated_at = now() WHERE id = $2`,
+    [value, Number(tableId)],
+  );
+  revalidatePath(PATH);
+}
+
 export async function deleteCatalogRow(tableId: string) {
   await poolV002.query(`DELETE FROM tables_catalog WHERE id = $1`, [Number(tableId)]);
   revalidatePath(PATH);

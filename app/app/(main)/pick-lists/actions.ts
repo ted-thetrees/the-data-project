@@ -54,6 +54,10 @@ const SOURCE_TABLES: Record<string, SourceConfig> = {
     table: "tables_feature_statuses",
     hasSortOrder: true,
   },
+  tables_display_types: {
+    table: "tables_display_types",
+    hasSortOrder: true,
+  },
 };
 
 function revalidate() {

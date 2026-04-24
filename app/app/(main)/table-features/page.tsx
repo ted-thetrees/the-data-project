@@ -15,8 +15,17 @@ export const dynamic = "force-dynamic";
 
 async function getCatalog(): Promise<CatalogRow[]> {
   const r = await poolV002.query<CatalogRow>(
-    `SELECT id::text AS id, name, path, notes, sort_order
+    `SELECT id::text AS id, name, path, notes, sort_order,
+            display_type_id::text AS display_type_id
      FROM tables_catalog
+     ORDER BY sort_order NULLS LAST, name`,
+  );
+  return r.rows;
+}
+
+async function getDisplayTypeOptions(): Promise<PillOption[]> {
+  const r = await poolV002.query<PillOption>(
+    `SELECT id::text AS id, name, color FROM tables_display_types
      ORDER BY sort_order NULLS LAST, name`,
   );
   return r.rows;
@@ -48,12 +57,14 @@ async function getStatusOptions(): Promise<PillOption[]> {
 }
 
 export default async function TableFeaturesPage() {
-  const [catalog, features, coverage, statusOptions] = await Promise.all([
-    getCatalog(),
-    getFeatures(),
-    getCoverage(),
-    getStatusOptions(),
-  ]);
+  const [catalog, features, coverage, statusOptions, displayTypeOptions] =
+    await Promise.all([
+      getCatalog(),
+      getFeatures(),
+      getCoverage(),
+      getStatusOptions(),
+      getDisplayTypeOptions(),
+    ]);
   return (
     <PageShell title="Table Features" count={catalog.length} maxWidth="">
       <Realtime
@@ -62,17 +73,19 @@ export default async function TableFeaturesPage() {
           "tables_features",
           "tables_feature_statuses",
           "tables_coverage",
+          "tables_display_types",
         ]}
       />
       <Subtitle>
-        Cross-tab of every grid page × every feature. Features marked{" "}
-        <em>Default for new</em> should be enabled on new tables by default.
+        Cross-tab of every page × every feature. Features marked{" "}
+        <em>Default for new</em> should be enabled on new pages by default.
       </Subtitle>
       <TableFeaturesGrid
         catalog={catalog}
         features={features}
         coverage={coverage}
         statusOptions={statusOptions}
+        displayTypeOptions={displayTypeOptions}
       />
     </PageShell>
   );
