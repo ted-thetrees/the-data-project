@@ -153,14 +153,19 @@ function IcicleCell({
   );
 }
 
-function GroupByControl({ current }: { current: "category" | "area" }) {
+function GroupByControl({
+  current,
+}: {
+  current: "category" | "area" | "none";
+}) {
   const items: Array<{
-    key: "category" | "area";
+    key: "category" | "area" | "none";
     label: string;
     href: string;
   }> = [
-    { key: "category", label: "No grouping", href: "/talent" },
-    { key: "area", label: "Area of expertise", href: "/talent?groupBy=area" },
+    { key: "none", label: "None", href: "/talent?groupBy=none" },
+    { key: "category", label: "Category & Rating", href: "/talent" },
+    { key: "area", label: "Area", href: "/talent?groupBy=area" },
   ];
   return (
     <div
@@ -247,7 +252,7 @@ export function TalentTable({
 }: {
   data: TalentRow[];
   recordCount: number;
-  groupBy: "category" | "area";
+  groupBy: "category" | "area" | "none";
   categoryOptions: PillOption[];
   ratingOptions: PillOption[];
   areaOptions: PillOption[];
@@ -519,7 +524,7 @@ export function TalentTable({
                 }}
               />
             </tr>
-            {groupBy === "category"
+            {groupBy !== "area"
               ? sorted.map((row) => (
                   <RowContextMenu
                     key={row.display_id}

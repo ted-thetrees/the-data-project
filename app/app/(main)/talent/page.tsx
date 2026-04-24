@@ -37,11 +37,16 @@ interface TalentRow {
 }
 
 async function getTalent(
-  options: { expandOn?: "area" | null } = {},
+  options: { expandOn?: "area" | null; sortMode?: "category" | "none" } = {},
 ): Promise<{ rows: TalentRow[]; recordCount: number }> {
   const expandOn = options.expandOn ?? null;
+  const sortMode = options.sortMode ?? "category";
 
   if (expandOn === null) {
+    const orderClause =
+      sortMode === "none"
+        ? "ORDER BY t.name"
+        : "ORDER BY tc.sort_order NULLS LAST, trl.sort_order NULLS LAST, t.name";
     const result = await poolV002.query(`
       SELECT t.id, t.name, t.primary_talent_category,
              t.overall_rating, t.website, t.instagram, t.notes,
@@ -62,7 +67,7 @@ async function getTalent(
       LEFT JOIN talent_categories tc ON t.primary_talent_category = tc.name
       LEFT JOIN talent_rating_levels trl ON t.overall_rating = trl.name
       GROUP BY t.id, tc.sort_order, trl.sort_order
-      ORDER BY tc.sort_order NULLS LAST, trl.sort_order NULLS LAST, t.name
+      ${orderClause}
     `);
     const rows: TalentRow[] = result.rows.map((r) => ({
       ...r,
@@ -159,7 +164,12 @@ export default async function TalentPage({
   const rawGroupBy = Array.isArray(params.groupBy)
     ? params.groupBy[0]
     : params.groupBy;
-  const groupBy: "category" | "area" = rawGroupBy === "area" ? "area" : "category";
+  const groupBy: "category" | "area" | "none" =
+    rawGroupBy === "area"
+      ? "area"
+      : rawGroupBy === "none"
+        ? "none"
+        : "category";
 
   const [
     { rows: talent, recordCount },
@@ -168,7 +178,10 @@ export default async function TalentPage({
     areaOptions,
     initialParams,
   ] = await Promise.all([
-    getTalent({ expandOn: groupBy === "area" ? "area" : null }),
+    getTalent({
+      expandOn: groupBy === "area" ? "area" : null,
+      sortMode: groupBy === "none" ? "none" : "category",
+    }),
     getLookupOptions("talent_categories"),
     getLookupOptions("talent_rating_levels"),
     getAreaOptions(),
