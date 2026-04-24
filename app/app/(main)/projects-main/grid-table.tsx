@@ -23,6 +23,7 @@ import {
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { format, parse } from "date-fns";
+import { GripVertical } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { Subtitle } from "@/components/subtitle";
 import { Calendar } from "@/components/ui/calendar";
@@ -850,12 +851,22 @@ export function GridTable({
                     <td
                       rowSpan={span.rowSpan + 1}
                       className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
-                      draggable={!isDraft}
-                      onDragStart={isDraft ? undefined : handleDragStart}
                       onDragOver={isDraft ? undefined : handleDragOver}
                       onDrop={isDraft ? undefined : handleDrop}
                     >
                       <div className="flex items-start gap-2">
+                        {!isDraft && (
+                          <span
+                            draggable
+                            onDragStart={handleDragStart}
+                            className="cursor-grab select-none shrink-0 text-[color:var(--muted-foreground)] hover:text-foreground"
+                            style={{ marginTop: 2, touchAction: "none" }}
+                            title="Drag to reorder within this tickle date"
+                            aria-label="Drag to reorder"
+                          >
+                            <GripVertical className="w-3 h-3" />
+                          </span>
+                        )}
                         <div
                           className="flex-1 min-w-0"
                           style={
@@ -868,8 +879,8 @@ export function GridTable({
                           }
                           title={
                             isAutoOrder
-                              ? "Auto-ordered alphabetically. Drag to set a manual order."
-                              : "Drag to reorder within this tickle date."
+                              ? "Auto-ordered alphabetically. Drag the grip to set a manual order."
+                              : undefined
                           }
                         >
                           <EditableTextWrap
