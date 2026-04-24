@@ -185,16 +185,26 @@ export function TableFeaturesGrid({
 
           {/* Feature labels */}
           <tr>
-            <th className={headerClass} style={stickyHeaderStyle(0)}>
+            <th
+              className={headerClass}
+              style={{ ...stickyHeaderStyle(0), verticalAlign: "top" }}
+            >
               Page
             </th>
             <th
               className={headerClass}
-              style={{ ...stickyHeaderStyle(1), textAlign: "center" }}
+              style={{
+                ...stickyHeaderStyle(1),
+                textAlign: "center",
+                verticalAlign: "top",
+              }}
             >
               Go
             </th>
-            <th className={headerClass} style={stickyHeaderStyle(2)}>
+            <th
+              className={headerClass}
+              style={{ ...stickyHeaderStyle(2), verticalAlign: "top" }}
+            >
               Display
             </th>
             {features.map((f) => (
