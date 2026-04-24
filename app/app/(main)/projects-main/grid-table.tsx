@@ -808,13 +808,29 @@ export function GridTable({
                   const span = projectByIndex[i];
                   const isDraft = Boolean(span.extra?.is_draft);
                   const isDirty = dirtySet.has(row.project_id);
+                  const isAutoOrder = row.project_sort_order == null;
                   return (
                     <td
                       rowSpan={span.rowSpan + 1}
                       className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
                     >
                       <div className="flex items-start gap-2">
-                        <div className="flex-1 min-w-0">
+                        <div
+                          className="flex-1 min-w-0"
+                          style={
+                            isAutoOrder
+                              ? {
+                                  fontStyle: "italic",
+                                  color: "var(--muted-foreground)",
+                                }
+                              : undefined
+                          }
+                          title={
+                            isAutoOrder
+                              ? "Auto-ordered alphabetically. Drag to set a manual order."
+                              : undefined
+                          }
+                        >
                           <EditableTextWrap
                             value={span.value}
                             onSave={(v) =>

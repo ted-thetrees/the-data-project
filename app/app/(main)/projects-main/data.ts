@@ -9,6 +9,7 @@ export async function getProjectsMainData(): Promise<TaskRow[]> {
            p.id as project_id,
            p.status_id as project_status_id,
            p.name as project, p.tickle_date::text, p.notes as project_notes, p."order" as project_order,
+           p.sort_order as project_sort_order,
            p.is_draft as project_is_draft,
            p.action_order_status_id,
            aos.name as action_order_status, aos.color as action_order_color,
@@ -25,7 +26,9 @@ export async function getProjectsMainData(): Promise<TaskRow[]> {
     WHERE t.deleted_at IS NULL
     ORDER BY
       CASE WHEN p.is_draft THEN 0 ELSE 1 END,
-      p.tickle_date ASC NULLS LAST, p.name,
+      p.tickle_date ASC NULLS LAST,
+      p.sort_order ASC NULLS LAST,
+      p.name,
       CASE ts.name
         WHEN 'Tickled' THEN 1
         WHEN 'Done' THEN 2
