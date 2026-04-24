@@ -12,7 +12,35 @@ function parseLookupId(v: string): number | null {
 }
 
 export async function createGetItem() {
-  await poolV002.query(`INSERT INTO get (name) VALUES ('Untitled')`);
+  await poolV002.query(
+    `INSERT INTO get (name, sort_order)
+     VALUES ('Untitled', (SELECT COALESCE(MIN(sort_order), 0) - 1 FROM get))`,
+  );
+  revalidateGetPage();
+}
+
+export async function createGetItemInGroup(prefill: Record<string, string | null>) {
+  const allowed: Record<string, string> = {
+    category_id: "category_id",
+    status_id: "status_id",
+    source_id: "source_id",
+  };
+  const cols: string[] = ["name", "sort_order"];
+  const placeholders: string[] = [
+    `'Untitled'`,
+    `(SELECT COALESCE(MIN(sort_order), 0) - 1 FROM get)`,
+  ];
+  const params: (string | number | null)[] = [];
+  for (const [k, v] of Object.entries(prefill)) {
+    if (!allowed[k]) continue;
+    params.push(v ? Number(v) : null);
+    cols.push(allowed[k]);
+    placeholders.push(`$${params.length}`);
+  }
+  await poolV002.query(
+    `INSERT INTO get (${cols.join(",")}) VALUES (${placeholders.join(",")})`,
+    params,
+  );
   revalidateGetPage();
 }
 
