@@ -6,6 +6,11 @@ import { PillSelect, type PillOption } from "@/components/pill";
 import { EditableText } from "@/components/editable-text";
 import { RowContextMenu } from "@/components/row-context-menu";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   createCatalogRow,
   deleteCatalogRow,
   toggleDefaultForNew,
@@ -44,7 +49,7 @@ export interface CoverageRow {
 const FIXED_COL_PAGE = 240;
 const FIXED_COL_GO = 80;
 const FIXED_COL_DISPLAY = 160;
-const FEATURE_COL_WIDTH = 140;
+const FEATURE_COL_WIDTH = 120;
 const PROD_BASE_URL = "https://data.ifnotfor.com";
 
 export function TableFeaturesGrid({
@@ -196,21 +201,38 @@ export function TableFeaturesGrid({
               <th
                 key={f.id}
                 className={headerClass}
-                style={{ textAlign: "center" }}
-                title={f.label}
+                style={{
+                  textAlign: "center",
+                  verticalAlign: "top",
+                  lineHeight: 1.25,
+                  whiteSpace: "normal",
+                  wordBreak: "normal",
+                  overflowWrap: "break-word",
+                  padding: "10px 8px",
+                }}
               >
-                <div
-                  style={{
-                    writingMode: "vertical-rl",
-                    transform: "rotate(180deg)",
-                    whiteSpace: "nowrap",
-                    lineHeight: 1.1,
-                    padding: "4px 0",
-                  }}
-                >
-                  {f.label}
-                  {f.default_for_new ? " ★" : ""}
-                </div>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={<span className="cursor-help" />}
+                  >
+                    {f.label}
+                    {f.default_for_new ? " ★" : ""}
+                  </TooltipTrigger>
+                  <TooltipContent
+                    sideOffset={8}
+                    className="max-w-[360px] whitespace-normal"
+                  >
+                    <div
+                      style={{
+                        fontSize: "var(--cell-font-size)",
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      <div className="font-semibold mb-1">{f.label}</div>
+                      {f.description ?? ""}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
               </th>
             ))}
           </tr>
@@ -226,39 +248,6 @@ export function TableFeaturesGrid({
                 background: "transparent",
               }}
             />
-          </tr>
-
-          {/* Description row — what each feature actually means */}
-          <tr>
-            <td
-              className={cellClass}
-              colSpan={3}
-              style={{
-                ...stickySpanRowStyle,
-                fontStyle: "italic",
-                color: "var(--muted-foreground)",
-                verticalAlign: "top",
-              }}
-            >
-              Description
-            </td>
-            {features.map((f) => (
-              <td
-                key={`desc-${f.id}`}
-                className={cellClass}
-                style={{
-                  color: "var(--muted-foreground)",
-                  lineHeight: 1.5,
-                  verticalAlign: "top",
-                  padding: "10px 12px",
-                  whiteSpace: "normal",
-                  wordBreak: "break-word",
-                }}
-                title={f.description ?? ""}
-              >
-                {f.description ?? "—"}
-              </td>
-            ))}
           </tr>
 
           {/* + Add Page — sticks to the left edge with the frozen columns */}
