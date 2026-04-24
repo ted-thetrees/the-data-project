@@ -92,6 +92,34 @@ export function TableFeaturesGrid({
 
   const totalColSpan = 3 + features.length;
 
+  const stickyOffsets = [0, FIXED_COL_PAGE, FIXED_COL_PAGE + FIXED_COL_GO];
+  const stickyCellStyle = (col: 0 | 1 | 2): React.CSSProperties => ({
+    position: "sticky",
+    left: stickyOffsets[col],
+    zIndex: 2,
+    background: "var(--cell-bg)",
+    boxShadow: col === 2 ? "1px 0 0 var(--border)" : undefined,
+  });
+  const stickyHeaderStyle = (col: 0 | 1 | 2): React.CSSProperties => ({
+    position: "sticky",
+    left: stickyOffsets[col],
+    zIndex: 4,
+    background: "var(--header-bg)",
+    boxShadow: col === 2 ? "1px 0 0 var(--border)" : undefined,
+  });
+  const stickySpanHeaderStyle: React.CSSProperties = {
+    position: "sticky",
+    left: 0,
+    zIndex: 4,
+    background: "var(--header-bg)",
+  };
+  const stickySpanRowStyle: React.CSSProperties = {
+    position: "sticky",
+    left: 0,
+    zIndex: 2,
+    background: "var(--cell-bg)",
+  };
+
   return (
     <div className="overflow-x-auto">
       <table
@@ -115,7 +143,11 @@ export function TableFeaturesGrid({
         <thead>
           {/* Category super-header */}
           <tr>
-            <th className={headerClass} colSpan={3}></th>
+            <th
+              className={headerClass}
+              colSpan={3}
+              style={stickySpanHeaderStyle}
+            ></th>
             {byCategory.map(([category, fs]) => (
               <th
                 key={`cat-${category}`}
@@ -130,11 +162,18 @@ export function TableFeaturesGrid({
 
           {/* Feature labels */}
           <tr>
-            <th className={headerClass}>Page</th>
-            <th className={headerClass} style={{ textAlign: "center" }}>
+            <th className={headerClass} style={stickyHeaderStyle(0)}>
+              Page
+            </th>
+            <th
+              className={headerClass}
+              style={{ ...stickyHeaderStyle(1), textAlign: "center" }}
+            >
               Go
             </th>
-            <th className={headerClass}>Display</th>
+            <th className={headerClass} style={stickyHeaderStyle(2)}>
+              Display
+            </th>
             {features.map((f) => (
               <th
                 key={f.id}
@@ -177,6 +216,7 @@ export function TableFeaturesGrid({
               className={cellClass}
               colSpan={3}
               style={{
+                ...stickySpanRowStyle,
                 fontStyle: "italic",
                 color: "var(--muted-foreground)",
                 verticalAlign: "top",
@@ -216,16 +256,20 @@ export function TableFeaturesGrid({
             </td>
           </tr>
 
-          {/* Default-for-new row — shows which features should ship on new tables */}
+          {/* Default-for-new row — shows which features should ship on new pages */}
           <tr>
             <td
               className={cellClass}
-              style={{ fontStyle: "italic", color: "var(--muted-foreground)" }}
+              style={{
+                ...stickyCellStyle(0),
+                fontStyle: "italic",
+                color: "var(--muted-foreground)",
+              }}
             >
               Default for new pages
             </td>
-            <td className={cellClass} />
-            <td className={cellClass} />
+            <td className={cellClass} style={stickyCellStyle(1)} />
+            <td className={cellClass} style={stickyCellStyle(2)} />
             {features.map((f) => (
               <td key={`def-${f.id}`} className={compactCellClass}>
                 <button
@@ -247,13 +291,16 @@ export function TableFeaturesGrid({
               onDelete={() => deleteCatalogRow(t.id)}
               itemLabel={t.name ? `"${t.name}"` : "this table"}
             >
-              <td className={cellClass}>
+              <td className={cellClass} style={stickyCellStyle(0)}>
                 <EditableText
                   value={t.name}
                   onSave={(v) => updateCatalogName(t.id, v)}
                 />
               </td>
-              <td className={cellClass} style={{ textAlign: "center" }}>
+              <td
+                className={cellClass}
+                style={{ ...stickyCellStyle(1), textAlign: "center" }}
+              >
                 {t.path ? (
                   <div className="inline-flex items-end gap-2">
                     <a
@@ -286,7 +333,7 @@ export function TableFeaturesGrid({
                   />
                 )}
               </td>
-              <td className={cellClass}>
+              <td className={cellClass} style={stickyCellStyle(2)}>
                 <PillSelect
                   value={t.display_type_id ?? ""}
                   options={displayTypeOptions}
