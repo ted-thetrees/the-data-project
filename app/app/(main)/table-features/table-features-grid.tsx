@@ -92,39 +92,45 @@ export function TableFeaturesGrid({
 
   const totalColSpan = 3 + features.length;
 
-  const stickyOffsets = [0, FIXED_COL_PAGE, FIXED_COL_PAGE + FIXED_COL_GO];
-  // box-shadow draws a 2px-thick divider matching --row-gap on every sticky
-  // column's right edge so the gap stays visually consistent during horizontal
-  // scroll (the gap is otherwise eaten by scrolling cells passing underneath).
-  const stickyDivider = "2px 0 0 var(--background)";
-  const stickyOuterDivider = "2px 0 0 var(--background), 3px 0 0 var(--border)";
+  // Each sticky column's "left" must include the cumulative border-spacing
+  // (2px from theme --row-gap) — otherwise the gaps between Page/Go/Display
+  // collapse during horizontal scroll and the column dividers disappear.
+  const GAP = 2;
+  const stickyOffsets = [
+    GAP,
+    GAP + FIXED_COL_PAGE + GAP,
+    GAP + FIXED_COL_PAGE + GAP + FIXED_COL_GO + GAP,
+  ];
+  // After Display, the outer divider is the natural border-spacing — but since
+  // scrolling cells slide under, also draw a 1px line so the boundary is crisp.
+  const outerShadow = "1px 0 0 var(--border)";
   const stickyCellStyle = (col: 0 | 1 | 2): React.CSSProperties => ({
     position: "sticky",
     left: stickyOffsets[col],
     zIndex: 2,
     background: "var(--cell-bg)",
-    boxShadow: col === 2 ? stickyOuterDivider : stickyDivider,
+    boxShadow: col === 2 ? outerShadow : undefined,
   });
   const stickyHeaderStyle = (col: 0 | 1 | 2): React.CSSProperties => ({
     position: "sticky",
     left: stickyOffsets[col],
     zIndex: 4,
     background: "var(--header-bg)",
-    boxShadow: col === 2 ? stickyOuterDivider : stickyDivider,
+    boxShadow: col === 2 ? outerShadow : undefined,
   });
   const stickySpanHeaderStyle: React.CSSProperties = {
     position: "sticky",
-    left: 0,
+    left: stickyOffsets[0],
     zIndex: 4,
     background: "var(--header-bg)",
-    boxShadow: stickyOuterDivider,
+    boxShadow: outerShadow,
   };
   const stickySpanRowStyle: React.CSSProperties = {
     position: "sticky",
-    left: 0,
+    left: stickyOffsets[0],
     zIndex: 2,
     background: "var(--cell-bg)",
-    boxShadow: stickyOuterDivider,
+    boxShadow: outerShadow,
   };
 
   return (
