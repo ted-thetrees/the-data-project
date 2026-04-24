@@ -171,7 +171,7 @@ export async function createProject() {
       poolV002.query(`SELECT id FROM uber_projects ORDER BY name LIMIT 1`),
       poolV002.query(
         `SELECT id FROM project_action_order_statuses
-         ORDER BY sort_order NULLS LAST, name LIMIT 1`,
+         WHERE name = 'Needs Sorting' LIMIT 1`,
       ),
     ]);
   if (!projectStatus.rows[0]) throw new Error("Active project status missing");
