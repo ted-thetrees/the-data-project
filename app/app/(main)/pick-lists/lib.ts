@@ -143,9 +143,9 @@ export function getGetSources() {
   return getStatusesByName("get_sources", "ORDER BY sort_order NULLS LAST, name");
 }
 
-export function getEagleBubbleDistributions() {
+export function getInfImagesBubbleDistributions() {
   return getStatusesByName(
-    "eagle_bubble_distributions",
+    "inf_images_bubble_distributions",
     "ORDER BY sort_order NULLS LAST, name",
   );
 }
@@ -157,12 +157,12 @@ export function getTablesFeatureStatuses() {
   );
 }
 
-export async function getEagleFolders(): Promise<Status[]> {
+export async function getInfImagesFolders(): Promise<Status[]> {
   // Show the full folder path as the picklist label so nested folders with
   // duplicate names (e.g., "Yes" under multiple parents) are distinguishable.
   const r = await poolV002.query(
     `SELECT id, full_path AS name, COALESCE(color, '') AS color
-     FROM eagle_folders
+     FROM inf_images_folders
      ORDER BY sort_order NULLS LAST, full_path`,
   );
   return r.rows;

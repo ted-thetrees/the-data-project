@@ -3,11 +3,11 @@ import { Realtime } from "@/components/realtime";
 import { PicklistStatusTable } from "../picklist-tables";
 import {
   getPalettes,
-  getEagleBubbleDistributions,
-  getEagleFolders,
+  getInfImagesBubbleDistributions,
+  getInfImagesFolders,
 } from "../lib";
 
-export const metadata = { title: "Pick Lists · Eagle Images" };
+export const metadata = { title: "Pick Lists · INF Images" };
 export const dynamic = "force-dynamic";
 
 function PickListSection({
@@ -28,40 +28,40 @@ function PickListSection({
   );
 }
 
-export default async function PickListsEagleImagesPage() {
+export default async function PickListsInfImagesPage() {
   const [bubbleDistributions, folders, palettes] = await Promise.all([
-    getEagleBubbleDistributions(),
-    getEagleFolders(),
+    getInfImagesBubbleDistributions(),
+    getInfImagesFolders(),
     getPalettes(),
   ]);
 
   return (
-    <PageShell title="Pick Lists · Eagle Images">
+    <PageShell title="Pick Lists · INF Images">
       <Realtime
-        tables={["eagle_bubble_distributions", "eagle_folders", "color_palettes"]}
+        tables={["inf_images_bubble_distributions", "inf_images_folders", "color_palettes"]}
       />
       <div className="space-y-10">
         <PickListSection
           title="Sort / Yes / No"
-          usedBy="Bubble Distribution + every Folder column on Eagle Images · List"
+          usedBy="Bubble Distribution + every Folder column on INF Images · List"
         >
           <PicklistStatusTable
-            source="eagle_bubble_distributions"
+            source="inf_images_bubble_distributions"
             rows={bubbleDistributions}
             palettes={palettes}
-            storageKey="pick-lists:eagle_bubble_distributions"
+            storageKey="pick-lists:inf_images_bubble_distributions"
             sortable
           />
         </PickListSection>
         <PickListSection
           title="Folders"
-          usedBy="Eagle Images · Grid and Eagle Images · List"
+          usedBy="INF Images · Grid and INF Images · List"
         >
           <PicklistStatusTable
-            source="eagle_folders"
+            source="inf_images_folders"
             rows={folders}
             palettes={palettes}
-            storageKey="pick-lists:eagle_folders"
+            storageKey="pick-lists:inf_images_folders"
             sortable
           />
         </PickListSection>

@@ -30,10 +30,10 @@ const SOURCE_TABLES: Record<string, string> = {
   get_categories: "get_categories",
   get_statuses: "get_statuses",
   get_sources: "get_sources",
-  eagle_bubble_distributions: "eagle_bubble_distributions",
+  inf_images_bubble_distributions: "inf_images_bubble_distributions",
   tables_feature_statuses: "tables_feature_statuses",
   tables_display_types: "tables_display_types",
-  eagle_folders: "eagle_folders",
+  inf_images_folders: "inf_images_folders",
 };
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;

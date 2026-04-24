@@ -4,7 +4,7 @@ import { Realtime } from "@/components/realtime";
 import { Subtitle } from "@/components/subtitle";
 import { Masonry, type MasonryImage } from "./masonry";
 
-export const metadata = { title: "Eagle Images — Masonry" };
+export const metadata = { title: "INF Images — Masonry" };
 export const dynamic = "force-dynamic";
 
 async function getImages(): Promise<MasonryImage[]> {
@@ -17,18 +17,18 @@ async function getImages(): Promise<MasonryImage[]> {
       height,
       public_url,
       is_video
-    FROM eagle_images
+    FROM inf_images
     ORDER BY added_at DESC
   `);
   return r.rows;
 }
 
-export default async function EagleMasonryPage() {
+export default async function InfImagesMasonryPage() {
   const images = await getImages();
   return (
-    <PageShell title="Eagle Images — Masonry" count={images.length} maxWidth="">
-      <Realtime tables={["eagle_images"]} />
-      <Subtitle>4-column masonry view of every imported Eagle image.</Subtitle>
+    <PageShell title="INF Images — Masonry" count={images.length} maxWidth="">
+      <Realtime tables={["inf_images"]} />
+      <Subtitle>4-column masonry view of every imported INF image.</Subtitle>
       <Masonry images={images} />
     </PageShell>
   );

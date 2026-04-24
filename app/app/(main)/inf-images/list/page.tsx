@@ -5,10 +5,10 @@ import { Subtitle } from "@/components/subtitle";
 import { getInitialViewParams } from "@/lib/table-views-cookie";
 import { ListTable, type ListRow, type FolderOption, type TagOption } from "./list-table";
 import { LIST_STORAGE_KEY, LIST_DEFAULT_WIDTHS } from "./config";
-import { getEagleBubbleDistributions } from "../../pick-lists/lib";
+import { getInfImagesBubbleDistributions } from "../../pick-lists/lib";
 import type { PillOption } from "@/components/pill";
 
-export const metadata = { title: "Eagle Images — List" };
+export const metadata = { title: "INF Images — List" };
 export const dynamic = "force-dynamic";
 
 async function getRows(): Promise<ListRow[]> {
@@ -25,14 +25,14 @@ async function getRows(): Promise<ListRow[]> {
       i.bubble_distribution_id::text      AS bubble_distribution_id,
       COALESCE(
         (SELECT jsonb_object_agg(folder_id, status_id::text)
-           FROM eagle_image_folders WHERE image_id = i.id),
+           FROM inf_images_folder_links WHERE image_id = i.id),
         '{}'::jsonb
       ) AS folder_statuses,
       COALESCE(
-        (SELECT array_agg(tag_id::text) FROM eagle_image_tags WHERE image_id = i.id),
+        (SELECT array_agg(tag_id::text) FROM inf_images_tag_links WHERE image_id = i.id),
         ARRAY[]::text[]
       ) AS tag_ids
-    FROM eagle_images i
+    FROM inf_images i
     ORDER BY i.added_at DESC
   `);
   return r.rows;
@@ -40,37 +40,37 @@ async function getRows(): Promise<ListRow[]> {
 
 async function getFolders(): Promise<FolderOption[]> {
   const r = await poolV002.query<FolderOption>(
-    `SELECT id, name, full_path, color FROM eagle_folders ORDER BY full_path`,
+    `SELECT id, name, full_path, color FROM inf_images_folders ORDER BY full_path`,
   );
   return r.rows;
 }
 
 async function getTags(): Promise<TagOption[]> {
   const r = await poolV002.query<TagOption>(
-    `SELECT id::text AS id, name FROM eagle_tags ORDER BY name`,
+    `SELECT id::text AS id, name FROM inf_images_tags ORDER BY name`,
   );
   return r.rows;
 }
 
-export default async function EagleListPage() {
+export default async function InfImagesListPage() {
   const [rows, folders, tags, bubbleDistributions, initialParams] = await Promise.all([
     getRows(),
     getFolders(),
     getTags(),
-    getEagleBubbleDistributions() as unknown as Promise<PillOption[]>,
+    getInfImagesBubbleDistributions() as unknown as Promise<PillOption[]>,
     getInitialViewParams(LIST_STORAGE_KEY, LIST_DEFAULT_WIDTHS),
   ]);
 
   return (
-    <PageShell title="Eagle Images — List" count={rows.length} maxWidth="">
+    <PageShell title="INF Images — List" count={rows.length} maxWidth="">
       <Realtime
         tables={[
-          "eagle_images",
-          "eagle_image_folders",
-          "eagle_image_tags",
-          "eagle_folders",
-          "eagle_tags",
-          "eagle_bubble_distributions",
+          "inf_images",
+          "inf_images_folder_links",
+          "inf_images_tag_links",
+          "inf_images_folders",
+          "inf_images_tags",
+          "inf_images_bubble_distributions",
         ]}
       />
       <Subtitle>One row per image. Group by Folder, Tag, or Bubble Distribution.</Subtitle>

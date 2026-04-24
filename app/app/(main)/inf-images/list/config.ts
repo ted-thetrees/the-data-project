@@ -1,4 +1,4 @@
-export const LIST_STORAGE_KEY = "eagle-images-list";
+export const LIST_STORAGE_KEY = "inf-images-list";
 
 export const LIST_DEFAULT_WIDTHS: Record<string, number> = {
   select: 36,

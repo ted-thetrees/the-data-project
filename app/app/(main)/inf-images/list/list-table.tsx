@@ -423,7 +423,7 @@ export function ListTable({
           options={bubbleDistributionOptions}
           onSave={(v) => updateBubbleDistribution(row.image_id, v)}
           onCreate={(name) =>
-            createPicklistOptionNamed("eagle_bubble_distributions", name)
+            createPicklistOptionNamed("inf_images_bubble_distributions", name)
           }
         />
       </td>
@@ -449,7 +449,7 @@ export function ListTable({
   };
 
   // One PillSelect cell per folder. Status defaults to "Sort" (the absence
-  // of a row in eagle_image_folders); picking Yes/No writes a row.
+  // of a row in inf_images_folder_links); picking Yes/No writes a row.
   const sortStatus = bubbleDistributionOptions.find((o) => o.name === "Sort");
   for (const folder of folders) {
     const key = `folder:${folder.id}`;

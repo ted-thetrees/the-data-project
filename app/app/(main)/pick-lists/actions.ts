@@ -46,8 +46,8 @@ const SOURCE_TABLES: Record<string, SourceConfig> = {
   get_categories: { table: "get_categories", hasSortOrder: true },
   get_statuses: { table: "get_statuses", hasSortOrder: true },
   get_sources: { table: "get_sources", hasSortOrder: true },
-  eagle_bubble_distributions: {
-    table: "eagle_bubble_distributions",
+  inf_images_bubble_distributions: {
+    table: "inf_images_bubble_distributions",
     hasSortOrder: true,
   },
   tables_feature_statuses: {
@@ -58,8 +58,8 @@ const SOURCE_TABLES: Record<string, SourceConfig> = {
     table: "tables_display_types",
     hasSortOrder: true,
   },
-  eagle_folders: {
-    table: "eagle_folders",
+  inf_images_folders: {
+    table: "inf_images_folders",
     hasSortOrder: true,
     idType: "text",
   },
@@ -82,9 +82,9 @@ function revalidate() {
   revalidatePath("/user-stories");
   revalidatePath("/people");
   revalidatePath("/get");
-  revalidatePath("/pick-lists/eagle-images");
-  revalidatePath("/eagle-images/list");
-  revalidatePath("/eagle-images/masonry");
+  revalidatePath("/pick-lists/inf-images");
+  revalidatePath("/inf-images/list");
+  revalidatePath("/inf-images/masonry");
   revalidatePath("/pick-lists/table-features");
   revalidatePath("/table-features");
 }

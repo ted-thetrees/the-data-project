@@ -69,10 +69,10 @@ const NAV: Branch[] = [
     { kind: "leaf", label: "Table Features", path: "/table-features", key: "f", icon: Puzzle },
     { kind: "leaf", label: "Pick Lists", path: "/pick-lists/table-features", key: "F", icon: List },
   ] },
-  { kind: "branch", label: "Eagle", icon: ImageIcon, children: [
-    { kind: "leaf", label: "List", path: "/eagle-images/list", key: "L", icon: List },
-    { kind: "leaf", label: "Masonry", path: "/eagle-images/masonry", key: "E", icon: ImageIcon },
-    { kind: "leaf", label: "Pick Lists", path: "/pick-lists/eagle-images", key: "X", icon: List },
+  { kind: "branch", label: "INF Images", icon: ImageIcon, children: [
+    { kind: "leaf", label: "List", path: "/inf-images/list", key: "L", icon: List },
+    { kind: "leaf", label: "Masonry", path: "/inf-images/masonry", key: "E", icon: ImageIcon },
+    { kind: "leaf", label: "Pick Lists", path: "/pick-lists/inf-images", key: "X", icon: List },
   ] },
   { kind: "branch", label: "Calories", icon: Apple, children: [
     { kind: "leaf", label: "Everything", path: "/calories", key: "a", icon: Apple },

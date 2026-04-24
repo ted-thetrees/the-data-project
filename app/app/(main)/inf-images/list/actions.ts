@@ -13,20 +13,20 @@ export async function updateBubbleDistribution(
       ? Number(bubbleDistributionId)
       : null;
   await poolV002.query(
-    `UPDATE eagle_images SET bubble_distribution_id = $1, updated_at = now() WHERE id = $2`,
+    `UPDATE inf_images SET bubble_distribution_id = $1, updated_at = now() WHERE id = $2`,
     [value, imageId],
   );
-  revalidatePath("/eagle-images/list");
-  revalidatePath("/eagle-images");
+  revalidatePath("/inf-images/list");
+  revalidatePath("/inf-images");
 }
 
 export async function updateImageName(imageId: string, name: string) {
   await poolV002.query(
-    `UPDATE eagle_images SET name = $1, updated_at = now() WHERE id = $2`,
+    `UPDATE inf_images SET name = $1, updated_at = now() WHERE id = $2`,
     [name, imageId],
   );
-  revalidatePath("/eagle-images/list");
-  revalidatePath("/eagle-images");
+  revalidatePath("/inf-images/list");
+  revalidatePath("/inf-images");
 }
 
 /**
@@ -42,12 +42,12 @@ export async function bulkSetBubbleDistribution(
       ? Number(bubbleDistributionId)
       : null;
   await poolV002.query(
-    `UPDATE eagle_images SET bubble_distribution_id = $1, updated_at = now()
+    `UPDATE inf_images SET bubble_distribution_id = $1, updated_at = now()
      WHERE id = ANY($2::uuid[])`,
     [value, imageIds],
   );
-  revalidatePath("/eagle-images/list");
-  revalidatePath("/eagle-images");
+  revalidatePath("/inf-images/list");
+  revalidatePath("/inf-images");
 }
 
 /**
@@ -61,26 +61,26 @@ export async function bulkSetImageFolderStatus(
   if (imageIds.length === 0) return;
   const statusIdNum = Number(statusId);
   const sortRow = await poolV002.query<{ id: number }>(
-    `SELECT id FROM eagle_bubble_distributions WHERE name = 'Sort' LIMIT 1`,
+    `SELECT id FROM inf_images_bubble_distributions WHERE name = 'Sort' LIMIT 1`,
   );
   const sortId = sortRow.rows[0]?.id;
   if (sortId !== undefined && statusIdNum === sortId) {
     await poolV002.query(
-      `DELETE FROM eagle_image_folders WHERE folder_id = $1 AND image_id = ANY($2::uuid[])`,
+      `DELETE FROM inf_images_folder_links WHERE folder_id = $1 AND image_id = ANY($2::uuid[])`,
       [folderId, imageIds],
     );
   } else {
     // Build a multi-row INSERT ... ON CONFLICT
     const values = imageIds.map((_, i) => `($${i + 3}::uuid, $1, $2)`).join(",");
     await poolV002.query(
-      `INSERT INTO eagle_image_folders (image_id, folder_id, status_id)
+      `INSERT INTO inf_images_folder_links (image_id, folder_id, status_id)
        VALUES ${values}
        ON CONFLICT (image_id, folder_id) DO UPDATE SET status_id = EXCLUDED.status_id`,
       [folderId, statusIdNum, ...imageIds],
     );
   }
-  revalidatePath("/eagle-images/list");
-  revalidatePath("/eagle-images");
+  revalidatePath("/inf-images/list");
+  revalidatePath("/inf-images");
 }
 
 /**
@@ -96,29 +96,29 @@ export async function setImageFolderStatus(
 ) {
   const statusIdNum = Number(statusId);
   const sortRow = await poolV002.query<{ id: number }>(
-    `SELECT id FROM eagle_bubble_distributions WHERE name = 'Sort' LIMIT 1`,
+    `SELECT id FROM inf_images_bubble_distributions WHERE name = 'Sort' LIMIT 1`,
   );
   const sortId = sortRow.rows[0]?.id;
   if (sortId !== undefined && statusIdNum === sortId) {
     await poolV002.query(
-      `DELETE FROM eagle_image_folders WHERE image_id = $1 AND folder_id = $2`,
+      `DELETE FROM inf_images_folder_links WHERE image_id = $1 AND folder_id = $2`,
       [imageId, folderId],
     );
   } else {
     await poolV002.query(
-      `INSERT INTO eagle_image_folders (image_id, folder_id, status_id)
+      `INSERT INTO inf_images_folder_links (image_id, folder_id, status_id)
        VALUES ($1, $2, $3)
        ON CONFLICT (image_id, folder_id) DO UPDATE SET status_id = EXCLUDED.status_id`,
       [imageId, folderId, statusIdNum],
     );
   }
-  revalidatePath("/eagle-images/list");
-  revalidatePath("/eagle-images");
+  revalidatePath("/inf-images/list");
+  revalidatePath("/inf-images");
 }
 
 export async function deleteImageFromList(imageId: string) {
-  await poolV002.query(`DELETE FROM eagle_images WHERE id = $1`, [imageId]);
-  revalidatePath("/eagle-images/list");
-  revalidatePath("/eagle-images");
-  revalidatePath("/eagle-images/masonry");
+  await poolV002.query(`DELETE FROM inf_images WHERE id = $1`, [imageId]);
+  revalidatePath("/inf-images/list");
+  revalidatePath("/inf-images");
+  revalidatePath("/inf-images/masonry");
 }
