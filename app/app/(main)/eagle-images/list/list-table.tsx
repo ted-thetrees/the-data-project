@@ -284,9 +284,22 @@ export function ListTable({
       setScrollMargin(tableWrapperRef.current.offsetTop);
     }
   }, []);
+  // Row heights vary because the Image column displays full-width images at
+  // their natural aspect ratio. Use the image's known dimensions for the
+  // per-row size estimate so initial scroll positions are close to right.
+  const imageColWidth =
+    params.columnWidths.image ?? LIST_DEFAULT_WIDTHS.image ?? 140;
   const rowVirtualizer = useWindowVirtualizer({
     count: flatRows.length,
-    estimateSize: () => 116,
+    estimateSize: (index) => {
+      const f = flatRows[index];
+      if (!f || f.kind !== "data") return 48;
+      const r = f.row;
+      if (r.width && r.height && r.width > 0) {
+        return Math.round((imageColWidth * r.height) / r.width);
+      }
+      return imageColWidth; // square fallback
+    },
     overscan: 8,
     scrollMargin,
   });
@@ -298,12 +311,22 @@ export function ListTable({
 
   const cellRenderers: Record<string, (row: ListRow) => React.ReactNode> = {
     image: (row) => (
-      <td key="image" className={cellClass} style={{ textAlign: "center" }}>
-        <a href={row.public_url} target="_blank" rel="noreferrer" title={row.image_name}>
+      <td
+        key="image"
+        className="bg-[color:var(--cell-bg)]"
+        style={{ padding: 0, verticalAlign: "top" }}
+      >
+        <a
+          href={row.public_url}
+          target="_blank"
+          rel="noreferrer"
+          title={row.image_name}
+          style={{ display: "block", lineHeight: 0 }}
+        >
           {row.is_video ? (
             <video
               src={row.public_url}
-              style={{ maxWidth: "100%", maxHeight: 100, borderRadius: "var(--radius-sm)" }}
+              style={{ width: "100%", height: "auto", display: "block" }}
               preload="metadata"
             />
           ) : (
@@ -312,13 +335,7 @@ export function ListTable({
               src={row.public_url}
               alt={row.image_name}
               loading="lazy"
-              style={{
-                maxWidth: "100%",
-                maxHeight: 100,
-                borderRadius: "var(--radius-sm)",
-                objectFit: "contain",
-                display: "inline-block",
-              }}
+              style={{ width: "100%", height: "auto", display: "block" }}
             />
           )}
         </a>
