@@ -300,7 +300,17 @@ export function PillSelect({
   const [search, setSearch] = useState("");
   const [isPending, startTransition] = useTransition();
   useFocusCmdkInput(open);
-  const current = options.find((o) => o.id === value);
+  // Optimistic local override — display the picked value the instant the
+  // user selects, without waiting for the server action + revalidate +
+  // re-fetch + re-render round-trip. Server-confirmed value supersedes
+  // when the prop updates.
+  const [optimistic, setOptimistic] = useState<string | null>(null);
+  useEffect(() => {
+    // Server has caught up with our optimistic guess — drop the override.
+    if (optimistic != null && value === optimistic) setOptimistic(null);
+  }, [value, optimistic]);
+  const displayedValue = optimistic ?? value;
+  const current = options.find((o) => o.id === displayedValue);
   const bg = current?.color || DEFAULT_COLOR;
   const fg = contrastTextColor(current?.color ?? null);
 
@@ -311,12 +321,14 @@ export function PillSelect({
   const showCreate = !!onCreate && trimmed.length > 0 && !exact;
 
   const handleSelect = (id: string) => {
+    setOptimistic(id);
     startTransition(() => onSave(id));
     setOpen(false);
     setSearch("");
   };
 
   const handleClear = () => {
+    setOptimistic("");
     startTransition(() => onSave(""));
     setOpen(false);
     setSearch("");
