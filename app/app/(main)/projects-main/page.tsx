@@ -31,7 +31,6 @@ export interface TaskRow {
   project_status_id: string;
   project_color: string;
   project_order: number | null;
-  project_sort_order: number | null;
   project_is_draft: boolean;
   tickle_date: string | null;
   project_notes: string | null;

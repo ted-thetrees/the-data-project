@@ -11,15 +11,11 @@ import {
 } from "react";
 import {
   DndContext,
-  DragOverlay,
   PointerSensor,
   closestCenter,
-  useDraggable,
-  useDroppable,
   useSensor,
   useSensors,
   type DragEndEvent,
-  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -27,7 +23,6 @@ import {
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { format, parse } from "date-fns";
-import { GripVertical } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { Subtitle } from "@/components/subtitle";
 import { Calendar } from "@/components/ui/calendar";
@@ -46,7 +41,6 @@ import {
   deleteTask,
   deleteProject,
   moveTask,
-  reorderProjectsInTickleDate,
 } from "./actions";
 import { createPicklistOptionNamed } from "../pick-lists/actions";
 import { Pill, PillSelect, PILL_CLASS } from "@/components/pill";
@@ -91,10 +85,7 @@ import { handleGridKeyDown } from "@/components/grid-keyboard-nav";
 import { GroupByPicker } from "@/components/group-by-picker";
 
 // Project-level icicle columns (rowspan-merged, pinned — not reorderable).
-// "grip" is a narrow column with the drag handle for reordering projects
-// within a tickle-date group.
 const PROJECT_ICICLE_KEYS = [
-  "grip",
   "project",
   "tickle",
   "uber_project",
@@ -106,7 +97,6 @@ const PROJECT_ICICLE_KEYS = [
 const TASK_COMMON_KEYS = ["task", "task_status", "result", "notes"] as const;
 
 const HEADER_LABELS: Record<string, string> = {
-  grip: "",
   project: "Project",
   tickle: "Tickle",
   uber_project: "Uber Project",
@@ -592,71 +582,13 @@ export function GridTable({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
-  const [dragPreview, setDragPreview] = useState<{
-    projectId: string;
-    name: string;
-  } | null>(null);
-  const [activeOver, setActiveOver] = useState<string | null>(null);
-  const handleDragStart = (e: DragStartEvent) => {
-    const id = String(e.active.id);
-    if (id.startsWith("proj:")) {
-      const projectId = id.slice("proj:".length);
-      const projectRow = orderedData.find((r) => r.project_id === projectId);
-      setDragPreview({
-        projectId,
-        name: projectRow?.project ?? "(unnamed)",
-      });
-    }
-  };
-  const handleDragOver = (e: { over: { id: string | number } | null }) => {
-    setActiveOver(e.over ? String(e.over.id) : null);
-  };
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    setDragPreview(null);
-    setActiveOver(null);
     if (!over || active.id === over.id) return;
-    const activeId = String(active.id);
-    const overId = String(over.id);
-
-    // Column header reorder
-    if (
-      orderedTaskKeys.includes(activeId) &&
-      orderedTaskKeys.includes(overId)
-    ) {
-      const oldIndex = orderedTaskKeys.indexOf(activeId);
-      const newIndex = orderedTaskKeys.indexOf(overId);
-      if (oldIndex < 0 || newIndex < 0) return;
-      setColumnOrder(arrayMove(orderedTaskKeys, oldIndex, newIndex));
-      return;
-    }
-
-    // Project row reorder within same tickle-date group
-    if (activeId.startsWith("proj:") && overId.startsWith("drop-proj:")) {
-      const srcId = activeId.slice("proj:".length);
-      const dstId = overId.slice("drop-proj:".length);
-      const srcRow = orderedData.find((r) => r.project_id === srcId);
-      const dstRow = orderedData.find((r) => r.project_id === dstId);
-      if (!srcRow || !dstRow) return;
-      const myTickle = srcRow.tickle_date ?? null;
-      if ((dstRow.tickle_date ?? null) !== myTickle) return;
-      const seen = new Set<string>();
-      const ids: string[] = [];
-      for (const r of orderedData) {
-        if (r.project_is_draft) continue;
-        if ((r.tickle_date ?? null) !== myTickle) continue;
-        if (!seen.has(r.project_id)) {
-          seen.add(r.project_id);
-          ids.push(r.project_id);
-        }
-      }
-      const from = ids.indexOf(srcId);
-      const to = ids.indexOf(dstId);
-      if (from < 0 || to < 0) return;
-      ids.splice(from, 1);
-      ids.splice(to, 0, srcId);
-      void reorderProjectsInTickleDate(ids);
-    }
+    const oldIndex = orderedTaskKeys.indexOf(String(active.id));
+    const newIndex = orderedTaskKeys.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    setColumnOrder(arrayMove(orderedTaskKeys, oldIndex, newIndex));
   };
 
   const headerClass =
@@ -706,8 +638,6 @@ export function GridTable({
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
         <table
@@ -751,29 +681,20 @@ export function GridTable({
                   />
                 </th>
               ))}
-              {PROJECT_ICICLE_KEYS.map((key, i) =>
-                key === "grip" ? (
-                  <th
-                    key={key}
-                    className={headerClass}
-                    style={{ width: 22 }}
-                    aria-hidden
+              {PROJECT_ICICLE_KEYS.map((key, i) => (
+                <th
+                  key={key}
+                  className={headerClass}
+                  style={{ position: "relative" }}
+                >
+                  {HEADER_LABELS[key]}
+                  <ColumnResizer
+                    columnIndex={i + groupBy.length}
+                    currentWidth={params.columnWidths[key]}
+                    onResize={(w) => setColumnWidth(key, w)}
                   />
-                ) : (
-                  <th
-                    key={key}
-                    className={headerClass}
-                    style={{ position: "relative" }}
-                  >
-                    {HEADER_LABELS[key]}
-                    <ColumnResizer
-                      columnIndex={i + groupBy.length}
-                      currentWidth={params.columnWidths[key]}
-                      onResize={(w) => setColumnWidth(key, w)}
-                    />
-                  </th>
-                ),
-              )}
+                </th>
+              ))}
               <SortableContext
                 items={orderedTaskKeys}
                 strategy={horizontalListSortingStrategy}
@@ -883,49 +804,18 @@ export function GridTable({
                     </td>
                   );
                 })}
-                {/* Icicle: Grip (rowspan-merged drag handle column, +1) */}
-                {projectStartSet.has(i) && (() => {
-                  const span = projectByIndex[i];
-                  const isDraft = Boolean(span.extra?.is_draft);
-                  return (
-                    <ProjectGripCell
-                      projectId={row.project_id}
-                      rowSpan={span.rowSpan + 1}
-                      isDraft={isDraft}
-                      isDragging={dragPreview?.projectId === row.project_id}
-                      isOver={activeOver === `drop-proj:${row.project_id}`}
-                    />
-                  );
-                })()}
-
                 {/* Icicle: Project (rowspan-merged, +1 to span add-row) */}
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
                   const isDraft = Boolean(span.extra?.is_draft);
                   const isDirty = dirtySet.has(row.project_id);
-                  const isAutoOrder = row.project_sort_order == null;
                   return (
                     <td
                       rowSpan={span.rowSpan + 1}
                       className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
                     >
                       <div className="flex items-start gap-2">
-                        <div
-                          className="flex-1 min-w-0"
-                          style={
-                            isAutoOrder
-                              ? {
-                                  fontStyle: "italic",
-                                  color: "var(--muted-foreground)",
-                                }
-                              : undefined
-                          }
-                          title={
-                            isAutoOrder
-                              ? "Auto-ordered alphabetically. Drag the grip to set a manual order."
-                              : undefined
-                          }
-                        >
+                        <div className="flex-1 min-w-0">
                           <EditableTextWrap
                             value={span.value}
                             onSave={(v) =>
@@ -1152,26 +1042,6 @@ export function GridTable({
             })}
           </tbody>
         </table>
-        <DragOverlay dropAnimation={null}>
-          {dragPreview ? (
-            <div
-              style={{
-                padding: "6px 12px",
-                background: "var(--cell-bg)",
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius-md)",
-                boxShadow: "var(--dropdown-shadow)",
-                fontSize: "var(--cell-font-size)",
-                fontWeight: "var(--font-weight-medium)",
-                color: "var(--foreground)",
-                whiteSpace: "nowrap",
-                cursor: "grabbing",
-              }}
-            >
-              {dragPreview.name}
-            </div>
-          ) : null}
-        </DragOverlay>
         </DndContext>
       </div>
       <Dialog
@@ -1232,62 +1102,6 @@ export function GridTable({
       </Subtitle>
       {body}
     </PageShell>
-  );
-}
-
-function ProjectGripCell({
-  projectId,
-  rowSpan,
-  isDraft,
-  isDragging,
-  isOver,
-}: {
-  projectId: string;
-  rowSpan: number;
-  isDraft: boolean;
-  isDragging: boolean;
-  isOver: boolean;
-}) {
-  // Draggable attached only to the grip handle span (so the name cell's
-  // click-to-edit still works). Droppable attached to the whole grip cell
-  // so users can drop on a neighbor with a generous target area.
-  const {
-    attributes,
-    listeners,
-    setNodeRef: setDragRef,
-  } = useDraggable({
-    id: `proj:${projectId}`,
-    disabled: isDraft,
-  });
-  const { setNodeRef: setDropRef } = useDroppable({
-    id: `drop-proj:${projectId}`,
-    disabled: isDraft,
-  });
-  return (
-    <td
-      ref={setDropRef}
-      rowSpan={rowSpan}
-      className="align-top px-0 py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-center"
-      style={{
-        opacity: isDragging ? 0.4 : undefined,
-        outline: isOver ? "2px solid var(--primary)" : undefined,
-        outlineOffset: isOver ? -2 : undefined,
-      }}
-    >
-      {!isDraft && (
-        <span
-          ref={setDragRef}
-          {...attributes}
-          {...listeners}
-          className="cursor-grab select-none inline-block text-[color:var(--muted-foreground)] hover:text-foreground"
-          style={{ touchAction: "none", padding: "0 2px" }}
-          title="Drag to reorder within this tickle date"
-          aria-label="Drag to reorder"
-        >
-          <GripVertical className="w-3 h-3" />
-        </span>
-      )}
-    </td>
   );
 }
 

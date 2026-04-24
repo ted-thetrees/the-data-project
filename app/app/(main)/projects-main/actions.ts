@@ -34,38 +34,10 @@ export async function updateProjectField(
 ) {
   if (!PROJECT_FIELDS.has(field))
     throw new Error(`Invalid project field: ${field}`);
-  // Changing tickle_date puts the project into a new date group. Reset
-  // sort_order to NULL so it returns to alphabetical ordering in the new
-  // group — the user can re-order it by hand when the date approaches.
-  if (field === "tickle_date") {
-    await poolV002.query(
-      `UPDATE projects SET tickle_date = $1, sort_order = NULL WHERE id = $2`,
-      [value, id],
-    );
-  } else {
-    await poolV002.query(`UPDATE projects SET ${field} = $1 WHERE id = $2`, [
-      value,
-      id,
-    ]);
-  }
-  revalidatePath("/projects-main");
-}
-
-export async function reorderProjectsInTickleDate(orderedIds: string[]) {
-  if (orderedIds.length === 0) return;
-  const values = orderedIds
-    .map((_, i) => `($${i * 2 + 1}::uuid, $${i * 2 + 2}::int)`)
-    .join(",");
-  const params: (string | number)[] = [];
-  orderedIds.forEach((id, i) => {
-    params.push(id, i);
-  });
-  await poolV002.query(
-    `UPDATE projects p SET sort_order = v.sort_order
-     FROM (VALUES ${values}) AS v(id, sort_order)
-     WHERE p.id = v.id`,
-    params,
-  );
+  await poolV002.query(`UPDATE projects SET ${field} = $1 WHERE id = $2`, [
+    value,
+    id,
+  ]);
   revalidatePath("/projects-main");
 }
 

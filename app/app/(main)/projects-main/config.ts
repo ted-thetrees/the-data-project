@@ -2,7 +2,6 @@ export const PROJECTS_MAIN_STORAGE_KEY = "projects-main";
 
 export const PROJECTS_MAIN_DEFAULT_WIDTHS: Record<string, number> = {
   uber_project: 140,
-  grip: 22,
   project: 220,
   tickle: 110,
   project_status: 110,
