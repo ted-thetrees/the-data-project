@@ -252,7 +252,10 @@ export function TableFeaturesGrid({
                       title={`Open ${t.path} in Data app`}
                       aria-label="Open in Data app"
                     >
-                      <AppWindow className="w-4 h-4" />
+                      <AppWindow
+                        className="w-4 h-4"
+                        style={{ transform: "translateY(1px)" }}
+                      />
                     </a>
                     <a
                       href={`${PROD_BASE_URL}${t.path}`}
