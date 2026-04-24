@@ -362,6 +362,19 @@ export function PillSelect({
           opacity: isPending ? 0.6 : 1,
         }}
         onPointerDown={captureScrollOnPointerDown}
+        onKeyDown={(e) => {
+          if (open) return; // popup will handle
+          if (e.metaKey || e.ctrlKey || e.altKey) return;
+          // Single-char shortcut: pick option whose name starts with the key
+          const key = e.key.toLowerCase();
+          if (key.length !== 1) return;
+          const opt = options.find((o) => o.name[0]?.toLowerCase() === key);
+          if (!opt) return;
+          if (opt.id === value) return;
+          e.preventDefault();
+          setOptimistic(opt.id);
+          startTransition(() => onSave(opt.id));
+        }}
       >
         {current?.name ?? "—"}
       </PopoverTrigger>

@@ -19,10 +19,17 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { EditableText } from "@/components/editable-text";
 import { Empty } from "@/components/empty";
 import { Pill, PillSelect, type PillOption } from "@/components/pill";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { RowContextMenu } from "@/components/row-context-menu";
 import { SortableHeaderCell } from "@/components/sortable-header-cell";
 import { handleGridKeyDown } from "@/components/grid-keyboard-nav";
 import {
+  bulkSetBubbleDistribution,
+  bulkSetImageFolderStatus,
   deleteImageFromList,
   setImageFolderStatus,
   updateBubbleDistribution,
@@ -72,9 +79,16 @@ export interface TagOption {
   name: string;
 }
 
-const STATIC_COLUMN_KEYS = ["image", "name", "bubble_distribution", "tags"] as const;
+const STATIC_COLUMN_KEYS = [
+  "select",
+  "image",
+  "name",
+  "bubble_distribution",
+  "tags",
+] as const;
 
 const STATIC_HEADER_LABELS: Record<string, string> = {
+  select: "",
   image: "Image",
   name: "Name",
   bubble_distribution: "Bubble Distribution",
@@ -279,6 +293,29 @@ export function ListTable({
 
   const tableWrapperRef = useRef<HTMLDivElement>(null);
   const [scrollMargin, setScrollMargin] = useState(0);
+  const [lightbox, setLightbox] = useState<{
+    url: string;
+    name: string;
+    isVideo: boolean;
+  } | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkPicker, setBulkPicker] = useState<
+    | { kind: "bubble" }
+    | { kind: "folder"; folderId: string; folderName: string }
+    | null
+  >(null);
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
+  const selectAllVisible = () => {
+    setSelectedIds(new Set(rows.map((r) => r.image_id)));
+  };
   useEffect(() => {
     if (tableWrapperRef.current) {
       setScrollMargin(tableWrapperRef.current.offsetTop);
@@ -310,18 +347,45 @@ export function ListTable({
     "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]";
 
   const cellRenderers: Record<string, (row: ListRow) => React.ReactNode> = {
+    select: (row) => (
+      <td
+        key="select"
+        className={cellClass}
+        style={{ textAlign: "center", verticalAlign: "top" }}
+      >
+        <input
+          type="checkbox"
+          checked={selectedIds.has(row.image_id)}
+          onChange={() => toggleSelected(row.image_id)}
+          aria-label={`Select ${row.image_name}`}
+        />
+      </td>
+    ),
     image: (row) => (
       <td
         key="image"
         className="bg-[color:var(--cell-bg)]"
         style={{ padding: 0, verticalAlign: "top" }}
       >
-        <a
-          href={row.public_url}
-          target="_blank"
-          rel="noreferrer"
-          title={row.image_name}
-          style={{ display: "block", lineHeight: 0 }}
+        <button
+          type="button"
+          onClick={() =>
+            setLightbox({
+              url: row.public_url,
+              name: row.image_name,
+              isVideo: row.is_video,
+            })
+          }
+          title={`${row.image_name} — click to enlarge`}
+          style={{
+            display: "block",
+            width: "100%",
+            padding: 0,
+            border: 0,
+            background: "transparent",
+            cursor: "zoom-in",
+            lineHeight: 0,
+          }}
         >
           {row.is_video ? (
             <video
@@ -338,7 +402,7 @@ export function ListTable({
               style={{ width: "100%", height: "auto", display: "block" }}
             />
           )}
-        </a>
+        </button>
       </td>
     ),
     name: (row) => (
@@ -422,6 +486,19 @@ export function ListTable({
         groupBy={groupBy}
         onChange={setGroupBy}
       />
+      {selectedIds.size > 0 && (
+        <BulkActionBar
+          count={selectedIds.size}
+          onClear={clearSelection}
+          onSelectAll={selectAllVisible}
+          totalCount={rows.length}
+          folders={folders}
+          onPickBubble={() => setBulkPicker({ kind: "bubble" })}
+          onPickFolder={(f) =>
+            setBulkPicker({ kind: "folder", folderId: f.id, folderName: f.name })
+          }
+        />
+      )}
       <div ref={tableWrapperRef} className="overflow-x-auto">
         <DndContext
           sensors={sensors}
@@ -638,6 +715,65 @@ export function ListTable({
         </table>
         </DndContext>
       </div>
+      <BulkPickerDialog
+        picker={bulkPicker}
+        onClose={() => setBulkPicker(null)}
+        bubbleOptions={bubbleDistributionOptions}
+        selectedIds={[...selectedIds]}
+        onApplyBubble={(statusId) => {
+          void bulkSetBubbleDistribution([...selectedIds], statusId);
+          setBulkPicker(null);
+          clearSelection();
+        }}
+        onApplyFolder={(folderId, statusId) => {
+          void bulkSetImageFolderStatus([...selectedIds], folderId, statusId);
+          setBulkPicker(null);
+          clearSelection();
+        }}
+      />
+      <Dialog
+        open={lightbox !== null}
+        onOpenChange={(o) => {
+          if (!o) setLightbox(null);
+        }}
+      >
+        <DialogContent
+          className="sm:max-w-[min(95vw,1600px)] p-0 overflow-hidden bg-transparent border-0 shadow-none"
+          showCloseButton
+        >
+          <DialogTitle className="sr-only">
+            {lightbox?.name ?? "Image preview"}
+          </DialogTitle>
+          {lightbox &&
+            (lightbox.isVideo ? (
+              <video
+                src={lightbox.url}
+                controls
+                autoPlay
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  maxHeight: "90vh",
+                  display: "block",
+                  background: "#000",
+                }}
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={lightbox.url}
+                alt={lightbox.name}
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  maxHeight: "90vh",
+                  display: "block",
+                  objectFit: "contain",
+                }}
+              />
+            ))}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
@@ -814,3 +950,146 @@ function renderTree(
 
   return out;
 }
+
+// ---------- Bulk action bar ----------
+
+function BulkActionBar({
+  count,
+  totalCount,
+  onClear,
+  onSelectAll,
+  folders,
+  onPickBubble,
+  onPickFolder,
+}: {
+  count: number;
+  totalCount: number;
+  onClear: () => void;
+  onSelectAll: () => void;
+  folders: FolderOption[];
+  onPickBubble: () => void;
+  onPickFolder: (f: FolderOption) => void;
+}) {
+  return (
+    <div
+      className="mb-3 flex flex-wrap items-center gap-2 px-3 py-2 rounded-md"
+      style={{
+        background: "var(--card)",
+        border: "1px solid var(--border)",
+      }}
+    >
+      <span className="text-sm">
+        <strong>{count}</strong> selected
+        {count < totalCount && (
+          <button
+            type="button"
+            className="themed-link ml-2"
+            onClick={onSelectAll}
+          >
+            Select all {totalCount}
+          </button>
+        )}
+      </span>
+      <span className="text-[color:var(--muted-foreground)] text-sm">
+        Set:
+      </span>
+      <button
+        type="button"
+        className="themed-button-sm"
+        onClick={onPickBubble}
+      >
+        Bubble Distribution…
+      </button>
+      <details className="relative">
+        <summary
+          className="themed-button-sm cursor-pointer list-none"
+          style={{ display: "inline-block" }}
+        >
+          Folder…
+        </summary>
+        <div
+          className="absolute z-10 mt-1 max-h-[300px] overflow-y-auto rounded-md p-1"
+          style={{
+            background: "var(--card)",
+            border: "1px solid var(--border)",
+            boxShadow: "var(--dropdown-shadow)",
+            minWidth: 220,
+          }}
+        >
+          {folders.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              className="block w-full text-left px-2 py-1 text-sm rounded-sm hover:bg-[color:var(--accent)]"
+              onClick={() => onPickFolder(f)}
+            >
+              {f.name}
+            </button>
+          ))}
+        </div>
+      </details>
+      <button
+        type="button"
+        className="themed-button-sm ml-auto"
+        onClick={onClear}
+      >
+        Clear selection
+      </button>
+    </div>
+  );
+}
+
+function BulkPickerDialog({
+  picker,
+  onClose,
+  bubbleOptions,
+  selectedIds,
+  onApplyBubble,
+  onApplyFolder,
+}: {
+  picker:
+    | { kind: "bubble" }
+    | { kind: "folder"; folderId: string; folderName: string }
+    | null;
+  onClose: () => void;
+  bubbleOptions: PillOption[];
+  selectedIds: string[];
+  onApplyBubble: (statusId: string) => void;
+  onApplyFolder: (folderId: string, statusId: string) => void;
+}) {
+  const open = picker !== null;
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-[420px]">
+        <DialogTitle>
+          {picker?.kind === "folder"
+            ? `Set "${picker.folderName}" on ${selectedIds.length} image${
+                selectedIds.length === 1 ? "" : "s"
+              }`
+            : `Set Bubble Distribution on ${selectedIds.length} image${
+                selectedIds.length === 1 ? "" : "s"
+              }`}
+        </DialogTitle>
+        <div className="flex flex-wrap gap-2 mt-3">
+          {bubbleOptions.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              style={{ background: "none", border: 0, padding: 0, cursor: "pointer" }}
+              onClick={() => {
+                if (picker?.kind === "folder") {
+                  onApplyFolder(picker.folderId, opt.id);
+                } else if (picker?.kind === "bubble") {
+                  onApplyBubble(opt.id);
+                }
+              }}
+            >
+              <Pill color={opt.color}>{opt.name}</Pill>
+            </button>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+

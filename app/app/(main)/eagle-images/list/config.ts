@@ -1,6 +1,7 @@
 export const LIST_STORAGE_KEY = "eagle-images-list";
 
 export const LIST_DEFAULT_WIDTHS: Record<string, number> = {
+  select: 36,
   image: 140,
   name: 280,
   bubble_distribution: 160,

@@ -30,6 +30,60 @@ export async function updateImageName(imageId: string, name: string) {
 }
 
 /**
+ * Bulk-set Bubble Distribution on many images at once.
+ */
+export async function bulkSetBubbleDistribution(
+  imageIds: string[],
+  bubbleDistributionId: string,
+) {
+  if (imageIds.length === 0) return;
+  const value =
+    bubbleDistributionId && bubbleDistributionId.length > 0
+      ? Number(bubbleDistributionId)
+      : null;
+  await poolV002.query(
+    `UPDATE eagle_images SET bubble_distribution_id = $1, updated_at = now()
+     WHERE id = ANY($2::uuid[])`,
+    [value, imageIds],
+  );
+  revalidatePath("/eagle-images/list");
+  revalidatePath("/eagle-images");
+}
+
+/**
+ * Bulk-set folder membership status on many images at once.
+ */
+export async function bulkSetImageFolderStatus(
+  imageIds: string[],
+  folderId: string,
+  statusId: string,
+) {
+  if (imageIds.length === 0) return;
+  const statusIdNum = Number(statusId);
+  const sortRow = await poolV002.query<{ id: number }>(
+    `SELECT id FROM eagle_bubble_distributions WHERE name = 'Sort' LIMIT 1`,
+  );
+  const sortId = sortRow.rows[0]?.id;
+  if (sortId !== undefined && statusIdNum === sortId) {
+    await poolV002.query(
+      `DELETE FROM eagle_image_folders WHERE folder_id = $1 AND image_id = ANY($2::uuid[])`,
+      [folderId, imageIds],
+    );
+  } else {
+    // Build a multi-row INSERT ... ON CONFLICT
+    const values = imageIds.map((_, i) => `($${i + 3}::uuid, $1, $2)`).join(",");
+    await poolV002.query(
+      `INSERT INTO eagle_image_folders (image_id, folder_id, status_id)
+       VALUES ${values}
+       ON CONFLICT (image_id, folder_id) DO UPDATE SET status_id = EXCLUDED.status_id`,
+      [folderId, statusIdNum, ...imageIds],
+    );
+  }
+  revalidatePath("/eagle-images/list");
+  revalidatePath("/eagle-images");
+}
+
+/**
  * Set the image's membership status in a specific folder.
  *   statusId = Yes   → upsert a row with status=Yes
  *   statusId = No    → upsert a row with status=No
