@@ -92,14 +92,15 @@ export function TableFeaturesGrid({
 
   const totalColSpan = 3 + features.length;
 
-  // Each sticky column's "left" must include the cumulative border-spacing
-  // (2px from theme --row-gap) — otherwise the gaps between Page/Go/Display
-  // collapse during horizontal scroll and the column dividers disappear.
+  // Each sticky column's "left" is the cumulative widths + border-spacing of
+  // the columns to its left. Col 0 sits flush at left=0 so the 2px left
+  // border-spacing of the table doesn't leave a gap where scrolling content
+  // can leak through.
   const GAP = 2;
   const stickyOffsets = [
-    GAP,
-    GAP + FIXED_COL_PAGE + GAP,
-    GAP + FIXED_COL_PAGE + GAP + FIXED_COL_GO + GAP,
+    0,
+    FIXED_COL_PAGE + GAP,
+    FIXED_COL_PAGE + GAP + FIXED_COL_GO + GAP,
   ];
   // Inner dividers (between pinned cols) fully cover the 2px border-spacing gap
   // so no scrolling-cell pixels leak through. The outer divider (pinned→scroll
