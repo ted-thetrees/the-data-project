@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { AppWindow, ExternalLink } from "lucide-react";
 import { PillSelect, type PillOption } from "@/components/pill";
 import { EditableText } from "@/components/editable-text";
 import { RowContextMenu } from "@/components/row-context-menu";
@@ -38,8 +39,7 @@ export interface CoverageRow {
 }
 
 const FIXED_COL_TABLE = 240;
-const FIXED_COL_PATH = 180;
-const FIXED_COL_BROWSER = 320;
+const FIXED_COL_GO = 80;
 const FEATURE_COL_WIDTH = 140;
 const PROD_BASE_URL = "https://data.ifnotfor.com";
 
@@ -73,8 +73,7 @@ export function TableFeaturesGrid({
 
   const totalWidth =
     FIXED_COL_TABLE +
-    FIXED_COL_PATH +
-    FIXED_COL_BROWSER +
+    FIXED_COL_GO +
     features.length * FEATURE_COL_WIDTH;
 
   const headerClass =
@@ -84,7 +83,7 @@ export function TableFeaturesGrid({
   const compactCellClass =
     "px-1 py-1 bg-[color:var(--cell-bg)] text-center";
 
-  const totalColSpan = 3 + features.length;
+  const totalColSpan = 2 + features.length;
 
   return (
     <div className="overflow-x-auto">
@@ -99,8 +98,7 @@ export function TableFeaturesGrid({
       >
         <colgroup>
           <col style={{ width: FIXED_COL_TABLE }} />
-          <col style={{ width: FIXED_COL_PATH }} />
-          <col style={{ width: FIXED_COL_BROWSER }} />
+          <col style={{ width: FIXED_COL_GO }} />
           {features.map((f) => (
             <col key={f.id} style={{ width: FEATURE_COL_WIDTH }} />
           ))}
@@ -109,7 +107,7 @@ export function TableFeaturesGrid({
         <thead>
           {/* Category super-header */}
           <tr>
-            <th className={headerClass} colSpan={3}></th>
+            <th className={headerClass} colSpan={2}></th>
             {byCategory.map(([category, fs]) => (
               <th
                 key={`cat-${category}`}
@@ -125,8 +123,9 @@ export function TableFeaturesGrid({
           {/* Feature labels */}
           <tr>
             <th className={headerClass}>Table</th>
-            <th className={headerClass}>Path</th>
-            <th className={headerClass}>Browser URL</th>
+            <th className={headerClass} style={{ textAlign: "center" }}>
+              Go
+            </th>
             {features.map((f) => (
               <th
                 key={f.id}
@@ -167,7 +166,7 @@ export function TableFeaturesGrid({
           <tr>
             <td
               className={cellClass}
-              colSpan={3}
+              colSpan={2}
               style={{
                 fontStyle: "italic",
                 color: "var(--muted-foreground)",
@@ -217,7 +216,6 @@ export function TableFeaturesGrid({
               Default for new tables
             </td>
             <td className={cellClass} />
-            <td className={cellClass} />
             {features.map((f) => (
               <td key={`def-${f.id}`} className={compactCellClass}>
                 <button
@@ -245,15 +243,28 @@ export function TableFeaturesGrid({
                   onSave={(v) => updateCatalogName(t.id, v)}
                 />
               </td>
-              <td className={cellClass}>
+              <td className={cellClass} style={{ textAlign: "center" }}>
                 {t.path ? (
-                  <a
-                    href={t.path}
-                    className="themed-link"
-                    title={`Open ${t.path} in Data`}
-                  >
-                    {t.path}
-                  </a>
+                  <div className="inline-flex items-center gap-2">
+                    <a
+                      href={t.path}
+                      className="themed-link inline-flex items-center"
+                      title={`Open ${t.path} in Data app`}
+                      aria-label="Open in Data app"
+                    >
+                      <AppWindow className="w-4 h-4" />
+                    </a>
+                    <a
+                      href={`${PROD_BASE_URL}${t.path}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="themed-link inline-flex items-center"
+                      title={`Open ${t.path} in default browser`}
+                      aria-label="Open in default browser"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
                 ) : (
                   <EditableText
                     value=""
@@ -261,20 +272,6 @@ export function TableFeaturesGrid({
                     placeholder="/path"
                   />
                 )}
-              </td>
-              <td className={cellClass}>
-                {t.path ? (
-                  <a
-                    href={`${PROD_BASE_URL}${t.path}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="themed-link font-mono"
-                    style={{ fontSize: "var(--font-size-xs)" }}
-                    title="Open in default browser"
-                  >
-                    {`${PROD_BASE_URL}${t.path}`}
-                  </a>
-                ) : null}
               </td>
               {features.map((f) => {
                 const statusId = coverageMap.get(`${t.id}:${f.id}`) ?? null;
