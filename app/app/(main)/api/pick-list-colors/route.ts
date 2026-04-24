@@ -33,6 +33,7 @@ const SOURCE_TABLES: Record<string, string> = {
   eagle_bubble_distributions: "eagle_bubble_distributions",
   tables_feature_statuses: "tables_feature_statuses",
   tables_display_types: "tables_display_types",
+  eagle_folders: "eagle_folders",
 };
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;

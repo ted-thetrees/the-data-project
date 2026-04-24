@@ -157,6 +157,17 @@ export function getTablesFeatureStatuses() {
   );
 }
 
+export async function getEagleFolders(): Promise<Status[]> {
+  // Show the full folder path as the picklist label so nested folders with
+  // duplicate names (e.g., "Yes" under multiple parents) are distinguishable.
+  const r = await poolV002.query(
+    `SELECT id, full_path AS name, COALESCE(color, '') AS color
+     FROM eagle_folders
+     ORDER BY sort_order NULLS LAST, full_path`,
+  );
+  return r.rows;
+}
+
 export async function getPeopleMetroAreas(): Promise<Status[]> {
   const result = await poolV002.query(
     `SELECT id::text, name, full_name, COALESCE(color, '') as color

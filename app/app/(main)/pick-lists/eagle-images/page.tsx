@@ -1,7 +1,11 @@
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
 import { PicklistStatusTable } from "../picklist-tables";
-import { getPalettes, getEagleBubbleDistributions } from "../lib";
+import {
+  getPalettes,
+  getEagleBubbleDistributions,
+  getEagleFolders,
+} from "../lib";
 
 export const metadata = { title: "Pick Lists · Eagle Images" };
 export const dynamic = "force-dynamic";
@@ -25,14 +29,17 @@ function PickListSection({
 }
 
 export default async function PickListsEagleImagesPage() {
-  const [bubbleDistributions, palettes] = await Promise.all([
+  const [bubbleDistributions, folders, palettes] = await Promise.all([
     getEagleBubbleDistributions(),
+    getEagleFolders(),
     getPalettes(),
   ]);
 
   return (
     <PageShell title="Pick Lists · Eagle Images">
-      <Realtime tables={["eagle_bubble_distributions", "color_palettes"]} />
+      <Realtime
+        tables={["eagle_bubble_distributions", "eagle_folders", "color_palettes"]}
+      />
       <div className="space-y-10">
         <PickListSection title="Bubble Distribution" usedBy="Eagle Images · List">
           <PicklistStatusTable
@@ -40,6 +47,18 @@ export default async function PickListsEagleImagesPage() {
             rows={bubbleDistributions}
             palettes={palettes}
             storageKey="pick-lists:eagle_bubble_distributions"
+            sortable
+          />
+        </PickListSection>
+        <PickListSection
+          title="Folders"
+          usedBy="Eagle Images · Grid and Eagle Images · List"
+        >
+          <PicklistStatusTable
+            source="eagle_folders"
+            rows={folders}
+            palettes={palettes}
+            storageKey="pick-lists:eagle_folders"
             sortable
           />
         </PickListSection>

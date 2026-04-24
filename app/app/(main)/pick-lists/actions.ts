@@ -8,7 +8,7 @@ type SourceConfig = {
   hasSortOrder: boolean;
   /** Postgres type of the table's id column. Defaults to "bigint" — the
    *  Projects-family picklists use "uuid", so reorder needs the right cast. */
-  idType?: "bigint" | "uuid";
+  idType?: "bigint" | "uuid" | "text";
   // Extra NOT NULL columns that need defaults on insert
   extraInsertDefaults?: Record<string, string>;
 };
@@ -57,6 +57,11 @@ const SOURCE_TABLES: Record<string, SourceConfig> = {
   tables_display_types: {
     table: "tables_display_types",
     hasSortOrder: true,
+  },
+  eagle_folders: {
+    table: "eagle_folders",
+    hasSortOrder: true,
+    idType: "text",
   },
 };
 
@@ -211,7 +216,12 @@ export async function reorderPicklistOptions(
     throw new Error(`${source} does not support reordering`);
   }
   if (orderedIds.length === 0) return;
-  const arrayType = config.idType === "uuid" ? "uuid[]" : "bigint[]";
+  const arrayType =
+    config.idType === "uuid"
+      ? "uuid[]"
+      : config.idType === "text"
+        ? "text[]"
+        : "bigint[]";
   await poolV002.query(
     `UPDATE ${config.table} AS t
        SET sort_order = u.ord
