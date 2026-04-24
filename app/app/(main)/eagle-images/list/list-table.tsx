@@ -458,6 +458,12 @@ export function ListTable({
                   orderedKeys,
                   cellRenderers,
                   (row) => deleteImageFromList(row.image_id),
+                  (group) => {
+                    if (group.field === "bubble_distribution" && group.value) {
+                      return bubbleById.get(group.value)?.color ?? null;
+                    }
+                    return null;
+                  },
                 )}
           </tbody>
         </table>
@@ -538,6 +544,7 @@ function renderTree(
   orderedKeys: string[],
   cellRenderers: Record<string, (row: ListRow) => React.ReactNode>,
   onDelete: (row: ListRow) => void | Promise<void>,
+  colorFor: (group: GroupNode<ListRow>) => string | null,
 ): React.ReactNode[] {
   const flat = flatten(tree, collapsed, []);
   const spanStartAt: Map<number, LevelSpan>[] = [];
@@ -562,6 +569,7 @@ function renderTree(
         frow.kind === "collapsed" && frow.group.level === L;
 
       if (isCollapsedLevel) {
+        const color = colorFor(span.group);
         icicleCells.push(
           <td
             key={`ice-${L}`}
@@ -573,9 +581,7 @@ function renderTree(
           >
             <div className="flex items-center gap-2">
               <ChevronRight className="w-3 h-3 shrink-0" />
-              <span className="font-[number:var(--font-weight-medium)]">
-                {span.group.label || "(unnamed)"}
-              </span>
+              <Pill color={color}>{span.group.label || "(unnamed)"}</Pill>
               <span className="text-[color:var(--muted-foreground)] text-xs">
                 ({span.group.count})
               </span>
@@ -586,6 +592,7 @@ function renderTree(
         break;
       }
 
+      const color = colorFor(span.group);
       icicleCells.push(
         <td
           key={`ice-${L}`}
@@ -596,9 +603,7 @@ function renderTree(
         >
           <div className="flex items-start gap-1">
             <ChevronDown className="w-3 h-3 mt-1 shrink-0" />
-            <span className="font-[number:var(--font-weight-medium)]">
-              {span.group.label || "(unnamed)"}
-            </span>
+            <Pill color={color}>{span.group.label || "(unnamed)"}</Pill>
             <span className="text-[color:var(--muted-foreground)] text-xs ml-1">
               ({span.group.count})
             </span>
