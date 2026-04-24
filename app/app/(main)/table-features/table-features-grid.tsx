@@ -247,11 +247,10 @@ export function TableFeaturesGrid({
                 key={`desc-${f.id}`}
                 className={cellClass}
                 style={{
-                  fontSize: "var(--font-size-xs)",
                   color: "var(--muted-foreground)",
-                  lineHeight: 1.35,
+                  lineHeight: 1.5,
                   verticalAlign: "top",
-                  padding: "8px 6px",
+                  padding: "10px 12px",
                   whiteSpace: "normal",
                   wordBreak: "break-word",
                 }}
