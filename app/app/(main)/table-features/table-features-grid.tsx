@@ -39,7 +39,7 @@ export interface CoverageRow {
 
 const FIXED_COL_TABLE = 240;
 const FIXED_COL_PATH = 180;
-const FEATURE_COL_WIDTH = 96;
+const FEATURE_COL_WIDTH = 140;
 
 export function TableFeaturesGrid({
   catalog,
@@ -156,6 +156,39 @@ export function TableFeaturesGrid({
                 background: "transparent",
               }}
             />
+          </tr>
+
+          {/* Description row — what each feature actually means */}
+          <tr>
+            <td
+              className={cellClass}
+              colSpan={2}
+              style={{
+                fontStyle: "italic",
+                color: "var(--muted-foreground)",
+                verticalAlign: "top",
+              }}
+            >
+              Description
+            </td>
+            {features.map((f) => (
+              <td
+                key={`desc-${f.id}`}
+                className={cellClass}
+                style={{
+                  fontSize: "var(--font-size-xs)",
+                  color: "var(--muted-foreground)",
+                  lineHeight: 1.35,
+                  verticalAlign: "top",
+                  padding: "8px 6px",
+                  whiteSpace: "normal",
+                  wordBreak: "break-word",
+                }}
+                title={f.description ?? ""}
+              >
+                {f.description ?? "—"}
+              </td>
+            ))}
           </tr>
 
           {/* + New */}
