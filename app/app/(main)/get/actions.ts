@@ -44,6 +44,22 @@ export async function createGetItemInGroup(prefill: Record<string, string | null
   revalidateGetPage();
 }
 
+export async function reorderGetRows(orderedIds: string[]) {
+  if (orderedIds.length === 0) return;
+  const values = orderedIds.map((_, i) => `($${i * 2 + 1}::bigint, $${i * 2 + 2}::int)`).join(",");
+  const params: (string | number)[] = [];
+  orderedIds.forEach((id, i) => {
+    params.push(id, i);
+  });
+  await poolV002.query(
+    `UPDATE get g SET sort_order = v.sort_order
+     FROM (VALUES ${values}) AS v(id, sort_order)
+     WHERE g.id = v.id`,
+    params,
+  );
+  revalidateGetPage();
+}
+
 export async function deleteGetItem(id: string) {
   await poolV002.query(`DELETE FROM get WHERE id = $1`, [id]);
   revalidateGetPage();

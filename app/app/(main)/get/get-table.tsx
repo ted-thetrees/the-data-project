@@ -13,8 +13,11 @@ import {
   SortableContext,
   arrayMove,
   horizontalListSortingStrategy,
+  verticalListSortingStrategy,
+  useSortable,
 } from "@dnd-kit/sortable";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { CSS } from "@dnd-kit/utilities";
+import { ChevronDown, ChevronRight, GripVertical } from "lucide-react";
 import { Pill, PillSelect, type PillOption } from "@/components/pill";
 import { EditableText, EditableTextWrap } from "@/components/editable-text";
 import { EditableLink } from "@/components/editable-link";
@@ -41,6 +44,7 @@ import {
   createGetItem,
   createGetItemInGroup,
   deleteGetItem,
+  reorderGetRows,
   updateGetName,
   updateGetCategory,
   updateGetStatus,
@@ -98,6 +102,59 @@ const createStatus = (name: string) =>
   createPicklistOptionNamed("get_statuses", name);
 const createSource = (name: string) =>
   createPicklistOptionNamed("get_sources", name);
+
+function SortableGetRow({
+  rowId,
+  onDelete,
+  itemLabel,
+  gripWidth,
+  children,
+}: {
+  rowId: string;
+  onDelete: () => void | Promise<void>;
+  itemLabel: string;
+  gripWidth: number;
+  children: React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: rowId });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.85 : undefined,
+    position: isDragging ? "relative" : undefined,
+    zIndex: isDragging ? 2 : undefined,
+  };
+  return (
+    <RowContextMenu
+      onDelete={onDelete}
+      itemLabel={itemLabel}
+      rowStyle={style}
+      trProps={{ ref: setNodeRef, ...attributes }}
+    >
+      <td
+        {...listeners}
+        className="cursor-grab select-none bg-[color:var(--cell-bg)] text-[color:var(--muted-foreground)] align-middle"
+        style={{
+          width: gripWidth,
+          padding: 0,
+          textAlign: "center",
+          touchAction: "none",
+        }}
+        title="Drag to reorder"
+      >
+        <GripVertical className="inline-block w-3 h-3 opacity-60 hover:opacity-100" />
+      </td>
+      {children}
+    </RowContextMenu>
+  );
+}
 
 type FlatRow =
   | { kind: "data"; row: GetRow; path: GroupNode<GetRow>[] }
@@ -268,16 +325,29 @@ export function GetTable({
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
+  const [, startReorder] = useTransition();
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const activeId = String(active.id);
     const overId = String(over.id);
-    if (!orderedKeys.includes(activeId)) return;
-    const oldIndex = orderedKeys.indexOf(activeId);
-    const newIndex = orderedKeys.indexOf(overId);
-    if (oldIndex < 0 || newIndex < 0) return;
-    setColumnOrder(arrayMove(orderedKeys, oldIndex, newIndex));
+    // Column drag (header reorder)
+    if (orderedKeys.includes(activeId)) {
+      const oldIndex = orderedKeys.indexOf(activeId);
+      const newIndex = orderedKeys.indexOf(overId);
+      if (oldIndex < 0 || newIndex < 0) return;
+      setColumnOrder(arrayMove(orderedKeys, oldIndex, newIndex));
+      return;
+    }
+    // Row drag (only in flat / ungrouped view for now)
+    if (iceLevels === 0) {
+      const ids = rows.map((r) => r.id);
+      const oldIdx = ids.indexOf(activeId);
+      const newIdx = ids.indexOf(overId);
+      if (oldIdx < 0 || newIdx < 0) return;
+      const next = arrayMove(ids, oldIdx, newIdx);
+      startReorder(() => reorderGetRows(next));
+    }
   };
 
   const iceWidth = (level: number) => {
@@ -293,8 +363,10 @@ export function GetTable({
     (sum, _, i) => sum + iceWidth(i),
     0,
   );
-  const totalWidth = userColsWidth + iceColsWidth;
-  const totalColumnCount = iceLevels + orderedKeys.length;
+  const gripCols = iceLevels === 0 ? 1 : 0; // grip column only in flat view
+  const gripWidth = 22;
+  const totalWidth = userColsWidth + iceColsWidth + gripCols * gripWidth;
+  const totalColumnCount = iceLevels + gripCols + orderedKeys.length;
 
   const headerClass =
     "relative text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
@@ -516,6 +588,7 @@ export function GetTable({
               {Array.from({ length: iceLevels }).map((_, i) => (
                 <col key={`ice-${i}`} style={{ width: iceWidth(i) }} />
               ))}
+              {gripCols > 0 && <col key="grip" style={{ width: gripWidth }} />}
               {orderedKeys.map((k) => (
                 <col
                   key={k}
@@ -539,6 +612,14 @@ export function GetTable({
                     />
                   </th>
                 ))}
+                {gripCols > 0 && (
+                  <th
+                    key="grip-h"
+                    className={headerClass}
+                    style={{ width: gripWidth }}
+                    aria-hidden
+                  />
+                )}
                 <SortableContext
                   items={orderedKeys}
                   strategy={horizontalListSortingStrategy}
@@ -597,17 +678,26 @@ export function GetTable({
                   }}
                 />
               </tr>
-              {iceLevels === 0
-                ? rows.map((row) => (
-                    <RowContextMenu
+              {iceLevels === 0 ? (
+                <SortableContext
+                  items={rows.map((r) => r.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {rows.map((row) => (
+                    <SortableGetRow
                       key={row.id}
+                      rowId={row.id}
                       onDelete={() => deleteGetItem(row.id)}
                       itemLabel={`"${row.name}"`}
+                      gripWidth={gripWidth}
                     >
                       {orderedKeys.map((k) => cellRenderers[k]?.(row))}
-                    </RowContextMenu>
-                  ))
-                : renderGrouped()}
+                    </SortableGetRow>
+                  ))}
+                </SortableContext>
+              ) : (
+                renderGrouped()
+              )}
             </tbody>
           </table>
         </DndContext>
