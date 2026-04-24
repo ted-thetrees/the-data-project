@@ -252,6 +252,31 @@ export function ListTable({
   const totalWidth = userColsWidth + iceColsWidth;
   const totalColumnCount = iceLevels + orderedKeys.length;
 
+  // Build the unified flat list once: ungrouped is just the data rows; grouped
+  // includes data + collapsed-summary + add-row markers from flatten().
+  const flatRows: FlatRow[] = useMemo(() => {
+    if (iceLevels === 0) {
+      return rows.map((row) => ({ kind: "data", row, path: [] }));
+    }
+    return flatten(tree, collapsed, []);
+  }, [iceLevels, rows, tree, collapsed]);
+
+  // Pre-compute icicle spans per level for grouped rendering.
+  const spanCoverage: Map<number, LevelSpan>[] = useMemo(() => {
+    const result: Map<number, LevelSpan>[] = [];
+    for (let L = 0; L < iceLevels; L++) {
+      const spans = computeSpans(flatRows, L);
+      const map = new Map<number, LevelSpan>();
+      for (const s of spans) {
+        for (let i = s.startIndex; i < s.startIndex + s.rowSpan; i++) {
+          map.set(i, s);
+        }
+      }
+      result.push(map);
+    }
+    return result;
+  }, [flatRows, iceLevels]);
+
   const tableWrapperRef = useRef<HTMLDivElement>(null);
   const [scrollMargin, setScrollMargin] = useState(0);
   useEffect(() => {
@@ -260,7 +285,7 @@ export function ListTable({
     }
   }, []);
   const rowVirtualizer = useWindowVirtualizer({
-    count: iceLevels === 0 ? rows.length : 0,
+    count: flatRows.length,
     estimateSize: () => 116,
     overscan: 8,
     scrollMargin,
@@ -455,67 +480,143 @@ export function ListTable({
                 }}
               />
             </tr>
-            {iceLevels === 0
-              ? (() => {
-                  const items = rowVirtualizer.getVirtualItems();
-                  const total = rowVirtualizer.getTotalSize();
-                  const first = items[0];
-                  const last = items[items.length - 1];
-                  const offsetTop = first
-                    ? first.start - rowVirtualizer.options.scrollMargin
-                    : 0;
-                  const offsetBottom =
-                    last && first
-                      ? total - last.end
-                      : 0;
-                  return (
-                    <>
-                      {offsetTop > 0 && (
-                        <tr aria-hidden="true">
-                          <td
-                            colSpan={totalColumnCount}
-                            style={{ height: offsetTop, padding: 0, background: "transparent" }}
-                          />
-                        </tr>
-                      )}
-                      {items.map((virtualRow) => {
-                        const row = rows[virtualRow.index];
-                        return (
-                          <RowContextMenu
-                            key={row.image_id}
-                            onDelete={() => deleteImageFromList(row.image_id)}
-                            itemLabel={`"${row.image_name}"`}
-                          >
-                            {orderedKeys.map((k) => cellRenderers[k]?.(row))}
-                          </RowContextMenu>
-                        );
-                      })}
-                      {offsetBottom > 0 && (
-                        <tr aria-hidden="true">
-                          <td
-                            colSpan={totalColumnCount}
-                            style={{ height: offsetBottom, padding: 0, background: "transparent" }}
-                          />
-                        </tr>
-                      )}
-                    </>
+            {(() => {
+              const items = rowVirtualizer.getVirtualItems();
+              const total = rowVirtualizer.getTotalSize();
+              const first = items[0];
+              const last = items[items.length - 1];
+              const offsetTop = first ? first.start - scrollMargin : 0;
+              const offsetBottom = last && first ? total - last.end : 0;
+              const firstIdx = first?.index ?? 0;
+              const lastIdx = last?.index ?? -1;
+
+              const colorFor = (group: GroupNode<ListRow>) => {
+                if (group.field === "bubble_distribution" && group.value) {
+                  return bubbleById.get(group.value)?.color ?? null;
+                }
+                return null;
+              };
+
+              const out: React.ReactNode[] = [];
+              if (offsetTop > 0) {
+                out.push(
+                  <tr key="vrow-top" aria-hidden="true">
+                    <td
+                      colSpan={totalColumnCount}
+                      style={{ height: offsetTop, padding: 0, background: "transparent" }}
+                    />
+                  </tr>,
+                );
+              }
+
+              for (const v of items) {
+                const i = v.index;
+                const frow = flatRows[i];
+                if (!frow) continue;
+
+                // Build icicle cells, clipped to the visible window.
+                const icicleCells: React.ReactNode[] = [];
+                let collapsedRight = false;
+                for (let L = 0; L < iceLevels; L++) {
+                  const span = spanCoverage[L].get(i);
+                  if (!span) continue;
+                  // Render the icicle on the FIRST visible row of this span.
+                  const visibleStart = Math.max(span.startIndex, firstIdx);
+                  const visibleEnd = Math.min(
+                    span.startIndex + span.rowSpan - 1,
+                    lastIdx,
                   );
-                })()
-              : renderTree(
-                  tree,
-                  collapsed,
-                  toggleCollapsed,
-                  iceLevels,
-                  orderedKeys,
-                  cellRenderers,
-                  (row) => deleteImageFromList(row.image_id),
-                  (group) => {
-                    if (group.field === "bubble_distribution" && group.value) {
-                      return bubbleById.get(group.value)?.color ?? null;
-                    }
-                    return null;
-                  },
-                )}
+                  if (i !== visibleStart) continue;
+                  const visRowSpan = visibleEnd - visibleStart + 1;
+                  const isCollapsedLevel =
+                    frow.kind === "collapsed" && frow.group.level === L;
+                  if (isCollapsedLevel) {
+                    const color = colorFor(span.group);
+                    icicleCells.push(
+                      <td
+                        key={`ice-${L}`}
+                        rowSpan={visRowSpan}
+                        colSpan={iceLevels - L + orderedKeys.length}
+                        className="themed-group-merged-cell cursor-pointer select-none"
+                        onClick={() => toggleCollapsed(span.group.path)}
+                        title="Expand"
+                      >
+                        <div className="flex items-center gap-2">
+                          <ChevronRight className="w-3 h-3 shrink-0" />
+                          <Pill color={color}>{span.group.label || "(unnamed)"}</Pill>
+                          <span className="text-[color:var(--muted-foreground)] text-xs">
+                            ({span.group.count})
+                          </span>
+                        </div>
+                      </td>,
+                    );
+                    collapsedRight = true;
+                    break;
+                  }
+                  const color = colorFor(span.group);
+                  icicleCells.push(
+                    <td
+                      key={`ice-${L}`}
+                      rowSpan={visRowSpan}
+                      className="themed-group-merged-cell cursor-pointer select-none"
+                      onClick={() => toggleCollapsed(span.group.path)}
+                      title="Collapse"
+                    >
+                      <div className="flex items-start gap-1">
+                        <ChevronDown className="w-3 h-3 mt-1 shrink-0" />
+                        <Pill color={color}>{span.group.label || "(unnamed)"}</Pill>
+                        <span className="text-[color:var(--muted-foreground)] text-xs ml-1">
+                          ({span.group.count})
+                        </span>
+                      </div>
+                    </td>,
+                  );
+                }
+
+                if (frow.kind === "collapsed") {
+                  if (!collapsedRight) {
+                    icicleCells.push(
+                      <td
+                        key="placeholder"
+                        colSpan={orderedKeys.length}
+                        className="bg-[color:var(--cell-bg)]"
+                      />,
+                    );
+                  }
+                  out.push(
+                    <tr key={`c-${frow.group.path}-${i}`} className="themed-group-row">
+                      {icicleCells}
+                    </tr>,
+                  );
+                  continue;
+                }
+
+                // Data row
+                const row = frow.row;
+                out.push(
+                  <RowContextMenu
+                    key={row.image_id}
+                    onDelete={() => deleteImageFromList(row.image_id)}
+                    itemLabel={`"${row.image_name}"`}
+                  >
+                    {icicleCells}
+                    {orderedKeys.map((k) => cellRenderers[k]?.(row))}
+                  </RowContextMenu>,
+                );
+              }
+
+              if (offsetBottom > 0) {
+                out.push(
+                  <tr key="vrow-bottom" aria-hidden="true">
+                    <td
+                      colSpan={totalColumnCount}
+                      style={{ height: offsetBottom, padding: 0, background: "transparent" }}
+                    />
+                  </tr>,
+                );
+              }
+              return out;
+            })()}
           </tbody>
         </table>
         </DndContext>
