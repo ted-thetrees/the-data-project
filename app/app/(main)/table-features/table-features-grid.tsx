@@ -101,11 +101,13 @@ export function TableFeaturesGrid({
     GAP + FIXED_COL_PAGE + GAP,
     GAP + FIXED_COL_PAGE + GAP + FIXED_COL_GO + GAP,
   ];
-  // Paint the column divider explicitly on each sticky cell's right edge so
-  // it stays visible no matter what scrolls underneath. Use --border (gray)
-  // so the line is clearly visible against the white cell backgrounds.
-  const innerShadow = "1px 0 0 0 var(--border)";
-  const outerShadow = "1px 0 0 0 var(--border)";
+  // Inner dividers (between pinned cols) fully cover the 2px border-spacing gap
+  // so no scrolling-cell pixels leak through. The outer divider (pinned→scroll
+  // boundary) paints a wider page-bg gutter so sideways-moving content is
+  // completely hidden at the seam, then a 1px border line for crispness.
+  const innerShadow = "2px 0 0 0 var(--border)";
+  const outerShadow =
+    "10px 0 0 0 var(--background), 11px 0 0 0 var(--border)";
   const stickyCellStyle = (col: 0 | 1 | 2): React.CSSProperties => ({
     position: "sticky",
     left: stickyOffsets[col],
