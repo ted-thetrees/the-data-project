@@ -248,7 +248,7 @@ export function TableFeaturesGrid({
                   <div className="inline-flex items-end gap-2">
                     <a
                       href={t.path}
-                      className="themed-link inline-flex items-center"
+                      className="themed-link inline-flex items-center no-underline hover:no-underline"
                       title={`Open ${t.path} in Data app`}
                       aria-label="Open in Data app"
                     >
@@ -258,7 +258,7 @@ export function TableFeaturesGrid({
                       href={`${PROD_BASE_URL}${t.path}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="themed-link inline-flex items-center"
+                      className="themed-link inline-flex items-center no-underline hover:no-underline"
                       title={`Open ${t.path} in default browser`}
                       aria-label="Open in default browser"
                     >
