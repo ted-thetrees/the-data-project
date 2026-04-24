@@ -23,6 +23,7 @@ import { SortableHeaderCell } from "@/components/sortable-header-cell";
 import { handleGridKeyDown } from "@/components/grid-keyboard-nav";
 import {
   deleteImageFromList,
+  setImageFolderStatus,
   updateBubbleDistribution,
   updateImageName,
 } from "./actions";
@@ -53,7 +54,8 @@ export interface ListRow {
   width: number | null;
   height: number | null;
   bubble_distribution_id: string | null;
-  folder_ids: string[];
+  /** Map of folder_id → status_id for folders this image has a status on. */
+  folder_statuses: Record<string, string>;
   tag_ids: string[];
 }
 
@@ -69,20 +71,24 @@ export interface TagOption {
   name: string;
 }
 
-const GROUPABLE_KEYS = ["folder", "tag", "bubble_distribution"] as const;
-type GroupField = (typeof GROUPABLE_KEYS)[number];
+const STATIC_COLUMN_KEYS = ["image", "name", "bubble_distribution", "tags"] as const;
 
-const HEADER_LABELS: Record<string, string> = {
-  folder: "Folder",
-  tag: "Tag",
-  bubble_distribution: "Bubble Distribution",
+const STATIC_HEADER_LABELS: Record<string, string> = {
   image: "Image",
   name: "Name",
-  folders: "Folders",
+  bubble_distribution: "Bubble Distribution",
   tags: "Tags",
 };
 
-const COLUMN_KEYS = ["image", "name", "bubble_distribution", "folders", "tags"] as const;
+// Group-by is scoped to static fields for now — grouping by per-folder
+// columns would be redundant with the column itself.
+const GROUPABLE_KEYS = ["tag", "bubble_distribution"] as const;
+type GroupField = (typeof GROUPABLE_KEYS)[number];
+
+const GROUPABLE_HEADER_LABELS: Record<string, string> = {
+  tag: "Tag",
+  bubble_distribution: "Bubble Distribution",
+};
 
 const ICICLE_WIDTH_DEFAULT = 200;
 
@@ -155,18 +161,6 @@ export function ListTable({
   const specs: GroupBySpec<ListRow>[] = useMemo(
     () =>
       groupBy.map((field) => {
-        if (field === "folder") {
-          return {
-            field,
-            getKey: (row) => row.folder_ids[0] ?? null,
-            getLabel: (key) =>
-              key == null
-                ? "No folder"
-                : folderById.get(key)?.full_path ??
-                  folderById.get(key)?.name ??
-                  "Unknown",
-          };
-        }
         if (field === "bubble_distribution") {
           return {
             field,
@@ -204,10 +198,24 @@ export function ListTable({
 
   const tree = useMemo(() => groupRows(rows, specs), [rows, specs]);
 
+  // Build dynamic column keys: static fields + one column per folder, in
+  // folder sort_order (already the order `folders` arrives in).
+  const columnKeys = useMemo(() => {
+    const folderKeys = folders.map((f) => `folder:${f.id}`);
+    return [...STATIC_COLUMN_KEYS, ...folderKeys];
+  }, [folders]);
+
+  const headerLabels = useMemo(() => {
+    const labels: Record<string, string> = { ...STATIC_HEADER_LABELS };
+    for (const f of folders) {
+      labels[`folder:${f.id}`] = f.name;
+    }
+    return labels;
+  }, [folders]);
+
   const orderedKeys = useMemo(
-    () =>
-      resolveColumnOrder(params.columnOrder, COLUMN_KEYS as readonly string[]),
-    [params.columnOrder],
+    () => resolveColumnOrder(params.columnOrder, columnKeys),
+    [params.columnOrder, columnKeys],
   );
 
   const sensors = useSensors(
@@ -299,24 +307,6 @@ export function ListTable({
         />
       </td>
     ),
-    folders: (row) => (
-      <td key="folders" className={cellClass}>
-        {row.folder_ids.length === 0 ? (
-          <Empty />
-        ) : (
-          <div className="flex flex-wrap gap-1">
-            {row.folder_ids.map((fid) => {
-              const f = folderById.get(fid);
-              return (
-                <Pill key={fid} color={f?.color ?? null}>
-                  {f?.name ?? fid}
-                </Pill>
-              );
-            })}
-          </div>
-        )}
-      </td>
-    ),
     tags: (row) => (
       <td key="tags" className={cellClass}>
         {row.tag_ids.length === 0 ? (
@@ -337,6 +327,26 @@ export function ListTable({
     ),
   };
 
+  // One PillSelect cell per folder. Status defaults to "Sort" (the absence
+  // of a row in eagle_image_folders); picking Yes/No writes a row.
+  const sortStatus = bubbleDistributionOptions.find((o) => o.name === "Sort");
+  for (const folder of folders) {
+    const key = `folder:${folder.id}`;
+    cellRenderers[key] = (row) => {
+      const currentStatus =
+        row.folder_statuses[folder.id] ?? sortStatus?.id ?? "";
+      return (
+        <td key={key} className={cellClass}>
+          <PillSelect
+            value={currentStatus}
+            options={bubbleDistributionOptions}
+            onSave={(v) => setImageFolderStatus(row.image_id, folder.id, v)}
+          />
+        </td>
+      );
+    };
+  }
+
   return (
     <>
       <ViewSwitcher
@@ -350,7 +360,7 @@ export function ListTable({
       <GroupByPicker
         available={[...GROUPABLE_KEYS].map((k) => ({
           key: k,
-          label: HEADER_LABELS[k] ?? k,
+          label: GROUPABLE_HEADER_LABELS[k] ?? k,
         }))}
         groupBy={groupBy}
         onChange={setGroupBy}
@@ -386,7 +396,7 @@ export function ListTable({
             <tr>
               {Array.from({ length: iceLevels }).map((_, i) => (
                 <th key={`ice-h-${i}`} className={headerClass} style={{ position: "relative" }}>
-                  {HEADER_LABELS[groupBy[i]] ?? groupBy[i]}
+                  {GROUPABLE_HEADER_LABELS[groupBy[i]] ?? groupBy[i]}
                   <ColumnResizer
                     columnIndex={i}
                     currentWidth={iceWidth(i)}
@@ -413,7 +423,7 @@ export function ListTable({
                       />
                     }
                   >
-                    {HEADER_LABELS[k] ?? k}
+                    {headerLabels[k] ?? k}
                   </SortableHeaderCell>
                 ))}
               </SortableContext>

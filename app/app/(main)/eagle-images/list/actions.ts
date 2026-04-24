@@ -29,6 +29,39 @@ export async function updateImageName(imageId: string, name: string) {
   revalidatePath("/eagle-images");
 }
 
+/**
+ * Set the image's membership status in a specific folder.
+ *   statusId = Yes   → upsert a row with status=Yes
+ *   statusId = No    → upsert a row with status=No
+ *   statusId = Sort  → delete any existing row (absence-of-row = Sort)
+ */
+export async function setImageFolderStatus(
+  imageId: string,
+  folderId: string,
+  statusId: string,
+) {
+  const statusIdNum = Number(statusId);
+  const sortRow = await poolV002.query<{ id: number }>(
+    `SELECT id FROM eagle_bubble_distributions WHERE name = 'Sort' LIMIT 1`,
+  );
+  const sortId = sortRow.rows[0]?.id;
+  if (sortId !== undefined && statusIdNum === sortId) {
+    await poolV002.query(
+      `DELETE FROM eagle_image_folders WHERE image_id = $1 AND folder_id = $2`,
+      [imageId, folderId],
+    );
+  } else {
+    await poolV002.query(
+      `INSERT INTO eagle_image_folders (image_id, folder_id, status_id)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (image_id, folder_id) DO UPDATE SET status_id = EXCLUDED.status_id`,
+      [imageId, folderId, statusIdNum],
+    );
+  }
+  revalidatePath("/eagle-images/list");
+  revalidatePath("/eagle-images");
+}
+
 export async function deleteImageFromList(imageId: string) {
   await poolV002.query(`DELETE FROM eagle_images WHERE id = $1`, [imageId]);
   revalidatePath("/eagle-images/list");

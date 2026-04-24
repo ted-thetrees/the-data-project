@@ -41,7 +41,10 @@ export default async function PickListsEagleImagesPage() {
         tables={["eagle_bubble_distributions", "eagle_folders", "color_palettes"]}
       />
       <div className="space-y-10">
-        <PickListSection title="Bubble Distribution" usedBy="Eagle Images · List">
+        <PickListSection
+          title="Sort / Yes / No"
+          usedBy="Bubble Distribution + every Folder column on Eagle Images · List"
+        >
           <PicklistStatusTable
             source="eagle_bubble_distributions"
             rows={bubbleDistributions}

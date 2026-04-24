@@ -24,9 +24,10 @@ async function getRows(): Promise<ListRow[]> {
       i.height,
       i.bubble_distribution_id::text      AS bubble_distribution_id,
       COALESCE(
-        (SELECT array_agg(folder_id) FROM eagle_image_folders WHERE image_id = i.id),
-        ARRAY[]::text[]
-      ) AS folder_ids,
+        (SELECT jsonb_object_agg(folder_id, status_id::text)
+           FROM eagle_image_folders WHERE image_id = i.id),
+        '{}'::jsonb
+      ) AS folder_statuses,
       COALESCE(
         (SELECT array_agg(tag_id::text) FROM eagle_image_tags WHERE image_id = i.id),
         ARRAY[]::text[]
