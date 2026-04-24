@@ -23,7 +23,7 @@ async function getPeople(): Promise<PersonRow[]> {
       p.has_org_filled_id::text AS has_org_filled_id,
       p.metro_area_id::text  AS metro_area_id
     FROM people p
-    ORDER BY p.updated_at DESC NULLS LAST, p.name NULLS LAST
+    ORDER BY p.sort_order NULLS LAST, p.updated_at DESC NULLS LAST, p.name NULLS LAST
   `);
   return result.rows;
 }

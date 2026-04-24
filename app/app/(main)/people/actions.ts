@@ -76,7 +76,26 @@ export async function updatePersonMetroArea(id: string, metroAreaId: string) {
 }
 
 export async function createPerson() {
-  await poolV002.query(`INSERT INTO people (name) VALUES ('Untitled')`);
+  await poolV002.query(
+    `INSERT INTO people (name, sort_order)
+     VALUES ('Untitled', (SELECT COALESCE(MIN(sort_order), 0) - 1 FROM people))`,
+  );
+  revalidatePeoplePage();
+}
+
+export async function reorderPeopleRows(orderedIds: string[]) {
+  if (orderedIds.length === 0) return;
+  const values = orderedIds.map((_, i) => `($${i * 2 + 1}::uuid, $${i * 2 + 2}::int)`).join(",");
+  const params: (string | number)[] = [];
+  orderedIds.forEach((id, i) => {
+    params.push(id, i);
+  });
+  await poolV002.query(
+    `UPDATE people p SET sort_order = v.sort_order
+     FROM (VALUES ${values}) AS v(id, sort_order)
+     WHERE p.id = v.id`,
+    params,
+  );
   revalidatePeoplePage();
 }
 
