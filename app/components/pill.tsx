@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useLayoutEffect, useState, useTransition } from "react";
 import {
   Popover,
   PopoverContent,
@@ -102,9 +102,15 @@ function matchesSearch(name: string, search: string): boolean {
 // the page scrolls to the top. We snapshot scroll before open and
 // undo any shift across the next few frames.
 function useFocusCmdkInput(open: boolean) {
-  useEffect(() => {
+  // The pre-open scroll position. Captured synchronously on the trigger's
+  // click via the savedScrollRef below so the snapshot is BEFORE cmdk's
+  // layout-time scrollIntoView. (Prior implementation snapshotted in a
+  // useEffect, which ran after the scroll had already jumped.)
+  useLayoutEffect(() => {
     if (!open) return;
-    const saved = { x: window.scrollX, y: window.scrollY };
+    const saved = (window as unknown as Window & {
+      __pillSavedScroll?: { x: number; y: number };
+    }).__pillSavedScroll ?? { x: window.scrollX, y: window.scrollY };
     const restore = () => {
       if (window.scrollX !== saved.x || window.scrollY !== saved.y) {
         window.scrollTo(saved.x, saved.y);
@@ -118,8 +124,25 @@ function useFocusCmdkInput(open: boolean) {
         ?.focus({ preventScroll: true });
       requestAnimationFrame(restore);
     });
-    return () => cancelAnimationFrame(raf1);
+    const raf2 = requestAnimationFrame(restore);
+    const t = setTimeout(restore, 50);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      clearTimeout(t);
+    };
   }, [open]);
+}
+
+/**
+ * Snapshot the page scroll position the moment the user pointer-downs on a
+ * pill trigger, BEFORE the popup mounts and cmdk's scrollIntoView fires.
+ * useFocusCmdkInput then reads from this stash for its restore baseline.
+ */
+function captureScrollOnPointerDown() {
+  (window as unknown as Window & {
+    __pillSavedScroll?: { x: number; y: number };
+  }).__pillSavedScroll = { x: window.scrollX, y: window.scrollY };
 }
 
 export function MultiPillSelect({
@@ -184,6 +207,7 @@ export function MultiPillSelect({
         className="flex flex-wrap gap-1 cursor-pointer items-center text-left rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 focus-visible:ring-offset-1"
         style={{ opacity: isPending ? 0.6 : 1 }}
         title="Edit tags"
+        onPointerDown={captureScrollOnPointerDown}
       >
         {selectedOptions.map((opt) => (
           <span
@@ -333,6 +357,7 @@ export function PillSelect({
           width: "fit-content",
           opacity: isPending ? 0.6 : 1,
         }}
+        onPointerDown={captureScrollOnPointerDown}
       >
         {current?.name ?? "—"}
       </PopoverTrigger>
