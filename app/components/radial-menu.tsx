@@ -21,6 +21,7 @@ import {
   Puzzle,
   Video,
   ShoppingBag,
+  Image as ImageIcon,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -63,6 +64,9 @@ const NAV: Branch[] = [
   ] },
   { kind: "branch", label: "Color Palettes", icon: Palette, children: [
     { kind: "leaf", label: "All", path: "/color-palettes", key: "c", icon: Palette },
+  ] },
+  { kind: "branch", label: "Eagle", icon: ImageIcon, children: [
+    { kind: "leaf", label: "Images", path: "/eagle-images", key: "e", icon: ImageIcon },
   ] },
   { kind: "branch", label: "Calories", icon: Apple, children: [
     { kind: "leaf", label: "Everything", path: "/calories", key: "a", icon: Apple },
