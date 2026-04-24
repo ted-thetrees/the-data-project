@@ -93,31 +93,38 @@ export function TableFeaturesGrid({
   const totalColSpan = 3 + features.length;
 
   const stickyOffsets = [0, FIXED_COL_PAGE, FIXED_COL_PAGE + FIXED_COL_GO];
+  // box-shadow draws a 2px-thick divider matching --row-gap on every sticky
+  // column's right edge so the gap stays visually consistent during horizontal
+  // scroll (the gap is otherwise eaten by scrolling cells passing underneath).
+  const stickyDivider = "2px 0 0 var(--background)";
+  const stickyOuterDivider = "2px 0 0 var(--background), 3px 0 0 var(--border)";
   const stickyCellStyle = (col: 0 | 1 | 2): React.CSSProperties => ({
     position: "sticky",
     left: stickyOffsets[col],
     zIndex: 2,
     background: "var(--cell-bg)",
-    boxShadow: col === 2 ? "1px 0 0 var(--border)" : undefined,
+    boxShadow: col === 2 ? stickyOuterDivider : stickyDivider,
   });
   const stickyHeaderStyle = (col: 0 | 1 | 2): React.CSSProperties => ({
     position: "sticky",
     left: stickyOffsets[col],
     zIndex: 4,
     background: "var(--header-bg)",
-    boxShadow: col === 2 ? "1px 0 0 var(--border)" : undefined,
+    boxShadow: col === 2 ? stickyOuterDivider : stickyDivider,
   });
   const stickySpanHeaderStyle: React.CSSProperties = {
     position: "sticky",
     left: 0,
     zIndex: 4,
     background: "var(--header-bg)",
+    boxShadow: stickyOuterDivider,
   };
   const stickySpanRowStyle: React.CSSProperties = {
     position: "sticky",
     left: 0,
     zIndex: 2,
     background: "var(--cell-bg)",
+    boxShadow: stickyOuterDivider,
   };
 
   return (
