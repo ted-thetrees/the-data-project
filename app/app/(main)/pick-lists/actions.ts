@@ -83,8 +83,8 @@ function revalidate() {
   revalidatePath("/people");
   revalidatePath("/get");
   revalidatePath("/pick-lists/eagle-images");
-  revalidatePath("/eagle-images");
   revalidatePath("/eagle-images/list");
+  revalidatePath("/eagle-images/masonry");
   revalidatePath("/pick-lists/table-features");
   revalidatePath("/table-features");
 }

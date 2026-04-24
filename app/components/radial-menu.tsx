@@ -70,7 +70,6 @@ const NAV: Branch[] = [
     { kind: "leaf", label: "Pick Lists", path: "/pick-lists/table-features", key: "F", icon: List },
   ] },
   { kind: "branch", label: "Eagle", icon: ImageIcon, children: [
-    { kind: "leaf", label: "Images", path: "/eagle-images", key: "e", icon: ImageIcon },
     { kind: "leaf", label: "List", path: "/eagle-images/list", key: "L", icon: List },
     { kind: "leaf", label: "Masonry", path: "/eagle-images/masonry", key: "E", icon: ImageIcon },
     { kind: "leaf", label: "Pick Lists", path: "/pick-lists/eagle-images", key: "X", icon: List },
