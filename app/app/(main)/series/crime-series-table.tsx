@@ -26,6 +26,7 @@ import {
   resolveColumnOrder,
   type ViewParams,
 } from "@/components/table-views";
+import { GroupByPicker } from "@/components/group-by-picker";
 import {
   CRIME_SERIES_STORAGE_KEY,
   CRIME_SERIES_DEFAULT_WIDTHS,
@@ -190,7 +191,11 @@ export function CrimeSeriesTable({
     deleteView,
     setColumnWidth,
     setColumnOrder,
+    setGroupBy,
   } = useTableViews(CRIME_SERIES_STORAGE_KEY, CRIME_DEFAULT_WIDTHS, initialParams);
+
+  const isGrouped = (params.groupBy ?? []).includes("status");
+  const groupByForPicker = isGrouped ? ["status"] : [];
 
   const orderedCommonKeys = useMemo(
     () =>
@@ -223,13 +228,13 @@ export function CrimeSeriesTable({
     release_date: "Release Date",
   };
 
-  const columnKeys = ["status", ...orderedCommonKeys];
+  const columnKeys = isGrouped ? ["status", ...orderedCommonKeys] : orderedCommonKeys;
   const headerClass =
     "relative text-left text-[length:var(--header-font-size)] font-[number:var(--header-font-weight)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
 
   return (
     <PageShell title="Series" count={data.length} maxWidth="">
-      <Subtitle>British crime &amp; murder TV &middot; grouped by status</Subtitle>
+      <Subtitle>British crime &amp; murder TV. Optionally group by status.</Subtitle>
       <ViewSwitcher
         views={views}
         activeViewId={activeViewId}
@@ -237,6 +242,11 @@ export function CrimeSeriesTable({
         onCreate={createView}
         onRename={renameView}
         onDelete={deleteView}
+      />
+      <GroupByPicker
+        available={[{ key: "status", label: "Status" }]}
+        groupBy={groupByForPicker}
+        onChange={(next) => setGroupBy(next.includes("status") ? ["status"] : [])}
       />
       <div className="overflow-x-auto">
         <DndContext
@@ -264,14 +274,16 @@ export function CrimeSeriesTable({
           </colgroup>
           <thead>
             <tr>
-              <th key="status" className={headerClass}>
-                Status
-                <ColumnResizer
-                  columnIndex={0}
-                  currentWidth={params.columnWidths["status"]}
-                  onResize={(w) => setColumnWidth("status", w)}
-                />
-              </th>
+              {isGrouped && (
+                <th key="status" className={headerClass}>
+                  Status
+                  <ColumnResizer
+                    columnIndex={0}
+                    currentWidth={params.columnWidths["status"]}
+                    onResize={(w) => setColumnWidth("status", w)}
+                  />
+                </th>
+              )}
               <SortableContext
                 items={orderedCommonKeys}
                 strategy={horizontalListSortingStrategy}
@@ -283,7 +295,7 @@ export function CrimeSeriesTable({
                     className={headerClass}
                     extras={
                       <ColumnResizer
-                        columnIndex={i + 1}
+                        columnIndex={i + (isGrouped ? 1 : 0)}
                         currentWidth={params.columnWidths[key]}
                         onResize={(w) => setColumnWidth(key, w)}
                       />
@@ -384,7 +396,7 @@ export function CrimeSeriesTable({
                     onDelete={() => deleteCrimeSeries(row.id)}
                     itemLabel={row.title ? `"${row.title}"` : "this series"}
                   >
-                    {statusStartSet.has(i) &&
+                    {isGrouped && statusStartSet.has(i) &&
                       (() => {
                         const span = statusByIndex[i];
                         return (
@@ -400,7 +412,7 @@ export function CrimeSeriesTable({
                       commonCellRenderers[key]?.(row),
                     )}
                   </RowContextMenu>
-                  {statusEndSet.has(i) && (
+                  {isGrouped && statusEndSet.has(i) && (
                     <AddSeriesRow
                       statusId={statusEndToSpan[i].statusId ?? null}
                       colSpan={columnKeys.length - 1}
