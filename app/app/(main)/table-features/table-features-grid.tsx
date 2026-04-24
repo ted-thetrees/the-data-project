@@ -1,0 +1,234 @@
+"use client";
+
+import { useMemo } from "react";
+import { PillSelect, type PillOption } from "@/components/pill";
+import { EditableText } from "@/components/editable-text";
+import { RowContextMenu } from "@/components/row-context-menu";
+import {
+  createCatalogRow,
+  deleteCatalogRow,
+  toggleDefaultForNew,
+  updateCatalogName,
+  updateCatalogPath,
+  updateCoverage,
+} from "./actions";
+
+export interface CatalogRow {
+  id: string;
+  name: string;
+  path: string | null;
+  notes: string | null;
+  sort_order: number | null;
+}
+
+export interface FeatureRow {
+  id: string;
+  key: string;
+  label: string;
+  category: string;
+  description: string | null;
+  default_for_new: boolean;
+  sort_order: number | null;
+}
+
+export interface CoverageRow {
+  table_id: string;
+  feature_id: string;
+  status_id: string | null;
+}
+
+const FIXED_COL_TABLE = 240;
+const FIXED_COL_PATH = 180;
+const FEATURE_COL_WIDTH = 96;
+
+export function TableFeaturesGrid({
+  catalog,
+  features,
+  coverage,
+  statusOptions,
+}: {
+  catalog: CatalogRow[];
+  features: FeatureRow[];
+  coverage: CoverageRow[];
+  statusOptions: PillOption[];
+}) {
+  const coverageMap = useMemo(() => {
+    const m = new Map<string, string | null>();
+    for (const c of coverage) m.set(`${c.table_id}:${c.feature_id}`, c.status_id);
+    return m;
+  }, [coverage]);
+
+  // Group features by category; preserve order by sort_order within each.
+  const byCategory = useMemo(() => {
+    const map = new Map<string, FeatureRow[]>();
+    for (const f of features) {
+      const arr = map.get(f.category) ?? [];
+      arr.push(f);
+      map.set(f.category, arr);
+    }
+    return Array.from(map.entries()); // preserves first-seen category order
+  }, [features]);
+
+  const totalWidth =
+    FIXED_COL_TABLE +
+    FIXED_COL_PATH +
+    features.length * FEATURE_COL_WIDTH;
+
+  const headerClass =
+    "relative text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x-narrow)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
+  const cellClass =
+    "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)]";
+  const compactCellClass =
+    "px-1 py-1 bg-[color:var(--cell-bg)] text-center";
+
+  const totalColSpan = 2 + features.length;
+
+  return (
+    <div className="overflow-x-auto">
+      <table
+        className="text-[length:var(--cell-font-size)] [&_td]:align-middle"
+        style={{
+          tableLayout: "fixed",
+          borderCollapse: "separate",
+          borderSpacing: "var(--row-gap)",
+          width: totalWidth,
+        }}
+      >
+        <colgroup>
+          <col style={{ width: FIXED_COL_TABLE }} />
+          <col style={{ width: FIXED_COL_PATH }} />
+          {features.map((f) => (
+            <col key={f.id} style={{ width: FEATURE_COL_WIDTH }} />
+          ))}
+        </colgroup>
+
+        <thead>
+          {/* Category super-header */}
+          <tr>
+            <th className={headerClass} colSpan={2}></th>
+            {byCategory.map(([category, fs]) => (
+              <th
+                key={`cat-${category}`}
+                className={headerClass}
+                colSpan={fs.length}
+                style={{ textAlign: "center" }}
+              >
+                {category}
+              </th>
+            ))}
+          </tr>
+
+          {/* Feature labels */}
+          <tr>
+            <th className={headerClass}>Table</th>
+            <th className={headerClass}>Path</th>
+            {features.map((f) => (
+              <th
+                key={f.id}
+                className={headerClass}
+                style={{ textAlign: "center" }}
+                title={f.label}
+              >
+                <div
+                  style={{
+                    writingMode: "vertical-rl",
+                    transform: "rotate(180deg)",
+                    whiteSpace: "nowrap",
+                    lineHeight: 1.1,
+                    padding: "4px 0",
+                  }}
+                >
+                  {f.label}
+                  {f.default_for_new ? " ★" : ""}
+                </div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr aria-hidden="true">
+            <td
+              colSpan={totalColSpan}
+              style={{
+                height: "var(--header-body-gap)",
+                padding: 0,
+                background: "transparent",
+              }}
+            />
+          </tr>
+
+          {/* + New */}
+          <tr>
+            <td
+              colSpan={totalColSpan}
+              className="themed-new-row-cell"
+              onClick={() => createCatalogRow()}
+              title="Register a new table"
+            >
+              + New table
+            </td>
+          </tr>
+
+          {/* Default-for-new row — shows which features should ship on new tables */}
+          <tr>
+            <td
+              className={cellClass}
+              style={{ fontStyle: "italic", color: "var(--muted-foreground)" }}
+            >
+              Default for new tables
+            </td>
+            <td className={cellClass} />
+            {features.map((f) => (
+              <td key={`def-${f.id}`} className={compactCellClass}>
+                <button
+                  type="button"
+                  onClick={() => toggleDefaultForNew(f.id, !f.default_for_new)}
+                  className="themed-button-sm"
+                  style={{ padding: "2px 6px" }}
+                  title="Toggle default for new tables"
+                >
+                  {f.default_for_new ? "★" : "☆"}
+                </button>
+              </td>
+            ))}
+          </tr>
+
+          {catalog.map((t) => (
+            <RowContextMenu
+              key={t.id}
+              onDelete={() => deleteCatalogRow(t.id)}
+              itemLabel={t.name ? `"${t.name}"` : "this table"}
+            >
+              <td className={cellClass}>
+                <EditableText
+                  value={t.name}
+                  onSave={(v) => updateCatalogName(t.id, v)}
+                />
+              </td>
+              <td className={cellClass}>
+                <EditableText
+                  value={t.path ?? ""}
+                  onSave={(v) => updateCatalogPath(t.id, v)}
+                  placeholder="/path"
+                />
+              </td>
+              {features.map((f) => {
+                const statusId = coverageMap.get(`${t.id}:${f.id}`) ?? null;
+                return (
+                  <td key={`cov-${t.id}-${f.id}`} className={compactCellClass}>
+                    <PillSelect
+                      value={statusId ?? ""}
+                      options={statusOptions}
+                      onSave={(v) => updateCoverage(t.id, f.id, v)}
+                    />
+                  </td>
+                );
+              })}
+            </RowContextMenu>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
