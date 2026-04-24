@@ -244,16 +244,21 @@ export function TableFeaturesGrid({
             ))}
           </tr>
 
-          {/* + New */}
+          {/* + Add Page — sticks to the left edge with the frozen columns */}
           <tr>
             <td
-              colSpan={totalColSpan}
+              colSpan={3}
               className="themed-new-row-cell"
               onClick={() => createCatalogRow()}
-              title="Register a new table"
+              title="Register a new page"
+              style={stickySpanRowStyle}
             >
-              + New table
+              + Add Page
             </td>
+            <td
+              colSpan={features.length}
+              style={{ background: "var(--cell-bg)" }}
+            />
           </tr>
 
           {/* Default-for-new row — shows which features should ship on new pages */}
