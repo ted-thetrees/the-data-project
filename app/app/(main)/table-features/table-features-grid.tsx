@@ -240,11 +240,23 @@ export function TableFeaturesGrid({
                 />
               </td>
               <td className={cellClass}>
-                <EditableText
-                  value={t.path ?? ""}
-                  onSave={(v) => updateCatalogPath(t.id, v)}
-                  placeholder="/path"
-                />
+                {t.path ? (
+                  <a
+                    href={t.path}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="themed-link"
+                    title={`Open ${t.path}`}
+                  >
+                    {t.path}
+                  </a>
+                ) : (
+                  <EditableText
+                    value=""
+                    onSave={(v) => updateCatalogPath(t.id, v)}
+                    placeholder="/path"
+                  />
+                )}
               </td>
               {features.map((f) => {
                 const statusId = coverageMap.get(`${t.id}:${f.id}`) ?? null;
