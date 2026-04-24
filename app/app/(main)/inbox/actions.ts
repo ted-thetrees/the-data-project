@@ -74,6 +74,16 @@ export async function deleteRecord(recordId: string) {
   revalidatePath("/inbox");
 }
 
+export async function updateRecordContent(recordId: string, content: string) {
+  await pool.query(
+    `UPDATE inbox SET content = $1 WHERE id = $2`,
+    [content, recordId],
+  );
+  revalidatePath("/inbox");
+  revalidatePath("/notes");
+  revalidatePath("/youtube");
+}
+
 async function ensureMigratedUber(): Promise<string> {
   const uberRes = await pool.query(
     `WITH ins AS (

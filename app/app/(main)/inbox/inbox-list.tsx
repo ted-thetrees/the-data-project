@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect, useState, useTransition } from "react";
 import { DeleteLink } from "./delete-button";
 import { MigrateLink } from "./migrate-button";
 import { ExternalLink } from "./external-link";
 import { LinkifiedText } from "./linkified-text";
 import { MobileActionMenu } from "./mobile-menu";
 import type { CardData } from "./card-data";
+import { updateRecordContent } from "./actions";
 
 const DUMMY_HREF = "#";
 const stripe = "px-[23px] py-[19px]";
@@ -132,12 +134,7 @@ export function InboxCard({ card }: { card: CardData }) {
                 />
               </div>
             )}
-            <p
-              className={`${metaTextDefault} whitespace-pre-wrap break-words`}
-              style={{ lineHeight: 1.5 }}
-            >
-              <LinkifiedText text={content} />
-            </p>
+            <EditableNoteContent recordId={recordId} content={content} className={metaTextDefault} />
           </div>
         )}
       </div>
@@ -146,5 +143,59 @@ export function InboxCard({ card }: { card: CardData }) {
         <ActionBar recordId={recordId} />
       </div>
     </div>
+  );
+}
+
+function EditableNoteContent({
+  recordId,
+  content,
+  className,
+}: {
+  recordId: string;
+  content: string;
+  className?: string;
+}) {
+  const [v, setV] = useState(content);
+  const [editing, setEditing] = useState(false);
+  const [, startSave] = useTransition();
+  useEffect(() => setV(content), [content]);
+
+  if (editing) {
+    return (
+      <textarea
+        autoFocus
+        value={v}
+        onChange={(e) => setV(e.target.value)}
+        onBlur={() => {
+          setEditing(false);
+          if (v !== content) startSave(() => updateRecordContent(recordId, v));
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            setV(content);
+            setEditing(false);
+          }
+        }}
+        className={`${className ?? ""} w-full whitespace-pre-wrap break-words bg-transparent outline-none`}
+        style={{
+          lineHeight: 1.5,
+          minHeight: "1.5em",
+          resize: "vertical",
+          border: 0,
+          padding: 0,
+        }}
+      />
+    );
+  }
+
+  return (
+    <p
+      className={`${className ?? ""} whitespace-pre-wrap break-words cursor-text`}
+      style={{ lineHeight: 1.5 }}
+      onClick={() => setEditing(true)}
+      title="Click to edit"
+    >
+      <LinkifiedText text={content} />
+    </p>
   );
 }
