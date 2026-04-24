@@ -352,6 +352,7 @@ export function GridTable({
     projectId: string;
     tickleDate: string | null;
   } | null>(null);
+  const [dragActive, setDragActive] = useState<string | null>(null);
 
   const {
     views,
@@ -837,10 +838,39 @@ export function GridTable({
                       tickleDate: myTickle,
                     };
                     e.dataTransfer.effectAllowed = "move";
-                    // Required for Firefox to start the drag.
                     try {
                       e.dataTransfer.setData("text/plain", row.project_id);
                     } catch {}
+                    // Drag preview: clone the project-name cell so the user
+                    // sees something meaningful following the cursor, not
+                    // just the tiny grip icon.
+                    const gripEl = e.currentTarget as HTMLElement;
+                    const td = gripEl.closest("td");
+                    const nameTd = td?.nextElementSibling as HTMLElement | null;
+                    if (nameTd) {
+                      const preview = document.createElement("div");
+                      preview.textContent = span.value ?? "";
+                      preview.style.padding = "6px 10px";
+                      preview.style.background = "var(--cell-bg)";
+                      preview.style.border = "1px solid var(--border)";
+                      preview.style.borderRadius = "var(--radius-md)";
+                      preview.style.boxShadow = "var(--dropdown-shadow)";
+                      preview.style.font = getComputedStyle(nameTd).font;
+                      preview.style.color = "var(--foreground)";
+                      preview.style.position = "absolute";
+                      preview.style.top = "-9999px";
+                      preview.style.left = "-9999px";
+                      document.body.appendChild(preview);
+                      e.dataTransfer.setDragImage(preview, 8, 8);
+                      setTimeout(() => {
+                        document.body.removeChild(preview);
+                      }, 0);
+                    }
+                    setDragActive(row.project_id);
+                  };
+                  const handleDragEndRow = () => {
+                    dragState.current = null;
+                    setDragActive(null);
                   };
                   const handleDragOver = (e: React.DragEvent) => {
                     const src = dragState.current;
@@ -872,17 +902,20 @@ export function GridTable({
                     ids.splice(to, 0, src.projectId);
                     void reorderProjectsInTickleDate(ids);
                   };
+                  const isSourceDragging = dragActive === row.project_id;
                   return (
                     <td
                       rowSpan={span.rowSpan + 1}
                       className="align-top px-0 py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-center"
                       onDragOver={isDraft ? undefined : handleDragOver}
                       onDrop={isDraft ? undefined : handleDrop}
+                      style={isSourceDragging ? { opacity: 0.4 } : undefined}
                     >
                       {!isDraft && (
                         <span
                           draggable
                           onDragStart={handleDragStart}
+                          onDragEnd={handleDragEndRow}
                           className="cursor-grab select-none inline-block text-[color:var(--muted-foreground)] hover:text-foreground"
                           style={{ touchAction: "none", padding: "0 2px" }}
                           title="Drag to reorder within this tickle date"
