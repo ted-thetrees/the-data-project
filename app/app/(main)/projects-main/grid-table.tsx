@@ -24,6 +24,7 @@ import {
 } from "@dnd-kit/sortable";
 import { format, parse } from "date-fns";
 import { PageShell } from "@/components/page-shell";
+import { Subtitle } from "@/components/subtitle";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -1095,6 +1096,9 @@ export function GridTable({
   if (!wrapped) return body;
   return (
     <PageShell title={title} count={groupedData.length} maxWidth="">
+      <Subtitle>
+        Active and drafted projects with their task breakdown. Drafts surface first, then projects ordered by tickle date.
+      </Subtitle>
       {body}
     </PageShell>
   );

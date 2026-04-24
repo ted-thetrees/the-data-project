@@ -16,6 +16,7 @@ import {
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { PageShell } from "@/components/page-shell";
+import { Subtitle } from "@/components/subtitle";
 import { Empty } from "@/components/empty";
 import { EditableLink } from "@/components/editable-link";
 import {
@@ -430,6 +431,7 @@ export function TalentTable({
       maxWidth=""
       className="talent-page"
     >
+      <Subtitle>People whose creative work I admire — grouped by category, rating, and area.</Subtitle>
       <GroupByControl current={groupBy} />
       <ViewSwitcher
         views={views}
