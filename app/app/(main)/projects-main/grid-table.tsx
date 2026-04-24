@@ -87,7 +87,10 @@ import { handleGridKeyDown } from "@/components/grid-keyboard-nav";
 import { GroupByPicker } from "@/components/group-by-picker";
 
 // Project-level icicle columns (rowspan-merged, pinned — not reorderable).
+// "grip" is a narrow column with the drag handle for reordering projects
+// within a tickle-date group.
 const PROJECT_ICICLE_KEYS = [
+  "grip",
   "project",
   "tickle",
   "uber_project",
@@ -99,6 +102,7 @@ const PROJECT_ICICLE_KEYS = [
 const TASK_COMMON_KEYS = ["task", "task_status", "result", "notes"] as const;
 
 const HEADER_LABELS: Record<string, string> = {
+  grip: "",
   project: "Project",
   tickle: "Tickle",
   uber_project: "Uber Project",
@@ -340,6 +344,14 @@ export function GridTable({
     () => new Set(dirtyProjectIds),
     [dirtyProjectIds],
   );
+
+  // Tracks the in-flight drag across dragstart/dragover/drop. Can't use
+  // dataTransfer.getData() inside dragover in Chrome for security reasons,
+  // so a ref holds what we need.
+  const dragState = useRef<{
+    projectId: string;
+    tickleDate: string | null;
+  } | null>(null);
 
   const {
     views,
@@ -682,20 +694,29 @@ export function GridTable({
                   />
                 </th>
               ))}
-              {PROJECT_ICICLE_KEYS.map((key, i) => (
-                <th
-                  key={key}
-                  className={headerClass}
-                  style={{ position: "relative" }}
-                >
-                  {HEADER_LABELS[key]}
-                  <ColumnResizer
-                    columnIndex={i + groupBy.length}
-                    currentWidth={params.columnWidths[key]}
-                    onResize={(w) => setColumnWidth(key, w)}
+              {PROJECT_ICICLE_KEYS.map((key, i) =>
+                key === "grip" ? (
+                  <th
+                    key={key}
+                    className={headerClass}
+                    style={{ width: 22 }}
+                    aria-hidden
                   />
-                </th>
-              ))}
+                ) : (
+                  <th
+                    key={key}
+                    className={headerClass}
+                    style={{ position: "relative" }}
+                  >
+                    {HEADER_LABELS[key]}
+                    <ColumnResizer
+                      columnIndex={i + groupBy.length}
+                      currentWidth={params.columnWidths[key]}
+                      onResize={(w) => setColumnWidth(key, w)}
+                    />
+                  </th>
+                ),
+              )}
               <SortableContext
                 items={orderedTaskKeys}
                 strategy={horizontalListSortingStrategy}
@@ -805,31 +826,35 @@ export function GridTable({
                     </td>
                   );
                 })}
-                {/* Icicle: Project (rowspan-merged, +1 to span add-row) */}
+                {/* Icicle: Grip (rowspan-merged drag handle column, +1) */}
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
                   const isDraft = Boolean(span.extra?.is_draft);
-                  const isDirty = dirtySet.has(row.project_id);
-                  const isAutoOrder = row.project_sort_order == null;
                   const myTickle = row.tickle_date ?? null;
                   const handleDragStart = (e: React.DragEvent) => {
-                    e.dataTransfer.setData("projectId", row.project_id);
-                    e.dataTransfer.setData("tickleDate", myTickle ?? "");
+                    dragState.current = {
+                      projectId: row.project_id,
+                      tickleDate: myTickle,
+                    };
                     e.dataTransfer.effectAllowed = "move";
+                    // Required for Firefox to start the drag.
+                    try {
+                      e.dataTransfer.setData("text/plain", row.project_id);
+                    } catch {}
                   };
                   const handleDragOver = (e: React.DragEvent) => {
-                    const srcTickle = e.dataTransfer.getData("tickleDate");
-                    // Same tickle-date group only
-                    if (srcTickle === (myTickle ?? "")) {
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = "move";
-                    }
+                    const src = dragState.current;
+                    if (!src) return;
+                    if ((src.tickleDate ?? null) !== myTickle) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
                   };
                   const handleDrop = (e: React.DragEvent) => {
                     e.preventDefault();
-                    const srcId = e.dataTransfer.getData("projectId");
-                    if (!srcId || srcId === row.project_id) return;
-                    // Gather current order of projects in this tickle-date group
+                    const src = dragState.current;
+                    dragState.current = null;
+                    if (!src || src.projectId === row.project_id) return;
+                    if ((src.tickleDate ?? null) !== myTickle) return;
                     const seen = new Set<string>();
                     const ids: string[] = [];
                     for (const r of orderedData) {
@@ -840,33 +865,48 @@ export function GridTable({
                         ids.push(r.project_id);
                       }
                     }
-                    const from = ids.indexOf(srcId);
+                    const from = ids.indexOf(src.projectId);
                     const to = ids.indexOf(row.project_id);
                     if (from < 0 || to < 0) return;
                     ids.splice(from, 1);
-                    ids.splice(to, 0, srcId);
+                    ids.splice(to, 0, src.projectId);
                     void reorderProjectsInTickleDate(ids);
                   };
                   return (
                     <td
                       rowSpan={span.rowSpan + 1}
-                      className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
+                      className="align-top px-0 py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-center"
                       onDragOver={isDraft ? undefined : handleDragOver}
                       onDrop={isDraft ? undefined : handleDrop}
                     >
+                      {!isDraft && (
+                        <span
+                          draggable
+                          onDragStart={handleDragStart}
+                          className="cursor-grab select-none inline-block text-[color:var(--muted-foreground)] hover:text-foreground"
+                          style={{ touchAction: "none", padding: "0 2px" }}
+                          title="Drag to reorder within this tickle date"
+                          aria-label="Drag to reorder"
+                        >
+                          <GripVertical className="w-3 h-3" />
+                        </span>
+                      )}
+                    </td>
+                  );
+                })()}
+
+                {/* Icicle: Project (rowspan-merged, +1 to span add-row) */}
+                {projectStartSet.has(i) && (() => {
+                  const span = projectByIndex[i];
+                  const isDraft = Boolean(span.extra?.is_draft);
+                  const isDirty = dirtySet.has(row.project_id);
+                  const isAutoOrder = row.project_sort_order == null;
+                  return (
+                    <td
+                      rowSpan={span.rowSpan + 1}
+                      className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
+                    >
                       <div className="flex items-start gap-2">
-                        {!isDraft && (
-                          <span
-                            draggable
-                            onDragStart={handleDragStart}
-                            className="cursor-grab select-none shrink-0 text-[color:var(--muted-foreground)] hover:text-foreground"
-                            style={{ marginTop: 2, touchAction: "none" }}
-                            title="Drag to reorder within this tickle date"
-                            aria-label="Drag to reorder"
-                          >
-                            <GripVertical className="w-3 h-3" />
-                          </span>
-                        )}
                         <div
                           className="flex-1 min-w-0"
                           style={
