@@ -1,12 +1,31 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { EditableText } from "@/components/editable-text";
 import { Empty } from "@/components/empty";
 import { Pill, PillSelect, type PillOption } from "@/components/pill";
 import { RowContextMenu } from "@/components/row-context-menu";
+import { SortableHeaderCell } from "@/components/sortable-header-cell";
 import { handleGridKeyDown } from "@/components/grid-keyboard-nav";
-import { deleteImageFromList, updateBubbleDistribution } from "./actions";
+import {
+  deleteImageFromList,
+  updateBubbleDistribution,
+  updateImageName,
+} from "./actions";
 import { createPicklistOptionNamed } from "../../pick-lists/actions";
 import {
   useTableViews,
@@ -89,6 +108,7 @@ export function ListTable({
     renameView,
     deleteView,
     setColumnWidth,
+    setColumnOrder,
     setGroupBy,
   } = useTableViews(LIST_STORAGE_KEY, LIST_DEFAULT_WIDTHS, initialParams);
 
@@ -190,6 +210,22 @@ export function ListTable({
     [params.columnOrder],
   );
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const activeId = String(active.id);
+    const overId = String(over.id);
+    if (!orderedKeys.includes(activeId)) return;
+    const oldIndex = orderedKeys.indexOf(activeId);
+    const newIndex = orderedKeys.indexOf(overId);
+    if (oldIndex < 0 || newIndex < 0) return;
+    setColumnOrder(arrayMove(orderedKeys, oldIndex, newIndex));
+  };
+
   const iceWidth = (level: number) => {
     const field = groupBy[level];
     return params.columnWidths[`__ice:${field}`] ?? ICICLE_WIDTH_DEFAULT;
@@ -242,7 +278,10 @@ export function ListTable({
     ),
     name: (row) => (
       <td key="name" className={cellClass}>
-        <span className="text-foreground">{row.image_name}</span>
+        <EditableText
+          value={row.image_name}
+          onSave={(v) => updateImageName(row.image_id, v)}
+        />
         <span className="text-[color:var(--muted-foreground)] text-xs ml-1">
           .{row.ext}
         </span>
@@ -317,6 +356,11 @@ export function ListTable({
         onChange={setGroupBy}
       />
       <div className="overflow-x-auto">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
         <table
           className="text-[length:var(--cell-font-size)] [&_td]:align-middle"
           style={{
@@ -350,18 +394,29 @@ export function ListTable({
                   />
                 </th>
               ))}
-              {orderedKeys.map((k, i) => (
-                <th key={k} className={headerClass} style={{ position: "relative" }}>
-                  {HEADER_LABELS[k] ?? k}
-                  <ColumnResizer
-                    columnIndex={i + iceLevels}
-                    currentWidth={
-                      params.columnWidths[k] ?? LIST_DEFAULT_WIDTHS[k] ?? 200
+              <SortableContext
+                items={orderedKeys}
+                strategy={horizontalListSortingStrategy}
+              >
+                {orderedKeys.map((k, i) => (
+                  <SortableHeaderCell
+                    key={k}
+                    id={k}
+                    className={headerClass}
+                    extras={
+                      <ColumnResizer
+                        columnIndex={i + iceLevels}
+                        currentWidth={
+                          params.columnWidths[k] ?? LIST_DEFAULT_WIDTHS[k] ?? 200
+                        }
+                        onResize={(w) => setColumnWidth(k, w)}
+                      />
                     }
-                    onResize={(w) => setColumnWidth(k, w)}
-                  />
-                </th>
-              ))}
+                  >
+                    {HEADER_LABELS[k] ?? k}
+                  </SortableHeaderCell>
+                ))}
+              </SortableContext>
             </tr>
           </thead>
           <tbody>
@@ -396,6 +451,7 @@ export function ListTable({
                 )}
           </tbody>
         </table>
+        </DndContext>
       </div>
     </>
   );

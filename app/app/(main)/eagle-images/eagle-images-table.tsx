@@ -1,6 +1,19 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { EditableTextWrap } from "@/components/editable-text";
 import {
@@ -12,6 +25,7 @@ import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import { GroupByPicker } from "@/components/group-by-picker";
 import { RowContextMenu } from "@/components/row-context-menu";
+import { SortableHeaderCell } from "@/components/sortable-header-cell";
 import { handleGridKeyDown } from "@/components/grid-keyboard-nav";
 import {
   groupRows,
@@ -165,6 +179,22 @@ export function EagleImagesTable({
     [params.columnOrder],
   );
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const activeId = String(active.id);
+    const overId = String(over.id);
+    if (!orderedKeys.includes(activeId)) return;
+    const oldIndex = orderedKeys.indexOf(activeId);
+    const newIndex = orderedKeys.indexOf(overId);
+    if (oldIndex < 0 || newIndex < 0) return;
+    setColumnOrder(arrayMove(orderedKeys, oldIndex, newIndex));
+  };
+
   const iceWidth = (level: number) => {
     const field = groupBy[level];
     const key = `__ice:${field}`;
@@ -208,6 +238,11 @@ export function EagleImagesTable({
         onChange={(next) => setGroupBy(next)}
       />
       <div className="overflow-x-auto">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
         <table
           className="text-[length:var(--cell-font-size)] [&_td]:align-top"
           style={{
@@ -245,22 +280,29 @@ export function EagleImagesTable({
                   />
                 </th>
               ))}
-              {orderedKeys.map((k, i) => (
-                <th
-                  key={k}
-                  className={headerClass}
-                  style={{ position: "relative" }}
-                >
-                  {HEADER_LABELS[k]}
-                  <ColumnResizer
-                    columnIndex={i + iceLevels}
-                    currentWidth={
-                      params.columnWidths[k] ?? EAGLE_DEFAULT_WIDTHS[k] ?? 320
+              <SortableContext
+                items={orderedKeys}
+                strategy={horizontalListSortingStrategy}
+              >
+                {orderedKeys.map((k, i) => (
+                  <SortableHeaderCell
+                    key={k}
+                    id={k}
+                    className={headerClass}
+                    extras={
+                      <ColumnResizer
+                        columnIndex={i + iceLevels}
+                        currentWidth={
+                          params.columnWidths[k] ?? EAGLE_DEFAULT_WIDTHS[k] ?? 320
+                        }
+                        onResize={(w) => setColumnWidth(k, w)}
+                      />
                     }
-                    onResize={(w) => setColumnWidth(k, w)}
-                  />
-                </th>
-              ))}
+                  >
+                    {HEADER_LABELS[k]}
+                  </SortableHeaderCell>
+                ))}
+              </SortableContext>
             </tr>
           </thead>
           <tbody>
@@ -285,6 +327,7 @@ export function EagleImagesTable({
             )}
           </tbody>
         </table>
+        </DndContext>
       </div>
     </>
   );

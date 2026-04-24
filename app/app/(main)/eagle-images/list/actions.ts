@@ -20,6 +20,15 @@ export async function updateBubbleDistribution(
   revalidatePath("/eagle-images");
 }
 
+export async function updateImageName(imageId: string, name: string) {
+  await poolV002.query(
+    `UPDATE eagle_images SET name = $1, updated_at = now() WHERE id = $2`,
+    [name, imageId],
+  );
+  revalidatePath("/eagle-images/list");
+  revalidatePath("/eagle-images");
+}
+
 export async function deleteImageFromList(imageId: string) {
   await poolV002.query(`DELETE FROM eagle_images WHERE id = $1`, [imageId]);
   revalidatePath("/eagle-images/list");
