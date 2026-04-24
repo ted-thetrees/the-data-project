@@ -1,6 +1,7 @@
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
+import { Subtitle } from "@/components/subtitle";
 
 export const metadata = { title: "Color Palettes" };
 export const dynamic = "force-dynamic";
@@ -72,8 +73,9 @@ export default async function ColorPalettesPage() {
   const palettes = await getPalettes();
 
   return (
-    <PageShell title="Color Palettes" maxWidth="" className="!px-[70px]">
+    <PageShell title="Color Palettes" count={palettes.length} maxWidth="" className="!px-[70px]">
       <Realtime tables={["color_palettes"]} />
+      <Subtitle>Reusable 15-swatch palettes used to color pills and tags across the project.</Subtitle>
       <div className="space-y-8">
         {palettes.length === 0 ? (
           <p className="text-sm text-muted-foreground">No palettes yet.</p>

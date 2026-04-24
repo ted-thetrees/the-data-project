@@ -12,6 +12,7 @@ import { ColumnResizer } from "@/components/column-resizer";
 import { ViewSwitcher } from "@/components/view-switcher";
 import { GroupByPicker } from "@/components/group-by-picker";
 import { RowContextMenu } from "@/components/row-context-menu";
+import { handleGridKeyDown } from "@/components/grid-keyboard-nav";
 import {
   groupRows,
   type GroupBySpec,
@@ -215,6 +216,7 @@ export function EagleImagesTable({
             borderSpacing: "var(--row-gap)",
             width: totalWidth,
           }}
+          onKeyDown={handleGridKeyDown}
         >
           <colgroup>
             {Array.from({ length: iceLevels }).map((_, i) => (

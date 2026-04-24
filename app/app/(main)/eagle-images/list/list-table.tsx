@@ -4,7 +4,9 @@ import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Empty } from "@/components/empty";
 import { Pill, PillSelect, type PillOption } from "@/components/pill";
-import { updateBubbleDistribution } from "./actions";
+import { RowContextMenu } from "@/components/row-context-menu";
+import { handleGridKeyDown } from "@/components/grid-keyboard-nav";
+import { deleteImageFromList, updateBubbleDistribution } from "./actions";
 import { createPicklistOptionNamed } from "../../pick-lists/actions";
 import {
   useTableViews,
@@ -323,6 +325,7 @@ export function ListTable({
             borderSpacing: "var(--row-gap)",
             width: totalWidth,
           }}
+          onKeyDown={handleGridKeyDown}
         >
           <colgroup>
             {Array.from({ length: iceLevels }).map((_, i) => (
@@ -374,9 +377,13 @@ export function ListTable({
             </tr>
             {iceLevels === 0
               ? rows.map((row) => (
-                  <tr key={row.image_id}>
+                  <RowContextMenu
+                    key={row.image_id}
+                    onDelete={() => deleteImageFromList(row.image_id)}
+                    itemLabel={`"${row.image_name}"`}
+                  >
                     {orderedKeys.map((k) => cellRenderers[k]?.(row))}
-                  </tr>
+                  </RowContextMenu>
                 ))
               : renderTree(
                   tree,
@@ -385,6 +392,7 @@ export function ListTable({
                   iceLevels,
                   orderedKeys,
                   cellRenderers,
+                  (row) => deleteImageFromList(row.image_id),
                 )}
           </tbody>
         </table>
@@ -463,6 +471,7 @@ function renderTree(
   iceLevels: number,
   orderedKeys: string[],
   cellRenderers: Record<string, (row: ListRow) => React.ReactNode>,
+  onDelete: (row: ListRow) => void | Promise<void>,
 ): React.ReactNode[] {
   const flat = flatten(tree, collapsed, []);
   const spanStartAt: Map<number, LevelSpan>[] = [];
@@ -552,10 +561,14 @@ function renderTree(
 
     const row = frow.row;
     out.push(
-      <tr key={row.image_id}>
+      <RowContextMenu
+        key={row.image_id}
+        onDelete={() => onDelete(row)}
+        itemLabel={`"${row.image_name}"`}
+      >
         {icicleCells}
         {orderedKeys.map((k) => cellRenderers[k]?.(row))}
-      </tr>,
+      </RowContextMenu>,
     );
   }
 

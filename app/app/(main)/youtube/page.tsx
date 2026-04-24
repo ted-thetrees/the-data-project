@@ -4,6 +4,7 @@ export const metadata = { title: "YouTube" };
 
 import { getYouTubeRecords, getYouTubeCount } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
+import { Subtitle } from "@/components/subtitle";
 import { InboxRealtime } from "../inbox/inbox-realtime";
 import { InfiniteInbox } from "../inbox/infinite-inbox";
 import { loadMoreYouTubeCards } from "../inbox/actions";
@@ -19,6 +20,7 @@ export default async function YouTubePage() {
   return (
     <PageShell title="YouTube" count={count} maxWidth="">
       <InboxRealtime />
+      <Subtitle>YouTube videos saved for later watching.</Subtitle>
       <InfiniteInbox
         initial={initial}
         loader={loadMoreYouTubeCards}
