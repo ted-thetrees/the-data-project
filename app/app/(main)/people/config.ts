@@ -9,4 +9,9 @@ export const PEOPLE_DEFAULT_WIDTHS: Record<string, number> = {
   teller_status: 220,
   has_org_filled: 130,
   passphrase: 180,
+  "__ice:gender": 140,
+  "__ice:familiarity": 240,
+  "__ice:metro_area": 200,
+  "__ice:teller_status": 240,
+  "__ice:has_org_filled": 160,
 };

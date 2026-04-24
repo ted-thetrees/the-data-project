@@ -80,6 +80,30 @@ export async function createPerson() {
   revalidatePeoplePage();
 }
 
+export async function createPersonInGroup(prefill: Record<string, string | null>) {
+  const allowed: Record<string, string> = {
+    gender_id: "gender_id",
+    familiarity_id: "familiarity_id",
+    teller_status_id: "teller_status_id",
+    has_org_filled_id: "has_org_filled_id",
+    metro_area_id: "metro_area_id",
+  };
+  const cols: string[] = ["name"];
+  const placeholders: string[] = [`'Untitled'`];
+  const params: (string | number | null)[] = [];
+  for (const [k, v] of Object.entries(prefill)) {
+    if (!allowed[k]) continue;
+    params.push(v ? Number(v) : null);
+    cols.push(allowed[k]);
+    placeholders.push(`$${params.length}`);
+  }
+  await poolV002.query(
+    `INSERT INTO people (${cols.join(",")}) VALUES (${placeholders.join(",")})`,
+    params,
+  );
+  revalidatePeoplePage();
+}
+
 export async function deletePerson(id: string) {
   await poolV002.query(`DELETE FROM people WHERE id = $1`, [id]);
   revalidatePeoplePage();
