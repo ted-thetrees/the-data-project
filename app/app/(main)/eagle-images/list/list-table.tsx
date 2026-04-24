@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import {
   DndContext,
   PointerSensor,
@@ -251,6 +252,14 @@ export function ListTable({
   const totalWidth = userColsWidth + iceColsWidth;
   const totalColumnCount = iceLevels + orderedKeys.length;
 
+  const tableWrapperRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useWindowVirtualizer({
+    count: iceLevels === 0 ? rows.length : 0,
+    estimateSize: () => 116,
+    overscan: 8,
+    scrollMargin: tableWrapperRef.current?.offsetTop ?? 0,
+  });
+
   const headerClass =
     "relative text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
   const cellClass =
@@ -365,7 +374,7 @@ export function ListTable({
         groupBy={groupBy}
         onChange={setGroupBy}
       />
-      <div className="overflow-x-auto">
+      <div ref={tableWrapperRef} className="overflow-x-auto">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -441,15 +450,51 @@ export function ListTable({
               />
             </tr>
             {iceLevels === 0
-              ? rows.map((row) => (
-                  <RowContextMenu
-                    key={row.image_id}
-                    onDelete={() => deleteImageFromList(row.image_id)}
-                    itemLabel={`"${row.image_name}"`}
-                  >
-                    {orderedKeys.map((k) => cellRenderers[k]?.(row))}
-                  </RowContextMenu>
-                ))
+              ? (() => {
+                  const items = rowVirtualizer.getVirtualItems();
+                  const total = rowVirtualizer.getTotalSize();
+                  const first = items[0];
+                  const last = items[items.length - 1];
+                  const offsetTop = first
+                    ? first.start - rowVirtualizer.options.scrollMargin
+                    : 0;
+                  const offsetBottom =
+                    last && first
+                      ? total - last.end
+                      : 0;
+                  return (
+                    <>
+                      {offsetTop > 0 && (
+                        <tr aria-hidden="true">
+                          <td
+                            colSpan={totalColumnCount}
+                            style={{ height: offsetTop, padding: 0, background: "transparent" }}
+                          />
+                        </tr>
+                      )}
+                      {items.map((virtualRow) => {
+                        const row = rows[virtualRow.index];
+                        return (
+                          <RowContextMenu
+                            key={row.image_id}
+                            onDelete={() => deleteImageFromList(row.image_id)}
+                            itemLabel={`"${row.image_name}"`}
+                          >
+                            {orderedKeys.map((k) => cellRenderers[k]?.(row))}
+                          </RowContextMenu>
+                        );
+                      })}
+                      {offsetBottom > 0 && (
+                        <tr aria-hidden="true">
+                          <td
+                            colSpan={totalColumnCount}
+                            style={{ height: offsetBottom, padding: 0, background: "transparent" }}
+                          />
+                        </tr>
+                      )}
+                    </>
+                  );
+                })()
               : renderTree(
                   tree,
                   collapsed,
