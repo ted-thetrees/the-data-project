@@ -239,10 +239,7 @@ export function GridTable({
     [params.groupBy],
   );
 
-  const orderedData = useMemo(
-    () => data.filter((row) => row.project_status === "Active"),
-    [data],
-  );
+  const orderedData = data;
 
   // When grouping is active, re-sort projects (preserving task order within a
   // project) so that rows sharing group-by keys are consecutive. That lets us
@@ -455,7 +452,7 @@ export function GridTable({
         onRename={renameView}
         onDelete={deleteView}
       >
-        Active projects &middot; click any field to edit &middot; drag column edges to resize
+        All projects &middot; click any field to edit &middot; drag column edges to resize
       </ViewSwitcher>
 
       <GroupByPicker
@@ -891,7 +888,7 @@ export function GridTable({
       <PageSheet
         title={title}
         count={groupedData.length}
-        subtitle="Active and drafted projects with their task breakdown. Drafts surface first, then projects ordered by tickle date."
+        subtitle="All projects with their task breakdown, ordered by tickle date."
       >
         {sidebarControls}
       </PageSheet>
