@@ -20,6 +20,11 @@ const SOURCE_TABLES: Record<string, SourceConfig> = {
     hasSortOrder: true,
     idType: "uuid",
   },
+  project_entry_statuses: {
+    table: "project_entry_statuses",
+    hasSortOrder: true,
+    idType: "uuid",
+  },
   task_statuses: { table: "task_statuses", hasSortOrder: true, idType: "uuid" },
   crime_series_statuses: { table: "crime_series_statuses", hasSortOrder: true },
   uber_projects: { table: "uber_projects", hasSortOrder: true, idType: "uuid" },

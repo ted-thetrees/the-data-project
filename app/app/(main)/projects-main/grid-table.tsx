@@ -50,6 +50,8 @@ const createProjectStatusOption = (name: string) =>
   createPicklistOptionNamed("project_statuses", name);
 const createActionOrderStatusOption = (name: string) =>
   createPicklistOptionNamed("project_action_order_statuses", name);
+const createEntryStatusOption = (name: string) =>
+  createPicklistOptionNamed("project_entry_statuses", name);
 const createTaskStatusOption = (name: string) =>
   createPicklistOptionNamed("task_statuses", name);
 import {
@@ -81,6 +83,7 @@ const PROJECT_ICICLE_KEYS = [
   "uber_project",
   "project_status",
   "action_order_status",
+  "entry_status",
 ] as const;
 
 // Task-level columns (per-row, user-reorderable).
@@ -92,6 +95,7 @@ const HEADER_LABELS: Record<string, string> = {
   uber_project: "Uber Project",
   project_status: "Project Status",
   action_order_status: "Action Order",
+  entry_status: "Entry Status",
   task: "Task",
   task_status: "Task Status",
   result: "Result",
@@ -191,6 +195,7 @@ export function GridTable({
   taskStatuses,
   projectStatuses,
   actionOrderStatuses,
+  entryStatuses,
   uberProjects,
   wrapped = true,
   title = "Projects",
@@ -200,6 +205,7 @@ export function GridTable({
   taskStatuses: StatusOption[];
   projectStatuses: StatusOption[];
   actionOrderStatuses: StatusOption[];
+  entryStatuses: StatusOption[];
   uberProjects: StatusOption[];
   wrapped?: boolean;
   title?: string;
@@ -937,6 +943,30 @@ export function GridTable({
                           )
                         }
                         onCreate={createActionOrderStatusOption}
+                      />
+                    </td>
+                  );
+                })()}
+
+                {/* Icicle: Entry Status (rowspan-merged pill select, +1) */}
+                {projectStartSet.has(i) && (() => {
+                  const span = projectByIndex[i];
+                  return (
+                    <td
+                      rowSpan={span.rowSpan + 1}
+                      className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
+                    >
+                      <PillSelect
+                        value={row.entry_status_id ?? ""}
+                        options={entryStatuses}
+                        onSave={(v) =>
+                          updateProjectField(
+                            row.project_id,
+                            "entry_status_id",
+                            v || null,
+                          )
+                        }
+                        onCreate={createEntryStatusOption}
                       />
                     </td>
                   );

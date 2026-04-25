@@ -12,6 +12,8 @@ export async function getProjectsMainData(): Promise<TaskRow[]> {
            p.is_draft as project_is_draft,
            p.action_order_status_id,
            aos.name as action_order_status, aos.color as action_order_color,
+           p.entry_status_id,
+           pes.name as entry_status, pes.color as entry_status_color,
            ps.name as project_status, ps.color as project_color,
            up.id as uber_project_id,
            up.name as uber_project, up."order" as uber_order,
@@ -22,6 +24,7 @@ export async function getProjectsMainData(): Promise<TaskRow[]> {
     JOIN uber_projects up ON p.uber_project_id = up.id
     JOIN task_statuses ts ON t.status_id = ts.id
     LEFT JOIN project_action_order_statuses aos ON p.action_order_status_id = aos.id
+    LEFT JOIN project_entry_statuses pes ON p.entry_status_id = pes.id
     WHERE t.deleted_at IS NULL
     ORDER BY
       CASE WHEN p.is_draft THEN 0 ELSE 1 END,
@@ -54,6 +57,13 @@ export async function getProjectStatuses(): Promise<StatusOption[]> {
 export async function getActionOrderStatuses(): Promise<StatusOption[]> {
   const result = await poolV002.query(
     `SELECT id, name, color FROM project_action_order_statuses ORDER BY sort_order NULLS LAST, name`
+  );
+  return result.rows;
+}
+
+export async function getEntryStatuses(): Promise<StatusOption[]> {
+  const result = await poolV002.query(
+    `SELECT id, name, color FROM project_entry_statuses ORDER BY sort_order NULLS LAST, name`
   );
   return result.rows;
 }

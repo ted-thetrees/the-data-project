@@ -53,6 +53,13 @@ export function getProjectActionOrderStatuses() {
   );
 }
 
+export function getProjectEntryStatuses() {
+  return getStatusesByName(
+    "project_entry_statuses",
+    "ORDER BY sort_order NULLS LAST, name",
+  );
+}
+
 export function getTalentCategories() {
   return getStatusesByName("talent_categories", "ORDER BY sort_order NULLS LAST, name");
 }

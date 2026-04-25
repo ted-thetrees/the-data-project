@@ -6,6 +6,7 @@ import {
   getTaskStatuses,
   getProjectStatuses,
   getActionOrderStatuses,
+  getEntryStatuses,
   getUberProjects,
 } from "./data";
 
@@ -44,6 +45,9 @@ export interface TaskRow {
   action_order_status: string | null;
   action_order_status_id: string | null;
   action_order_color: string | null;
+  entry_status: string | null;
+  entry_status_id: string | null;
+  entry_status_color: string | null;
   uber_project: string;
   uber_project_id: string;
   uber_order: number | null;
@@ -62,6 +66,7 @@ export default async function GridPage() {
     taskStatuses,
     projectStatuses,
     actionOrderStatuses,
+    entryStatuses,
     uberProjects,
     initialParams,
   ] = await Promise.all([
@@ -69,6 +74,7 @@ export default async function GridPage() {
     getTaskStatuses(),
     getProjectStatuses(),
     getActionOrderStatuses(),
+    getEntryStatuses(),
     getUberProjects(),
     getInitialViewParams(
       PROJECTS_MAIN_STORAGE_KEY,
@@ -85,6 +91,7 @@ export default async function GridPage() {
           "task_statuses",
           "project_statuses",
           "project_action_order_statuses",
+          "project_entry_statuses",
         ]}
       />
       <GridTable
@@ -92,6 +99,7 @@ export default async function GridPage() {
         taskStatuses={taskStatuses}
         projectStatuses={projectStatuses}
         actionOrderStatuses={actionOrderStatuses}
+        entryStatuses={entryStatuses}
         uberProjects={uberProjects}
         initialParams={initialParams}
       />

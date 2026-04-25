@@ -5,6 +5,7 @@ import {
   getPalettes,
   getProjectStatuses,
   getProjectActionOrderStatuses,
+  getProjectEntryStatuses,
   getTaskStatuses,
   getUberProjectsForPickList,
   getPicklistColorsForTables,
@@ -35,6 +36,7 @@ export default async function PickListsProjectsPage() {
   const [
     projectStatuses,
     actionOrderStatuses,
+    entryStatuses,
     taskStatuses,
     uberProjects,
     legacyColors,
@@ -42,6 +44,7 @@ export default async function PickListsProjectsPage() {
   ] = await Promise.all([
     getProjectStatuses(),
     getProjectActionOrderStatuses(),
+    getProjectEntryStatuses(),
     getTaskStatuses(),
     getUberProjectsForPickList(),
     getPicklistColorsForTables(["Projects", "Tasks", "projects", "tasks"]),
@@ -54,6 +57,7 @@ export default async function PickListsProjectsPage() {
         tables={[
           "project_statuses",
           "project_action_order_statuses",
+          "project_entry_statuses",
           "task_statuses",
           "uber_projects",
           "picklist_colors",
@@ -79,6 +83,16 @@ export default async function PickListsProjectsPage() {
             palettes={palettes}
             sortable
             storageKey="pick-lists:project_action_order_statuses"
+          />
+        </PickListSection>
+
+        <PickListSection title="Entry Status" usedBy="Projects">
+          <PicklistStatusTable
+            source="project_entry_statuses"
+            rows={entryStatuses}
+            palettes={palettes}
+            sortable
+            storageKey="pick-lists:project_entry_statuses"
           />
         </PickListSection>
 
