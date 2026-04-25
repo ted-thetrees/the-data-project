@@ -3,8 +3,8 @@ import { Realtime } from "@/components/realtime";
 import { PicklistStatusTable, PicklistColorTable } from "../picklist-tables";
 import {
   getPalettes,
-  getProjectActionOrderStatuses,
-  getProjectEntryStatuses,
+  getProjectPriorities,
+  getProjectStatuses,
   getTaskStatuses,
   getUberProjectsForPickList,
   getPicklistColorsForTables,
@@ -33,15 +33,15 @@ function PickListSection({
 
 export default async function PickListsProjectsPage() {
   const [
-    actionOrderStatuses,
-    entryStatuses,
+    priorities,
+    statuses,
     taskStatuses,
     uberProjects,
     legacyColors,
     palettes,
   ] = await Promise.all([
-    getProjectActionOrderStatuses(),
-    getProjectEntryStatuses(),
+    getProjectPriorities(),
+    getProjectStatuses(),
     getTaskStatuses(),
     getUberProjectsForPickList(),
     getPicklistColorsForTables(["Projects", "Tasks", "projects", "tasks"]),
@@ -52,8 +52,8 @@ export default async function PickListsProjectsPage() {
     <PageShell title="Pick Lists · Projects">
       <Realtime
         tables={[
-          "project_action_order_statuses",
-          "project_entry_statuses",
+          "project_priorities",
+          "project_statuses",
           "task_statuses",
           "uber_projects",
           "picklist_colors",
@@ -61,23 +61,23 @@ export default async function PickListsProjectsPage() {
         ]}
       />
       <div className="space-y-10">
-        <PickListSection title="Action Order" usedBy="Projects">
+        <PickListSection title="Priority" usedBy="Projects">
           <PicklistStatusTable
-            source="project_action_order_statuses"
-            rows={actionOrderStatuses}
+            source="project_priorities"
+            rows={priorities}
             palettes={palettes}
             sortable
-            storageKey="pick-lists:project_action_order_statuses"
+            storageKey="pick-lists:project_priorities"
           />
         </PickListSection>
 
-        <PickListSection title="Entry Status" usedBy="Projects">
+        <PickListSection title="Status" usedBy="Projects">
           <PicklistStatusTable
-            source="project_entry_statuses"
-            rows={entryStatuses}
+            source="project_statuses"
+            rows={statuses}
             palettes={palettes}
             sortable
-            storageKey="pick-lists:project_entry_statuses"
+            storageKey="pick-lists:project_statuses"
           />
         </PickListSection>
 

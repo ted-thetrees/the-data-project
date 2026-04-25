@@ -45,10 +45,10 @@ import { Pill, PillSelect, PILL_CLASS } from "@/components/pill";
 
 const createUberProjectOption = (name: string) =>
   createPicklistOptionNamed("uber_projects", name);
-const createActionOrderStatusOption = (name: string) =>
-  createPicklistOptionNamed("project_action_order_statuses", name);
-const createEntryStatusOption = (name: string) =>
-  createPicklistOptionNamed("project_entry_statuses", name);
+const createPriorityOption = (name: string) =>
+  createPicklistOptionNamed("project_priorities", name);
+const createStatusOption = (name: string) =>
+  createPicklistOptionNamed("project_statuses", name);
 const createTaskStatusOption = (name: string) =>
   createPicklistOptionNamed("task_statuses", name);
 import {
@@ -78,8 +78,8 @@ const PROJECT_ICICLE_KEYS = [
   "project",
   "tickle",
   "uber_project",
-  "action_order_status",
-  "entry_status",
+  "priority",
+  "status",
 ] as const;
 
 // Task-level columns (per-row, user-reorderable).
@@ -89,8 +89,8 @@ const HEADER_LABELS: Record<string, string> = {
   project: "Project",
   tickle: "Tickle",
   uber_project: "Uber Project",
-  action_order_status: "Priority",
-  entry_status: "Status",
+  priority: "Priority",
+  status: "Status",
   task: "Task",
   task_status: "Task Status",
   result: "Result",
@@ -103,8 +103,8 @@ const HEADER_LABELS: Record<string, string> = {
 const GROUPABLE_KEYS = [
   "tickle",
   "uber_project",
-  "action_order_status",
-  "entry_status",
+  "priority",
+  "status",
 ] as const;
 type GroupableKey = (typeof GROUPABLE_KEYS)[number];
 
@@ -126,15 +126,15 @@ const GROUP_ACCESSORS: Record<
     label: (r) => r.uber_project ?? "(none)",
     color: (r) => r.uber_color,
   },
-  action_order_status: {
-    id: (r) => r.action_order_status_id ?? null,
-    label: (r) => r.action_order_status ?? "Uncategorized",
-    color: (r) => r.action_order_color,
+  priority: {
+    id: (r) => r.priority_id ?? null,
+    label: (r) => r.priority ?? "Uncategorized",
+    color: (r) => r.priority_color,
   },
-  entry_status: {
-    id: (r) => r.entry_status_id ?? null,
-    label: (r) => r.entry_status ?? "(none)",
-    color: (r) => r.entry_status_color,
+  status: {
+    id: (r) => r.status_id ?? null,
+    label: (r) => r.status ?? "(none)",
+    color: (r) => r.status_color,
   },
 };
 
@@ -188,8 +188,8 @@ function computeGroupSpans(
 export function GridTable({
   data,
   taskStatuses,
-  actionOrderStatuses,
-  entryStatuses,
+  priorities,
+  statuses,
   uberProjects,
   wrapped = true,
   title = "Projects",
@@ -197,8 +197,8 @@ export function GridTable({
 }: {
   data: TaskRow[];
   taskStatuses: StatusOption[];
-  actionOrderStatuses: StatusOption[];
-  entryStatuses: StatusOption[];
+  priorities: StatusOption[];
+  statuses: StatusOption[];
   uberProjects: StatusOption[];
   wrapped?: boolean;
   title?: string;
@@ -257,10 +257,10 @@ export function GridTable({
     //     Unknown/null options go last.
     const optionIndexByField: Record<string, Map<string, number>> = {
       uber_project: new Map(uberProjects.map((o, i) => [o.id, i])),
-      action_order_status: new Map(
-        actionOrderStatuses.map((o, i) => [o.id, i]),
+      priority: new Map(
+        priorities.map((o, i) => [o.id, i]),
       ),
-      entry_status: new Map(entryStatuses.map((o, i) => [o.id, i])),
+      status: new Map(statuses.map((o, i) => [o.id, i])),
     };
 
     const keyId = (k: GroupableKey, r: TaskRow) =>
@@ -298,7 +298,7 @@ export function GridTable({
       return 0;
     });
     return sorted.flatMap((b) => b.rows);
-  }, [orderedData, groupBy, uberProjects, actionOrderStatuses, entryStatuses]);
+  }, [orderedData, groupBy, uberProjects, priorities, statuses]);
 
   // Compute icicle spans for each active group-by level. Each span covers the
   // consecutive `groupedData` rows that share the same accumulated group path
@@ -699,16 +699,16 @@ export function GridTable({
                       className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
                     >
                       <PillSelect
-                        value={row.action_order_status_id ?? ""}
-                        options={actionOrderStatuses}
+                        value={row.priority_id ?? ""}
+                        options={priorities}
                         onSave={(v) =>
                           updateProjectField(
                             row.project_id,
-                            "action_order_status_id",
+                            "priority_id",
                             v || null,
                           )
                         }
-                        onCreate={createActionOrderStatusOption}
+                        onCreate={createPriorityOption}
                       />
                     </td>
                   );
@@ -723,16 +723,16 @@ export function GridTable({
                       className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
                     >
                       <PillSelect
-                        value={row.entry_status_id ?? ""}
-                        options={entryStatuses}
+                        value={row.status_id ?? ""}
+                        options={statuses}
                         onSave={(v) =>
                           updateProjectField(
                             row.project_id,
-                            "entry_status_id",
+                            "status_id",
                             v || null,
                           )
                         }
-                        onCreate={createEntryStatusOption}
+                        onCreate={createStatusOption}
                       />
                     </td>
                   );

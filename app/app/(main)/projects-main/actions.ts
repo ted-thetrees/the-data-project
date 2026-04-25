@@ -9,8 +9,8 @@ const PROJECT_FIELDS = new Set([
   "tickle_date",
   "notes",
   "uber_project_id",
-  "action_order_status_id",
-  "entry_status_id",
+  "priority_id",
+  "status_id",
 ]);
 const UBER_FIELDS = new Set(["name"]);
 
@@ -163,11 +163,11 @@ export async function createTask(projectId: string) {
 }
 
 export async function createProject() {
-  const [taskStatus, uberProject, actionOrder] = await Promise.all([
+  const [taskStatus, uberProject, priority] = await Promise.all([
     poolV002.query(`SELECT id FROM task_statuses WHERE name = 'Tickled' LIMIT 1`),
     poolV002.query(`SELECT id FROM uber_projects ORDER BY name LIMIT 1`),
     poolV002.query(
-      `SELECT id FROM project_action_order_statuses
+      `SELECT id FROM project_priorities
        WHERE name = 'Needs Sorting' LIMIT 1`,
     ),
   ]);
@@ -175,12 +175,12 @@ export async function createProject() {
   if (!uberProject.rows[0]) throw new Error("No uber projects available");
 
   const project = await poolV002.query(
-    `INSERT INTO projects (name, uber_project_id, action_order_status_id)
+    `INSERT INTO projects (name, uber_project_id, priority_id)
      VALUES ('Untitled Project', $1, $2)
      RETURNING id`,
     [
       uberProject.rows[0].id,
-      actionOrder.rows[0]?.id ?? null,
+      priority.rows[0]?.id ?? null,
     ],
   );
   await poolV002.query(

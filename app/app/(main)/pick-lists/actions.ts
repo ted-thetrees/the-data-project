@@ -14,13 +14,13 @@ type SourceConfig = {
 };
 
 const SOURCE_TABLES: Record<string, SourceConfig> = {
-  project_action_order_statuses: {
-    table: "project_action_order_statuses",
+  project_priorities: {
+    table: "project_priorities",
     hasSortOrder: true,
     idType: "uuid",
   },
-  project_entry_statuses: {
-    table: "project_entry_statuses",
+  project_statuses: {
+    table: "project_statuses",
     hasSortOrder: true,
     idType: "uuid",
   },

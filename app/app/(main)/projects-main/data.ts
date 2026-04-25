@@ -8,10 +8,10 @@ export async function getProjectsMainData(): Promise<TaskRow[]> {
            ts.name as task_status, ts.color as task_color,
            p.id as project_id,
            p.name as project, p.tickle_date::text, p.notes as project_notes, p."order" as project_order,
-           p.action_order_status_id,
-           aos.name as action_order_status, aos.color as action_order_color,
-           p.entry_status_id,
-           pes.name as entry_status, pes.color as entry_status_color,
+           p.priority_id,
+           pri.name as priority, pri.color as priority_color,
+           p.status_id,
+           st.name as status, st.color as status_color,
            up.id as uber_project_id,
            up.name as uber_project, up."order" as uber_order,
            up.color as uber_color
@@ -19,8 +19,8 @@ export async function getProjectsMainData(): Promise<TaskRow[]> {
     JOIN projects p ON t.project_id = p.id
     JOIN uber_projects up ON p.uber_project_id = up.id
     JOIN task_statuses ts ON t.status_id = ts.id
-    LEFT JOIN project_action_order_statuses aos ON p.action_order_status_id = aos.id
-    LEFT JOIN project_entry_statuses pes ON p.entry_status_id = pes.id
+    LEFT JOIN project_priorities pri ON p.priority_id = pri.id
+    LEFT JOIN project_statuses st ON p.status_id = st.id
     WHERE t.deleted_at IS NULL
     ORDER BY
       p.tickle_date ASC NULLS LAST, p.name,
@@ -42,16 +42,16 @@ export async function getTaskStatuses(): Promise<StatusOption[]> {
   return result.rows;
 }
 
-export async function getActionOrderStatuses(): Promise<StatusOption[]> {
+export async function getPriorities(): Promise<StatusOption[]> {
   const result = await poolV002.query(
-    `SELECT id, name, color FROM project_action_order_statuses ORDER BY sort_order NULLS LAST, name`
+    `SELECT id, name, color FROM project_priorities ORDER BY sort_order NULLS LAST, name`
   );
   return result.rows;
 }
 
-export async function getEntryStatuses(): Promise<StatusOption[]> {
+export async function getStatuses(): Promise<StatusOption[]> {
   const result = await poolV002.query(
-    `SELECT id, name, color FROM project_entry_statuses ORDER BY sort_order NULLS LAST, name`
+    `SELECT id, name, color FROM project_statuses ORDER BY sort_order NULLS LAST, name`
   );
   return result.rows;
 }

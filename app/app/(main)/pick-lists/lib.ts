@@ -37,16 +37,16 @@ export function getUberProjectsForPickList() {
   return getStatusesByName("uber_projects", "ORDER BY sort_order NULLS LAST, name");
 }
 
-export function getProjectActionOrderStatuses() {
+export function getProjectPriorities() {
   return getStatusesByName(
-    "project_action_order_statuses",
+    "project_priorities",
     "ORDER BY sort_order NULLS LAST, name",
   );
 }
 
-export function getProjectEntryStatuses() {
+export function getProjectStatuses() {
   return getStatusesByName(
-    "project_entry_statuses",
+    "project_statuses",
     "ORDER BY sort_order NULLS LAST, name",
   );
 }

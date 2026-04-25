@@ -8,13 +8,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "title required" }, { status: 400 });
   }
 
-  const [uberRows, taskStatusRow, actionOrderRow] = await Promise.all([
+  const [uberRows, taskStatusRow, priorityRow] = await Promise.all([
     poolV002.query<{ id: string; name: string }>(
       `SELECT id, name FROM uber_projects ORDER BY name`,
     ),
     poolV002.query(`SELECT id FROM task_statuses WHERE name = 'Tickled' LIMIT 1`),
     poolV002.query(
-      `SELECT id FROM project_action_order_statuses WHERE name = 'Needs Sorting' LIMIT 1`,
+      `SELECT id FROM project_priorities WHERE name = 'Needs Sorting' LIMIT 1`,
     ),
   ]);
   if (!uberRows.rows.length) {
@@ -31,10 +31,10 @@ export async function POST(req: NextRequest) {
     uberRows.rows.find((r) => r.name === uber_project) ?? uberRows.rows[0];
 
   const project = await poolV002.query<{ id: string }>(
-    `INSERT INTO projects (name, uber_project_id, action_order_status_id)
+    `INSERT INTO projects (name, uber_project_id, priority_id)
      VALUES ($1, $2, $3)
      RETURNING id`,
-    [title, uber.id, actionOrderRow.rows[0]?.id ?? null],
+    [title, uber.id, priorityRow.rows[0]?.id ?? null],
   );
   await poolV002.query(
     `INSERT INTO tasks (name, project_id, status_id) VALUES ('', $1, $2)`,
