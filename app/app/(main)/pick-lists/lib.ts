@@ -148,6 +148,13 @@ export function getInfImagesBubbleDistributions() {
   );
 }
 
+export function getInfImageStatuses() {
+  return getStatusesByName(
+    "inf_image_statuses",
+    "ORDER BY sort_order NULLS LAST, name",
+  );
+}
+
 export function getTablesFeatureStatuses() {
   return getStatusesByName(
     "tables_feature_statuses",

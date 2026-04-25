@@ -31,10 +31,12 @@ import {
   bulkDeleteImages,
   bulkSetBubbleDistribution,
   bulkSetImageFolderStatus,
+  bulkSetImageStatus,
   deleteImageFromList,
   setImageFolderStatus,
   updateBubbleDistribution,
   updateImageName,
+  updateImageStatus,
 } from "./actions";
 import { createPicklistOptionNamed } from "../../pick-lists/actions";
 import {
@@ -63,6 +65,7 @@ export interface ListRow {
   width: number | null;
   height: number | null;
   bubble_distribution_id: string | null;
+  status_id: string | null;
   /** Map of folder_id → status_id for folders this image has a status on. */
   folder_statuses: Record<string, string>;
   tag_ids: string[];
@@ -84,6 +87,7 @@ const STATIC_COLUMN_KEYS = [
   "select",
   "image",
   "name",
+  "status",
   "bubble_distribution",
   "tags",
 ] as const;
@@ -92,17 +96,19 @@ const STATIC_HEADER_LABELS: Record<string, string> = {
   select: "",
   image: "Image",
   name: "Name",
+  status: "Status",
   bubble_distribution: "Bubble Distribution",
   tags: "Tags",
 };
 
 // Group-by is scoped to static fields for now — grouping by per-folder
 // columns would be redundant with the column itself.
-const GROUPABLE_KEYS = ["tag", "bubble_distribution"] as const;
+const GROUPABLE_KEYS = ["tag", "status", "bubble_distribution"] as const;
 type GroupField = (typeof GROUPABLE_KEYS)[number];
 
 const GROUPABLE_HEADER_LABELS: Record<string, string> = {
   tag: "Tag",
+  status: "Status",
   bubble_distribution: "Bubble Distribution",
 };
 
@@ -113,12 +119,14 @@ export function ListTable({
   folders,
   tags,
   bubbleDistributionOptions,
+  statusOptions,
   initialParams,
 }: {
   rows: ListRow[];
   folders: FolderOption[];
   tags: TagOption[];
   bubbleDistributionOptions: PillOption[];
+  statusOptions: PillOption[];
   initialParams?: ViewParams;
 }) {
   const {
@@ -174,6 +182,11 @@ export function ListTable({
     [bubbleDistributionOptions],
   );
 
+  const statusById = useMemo(
+    () => new Map(statusOptions.map((s) => [s.id, s])),
+    [statusOptions],
+  );
+
   const specs: GroupBySpec<ListRow>[] = useMemo(
     () =>
       groupBy.map((field) => {
@@ -186,6 +199,17 @@ export function ListTable({
                 ? "Unassigned"
                 : bubbleById.get(key)?.name ?? "Unknown",
             keyOrder: bubbleDistributionOptions.map((b) => b.id),
+          };
+        }
+        if (field === "status") {
+          return {
+            field,
+            getKey: (row) => row.status_id ?? null,
+            getLabel: (key) =>
+              key == null
+                ? "Unassigned"
+                : statusById.get(key)?.name ?? "Unknown",
+            keyOrder: statusOptions.map((s) => s.id),
           };
         }
         return {
@@ -209,6 +233,8 @@ export function ListTable({
       tagKeyOrder,
       bubbleById,
       bubbleDistributionOptions,
+      statusById,
+      statusOptions,
     ],
   );
 
@@ -302,6 +328,7 @@ export function ListTable({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkPicker, setBulkPicker] = useState<
     | { kind: "bubble" }
+    | { kind: "status" }
     | { kind: "folder"; folderId: string; folderName: string }
     | null
   >(null);
@@ -428,6 +455,18 @@ export function ListTable({
         </span>
       </td>
     ),
+    status: (row) => (
+      <td key="status" className={cellClass}>
+        <PillSelect
+          value={row.status_id ?? ""}
+          options={statusOptions}
+          onSave={(v) => updateImageStatus(row.image_id, v)}
+          onCreate={(name) =>
+            createPicklistOptionNamed("inf_image_statuses", name)
+          }
+        />
+      </td>
+    ),
     bubble_distribution: (row) => (
       <td key="bubble_distribution" className={cellClass}>
         <PillSelect
@@ -506,6 +545,7 @@ export function ListTable({
           totalCount={rows.length}
           folders={folders}
           onPickBubble={() => setBulkPicker({ kind: "bubble" })}
+          onPickStatus={() => setBulkPicker({ kind: "status" })}
           onPickFolder={(f) =>
             setBulkPicker({ kind: "folder", folderId: f.id, folderName: f.name })
           }
@@ -608,6 +648,9 @@ export function ListTable({
               const colorFor = (group: GroupNode<ListRow>) => {
                 if (group.field === "bubble_distribution" && group.value) {
                   return bubbleById.get(group.value)?.color ?? null;
+                }
+                if (group.field === "status" && group.value) {
+                  return statusById.get(group.value)?.color ?? null;
                 }
                 return null;
               };
@@ -740,9 +783,15 @@ export function ListTable({
         picker={bulkPicker}
         onClose={() => setBulkPicker(null)}
         bubbleOptions={bubbleDistributionOptions}
+        statusOptions={statusOptions}
         selectedIds={[...selectedIds]}
         onApplyBubble={(statusId) => {
           void bulkSetBubbleDistribution([...selectedIds], statusId);
+          setBulkPicker(null);
+          clearSelection();
+        }}
+        onApplyStatus={(statusId) => {
+          void bulkSetImageStatus([...selectedIds], statusId);
           setBulkPicker(null);
           clearSelection();
         }}
@@ -981,6 +1030,7 @@ function BulkActionBar({
   onSelectAll,
   folders,
   onPickBubble,
+  onPickStatus,
   onPickFolder,
   onDelete,
 }: {
@@ -990,6 +1040,7 @@ function BulkActionBar({
   onSelectAll: () => void;
   folders: FolderOption[];
   onPickBubble: () => void;
+  onPickStatus: () => void;
   onPickFolder: (f: FolderOption) => void;
   onDelete: () => void;
 }) {
@@ -1016,6 +1067,13 @@ function BulkActionBar({
       <span className="text-[color:var(--muted-foreground)] text-sm">
         Set:
       </span>
+      <button
+        type="button"
+        className="themed-button-sm"
+        onClick={onPickStatus}
+      >
+        Status…
+      </button>
       <button
         type="button"
         className="themed-button-sm"
@@ -1077,35 +1135,44 @@ function BulkPickerDialog({
   picker,
   onClose,
   bubbleOptions,
+  statusOptions,
   selectedIds,
   onApplyBubble,
+  onApplyStatus,
   onApplyFolder,
 }: {
   picker:
     | { kind: "bubble" }
+    | { kind: "status" }
     | { kind: "folder"; folderId: string; folderName: string }
     | null;
   onClose: () => void;
   bubbleOptions: PillOption[];
+  statusOptions: PillOption[];
   selectedIds: string[];
   onApplyBubble: (statusId: string) => void;
+  onApplyStatus: (statusId: string) => void;
   onApplyFolder: (folderId: string, statusId: string) => void;
 }) {
   const open = picker !== null;
+  const optionsForPicker =
+    picker?.kind === "status" ? statusOptions : bubbleOptions;
+  const title = (() => {
+    const noun = selectedIds.length === 1 ? "image" : "images";
+    if (picker?.kind === "folder") {
+      return `Set "${picker.folderName}" on ${selectedIds.length} ${noun}`;
+    }
+    if (picker?.kind === "status") {
+      return `Set Status on ${selectedIds.length} ${noun}`;
+    }
+    return `Set Bubble Distribution on ${selectedIds.length} ${noun}`;
+  })();
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-[420px]">
-        <DialogTitle>
-          {picker?.kind === "folder"
-            ? `Set "${picker.folderName}" on ${selectedIds.length} image${
-                selectedIds.length === 1 ? "" : "s"
-              }`
-            : `Set Bubble Distribution on ${selectedIds.length} image${
-                selectedIds.length === 1 ? "" : "s"
-              }`}
-        </DialogTitle>
+        <DialogTitle>{title}</DialogTitle>
         <div className="flex flex-wrap gap-2 mt-3">
-          {bubbleOptions.map((opt) => (
+          {optionsForPicker.map((opt) => (
             <button
               key={opt.id}
               type="button"
@@ -1113,6 +1180,8 @@ function BulkPickerDialog({
               onClick={() => {
                 if (picker?.kind === "folder") {
                   onApplyFolder(picker.folderId, opt.id);
+                } else if (picker?.kind === "status") {
+                  onApplyStatus(opt.id);
                 } else if (picker?.kind === "bubble") {
                   onApplyBubble(opt.id);
                 }

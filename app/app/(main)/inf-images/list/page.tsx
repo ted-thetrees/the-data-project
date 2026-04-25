@@ -6,7 +6,10 @@ import { Subtitle } from "@/components/subtitle";
 import { getInitialViewParams } from "@/lib/table-views-cookie";
 import { ListTable, type ListRow, type FolderOption, type TagOption } from "./list-table";
 import { LIST_STORAGE_KEY, LIST_DEFAULT_WIDTHS } from "./config";
-import { getInfImagesBubbleDistributions } from "../../pick-lists/lib";
+import {
+  getInfImagesBubbleDistributions,
+  getInfImageStatuses,
+} from "../../pick-lists/lib";
 import type { PillOption } from "@/components/pill";
 
 export const metadata = { title: "INF Images — List" };
@@ -24,6 +27,7 @@ async function getRows(): Promise<ListRow[]> {
       i.width,
       i.height,
       i.bubble_distribution_id::text      AS bubble_distribution_id,
+      i.status_id::text                   AS status_id,
       COALESCE(
         (SELECT jsonb_object_agg(folder_id, status_id::text)
            FROM inf_images_folder_links WHERE image_id = i.id),
@@ -59,13 +63,15 @@ async function getTags(): Promise<TagOption[]> {
 }
 
 export default async function InfImagesListPage() {
-  const [rows, folders, tags, bubbleDistributions, initialParams] = await Promise.all([
-    getCachedRows(),
-    getFolders(),
-    getTags(),
-    getInfImagesBubbleDistributions() as unknown as Promise<PillOption[]>,
-    getInitialViewParams(LIST_STORAGE_KEY, LIST_DEFAULT_WIDTHS),
-  ]);
+  const [rows, folders, tags, bubbleDistributions, statuses, initialParams] =
+    await Promise.all([
+      getCachedRows(),
+      getFolders(),
+      getTags(),
+      getInfImagesBubbleDistributions() as unknown as Promise<PillOption[]>,
+      getInfImageStatuses() as unknown as Promise<PillOption[]>,
+      getInitialViewParams(LIST_STORAGE_KEY, LIST_DEFAULT_WIDTHS),
+    ]);
 
   return (
     <PageShell title="INF Images — List" count={rows.length} maxWidth="">
@@ -77,14 +83,16 @@ export default async function InfImagesListPage() {
           "inf_images_folders",
           "inf_images_tags",
           "inf_images_bubble_distributions",
+          "inf_image_statuses",
         ]}
       />
-      <Subtitle>One row per image. Group by Folder, Tag, or Bubble Distribution.</Subtitle>
+      <Subtitle>One row per image. Group by Folder, Tag, Status, or Bubble Distribution.</Subtitle>
       <ListTable
         rows={rows}
         folders={folders}
         tags={tags}
         bubbleDistributionOptions={bubbleDistributions}
+        statusOptions={statuses}
         initialParams={initialParams}
       />
     </PageShell>

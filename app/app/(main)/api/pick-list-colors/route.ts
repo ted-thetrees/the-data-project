@@ -32,6 +32,7 @@ const SOURCE_TABLES: Record<string, string> = {
   get_statuses: "get_statuses",
   get_sources: "get_sources",
   inf_images_bubble_distributions: "inf_images_bubble_distributions",
+  inf_image_statuses: "inf_image_statuses",
   tables_feature_statuses: "tables_feature_statuses",
   tables_display_types: "tables_display_types",
   inf_images_folders: "inf_images_folders",

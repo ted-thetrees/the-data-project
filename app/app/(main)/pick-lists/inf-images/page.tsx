@@ -5,6 +5,7 @@ import {
   getPalettes,
   getInfImagesBubbleDistributions,
   getInfImagesFolders,
+  getInfImageStatuses,
 } from "../lib";
 
 export const metadata = { title: "Pick Lists · INF Images" };
@@ -29,8 +30,9 @@ function PickListSection({
 }
 
 export default async function PickListsInfImagesPage() {
-  const [bubbleDistributions, folders, palettes] = await Promise.all([
+  const [bubbleDistributions, statuses, folders, palettes] = await Promise.all([
     getInfImagesBubbleDistributions(),
+    getInfImageStatuses(),
     getInfImagesFolders(),
     getPalettes(),
   ]);
@@ -38,9 +40,26 @@ export default async function PickListsInfImagesPage() {
   return (
     <PageShell title="Pick Lists · INF Images">
       <Realtime
-        tables={["inf_images_bubble_distributions", "inf_images_folders", "color_palettes"]}
+        tables={[
+          "inf_images_bubble_distributions",
+          "inf_image_statuses",
+          "inf_images_folders",
+          "color_palettes",
+        ]}
       />
       <div className="space-y-10">
+        <PickListSection
+          title="Status"
+          usedBy="Status column on INF Images · List"
+        >
+          <PicklistStatusTable
+            source="inf_image_statuses"
+            rows={statuses}
+            palettes={palettes}
+            storageKey="pick-lists:inf_image_statuses"
+            sortable
+          />
+        </PickListSection>
         <PickListSection
           title="Sort / Yes / No"
           usedBy="Bubble Distribution + every Folder column on INF Images · List"

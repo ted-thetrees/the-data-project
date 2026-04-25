@@ -54,6 +54,10 @@ const SOURCE_TABLES: Record<string, SourceConfig> = {
     table: "inf_images_bubble_distributions",
     hasSortOrder: true,
   },
+  inf_image_statuses: {
+    table: "inf_image_statuses",
+    hasSortOrder: true,
+  },
   tables_feature_statuses: {
     table: "tables_feature_statuses",
     hasSortOrder: true,

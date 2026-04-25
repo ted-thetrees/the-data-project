@@ -21,6 +21,37 @@ export async function updateBubbleDistribution(
   revalidatePath("/inf-images");
 }
 
+export async function updateImageStatus(imageId: string, statusId: string) {
+  const value =
+    statusId && statusId.length > 0 ? Number(statusId) : null;
+  await poolV002.query(
+    `UPDATE inf_images SET status_id = $1, updated_at = now() WHERE id = $2`,
+    [value, imageId],
+  );
+  updateTag("inf-images");
+  revalidatePath("/inf-images/list");
+  revalidatePath("/inf-images");
+  revalidatePath("/inf-images/masonry");
+}
+
+export async function bulkSetImageStatus(
+  imageIds: string[],
+  statusId: string,
+) {
+  if (imageIds.length === 0) return;
+  const value =
+    statusId && statusId.length > 0 ? Number(statusId) : null;
+  await poolV002.query(
+    `UPDATE inf_images SET status_id = $1, updated_at = now()
+     WHERE id = ANY($2::uuid[])`,
+    [value, imageIds],
+  );
+  updateTag("inf-images");
+  revalidatePath("/inf-images/list");
+  revalidatePath("/inf-images");
+  revalidatePath("/inf-images/masonry");
+}
+
 export async function updateImageName(imageId: string, name: string) {
   await poolV002.query(
     `UPDATE inf_images SET name = $1, updated_at = now() WHERE id = $2`,
