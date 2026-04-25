@@ -60,15 +60,6 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import {
   useTableViews,
   resolveColumnOrder,
   type ViewParams,
@@ -220,12 +211,6 @@ export function GridTable({
   // to the top in the order they became dirty and stay put until committed.
   // Committed projects render in normal SQL order below.
   const [dirtyProjectIds, setDirtyProjectIds] = useState<string[]>([]);
-  type DeleteConfirm =
-    | { kind: "task"; id: string; name: string }
-    | { kind: "project"; id: string; name: string }
-    | null;
-  const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirm>(null);
-  const [deletePending, startDeleteTransition] = useTransition();
   const dirtyTaskOrderRef = useRef<Map<string, string[]>>(new Map());
   const prevProjectIdsRef = useRef<Set<string> | null>(null);
 
@@ -1027,27 +1012,18 @@ export function GridTable({
                 </ContextMenuTrigger>
                 <ContextMenuContent>
                   <ContextMenuItem
-                    onClick={() =>
-                      setDeleteConfirm({
-                        kind: "task",
-                        id: row.id,
-                        name: row.task,
-                      })
-                    }
+                    onClick={() => {
+                      void deleteTask(row.id);
+                    }}
                     variant="destructive"
                   >
                     Delete task
                   </ContextMenuItem>
                   <ContextMenuSeparator />
                   <ContextMenuItem
-                    onClick={() =>
-                      setDeleteConfirm({
-                        kind: "project",
-                        id: row.project_id,
-                        name:
-                          (projectByIndex[i]?.value as string) ?? "this project",
-                      })
-                    }
+                    onClick={() => {
+                      void deleteProject(row.project_id);
+                    }}
                     variant="destructive"
                   >
                     Delete project
@@ -1067,53 +1043,6 @@ export function GridTable({
         </table>
         </DndContext>
       </div>
-      <Dialog
-        open={deleteConfirm !== null}
-        onOpenChange={(o) => {
-          if (!o) setDeleteConfirm(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-sm rounded-none p-4 gap-3 text-balance">
-          <DialogHeader className="pr-8">
-            <DialogTitle className="leading-relaxed">
-              Delete {deleteConfirm?.kind === "project" ? "project" : "task"}{" "}
-              {deleteConfirm?.name ? `"${deleteConfirm.name}"` : ""}?
-            </DialogTitle>
-            {deleteConfirm?.kind === "project" && (
-              <DialogDescription>
-                This will also delete all tasks under this project.
-              </DialogDescription>
-            )}
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteConfirm(null)}
-              disabled={deletePending}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={deletePending}
-              onClick={() => {
-                if (!deleteConfirm) return;
-                const target = deleteConfirm;
-                startDeleteTransition(async () => {
-                  if (target.kind === "task") {
-                    await deleteTask(target.id);
-                  } else {
-                    await deleteProject(target.id);
-                  }
-                  setDeleteConfirm(null);
-                });
-              }}
-            >
-              {deletePending ? "Deleting…" : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 

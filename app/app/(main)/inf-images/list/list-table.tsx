@@ -512,10 +512,6 @@ export function ListTable({
           onDelete={() => {
             const ids = [...selectedIds];
             if (ids.length === 0) return;
-            const ok = window.confirm(
-              `Delete ${ids.length} image${ids.length === 1 ? "" : "s"}? This cannot be undone.`,
-            );
-            if (!ok) return;
             void bulkDeleteImages(ids).then(() => clearSelection());
           }}
         />

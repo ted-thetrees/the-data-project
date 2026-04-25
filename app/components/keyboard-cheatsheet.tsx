@@ -24,7 +24,7 @@ const SHORTCUTS: { keys: string; desc: string }[] = [
   { keys: "Return", desc: "Enter first editable cell (when nothing focused)" },
   { keys: "Return", desc: "Open pill picker / commit text edit" },
   { keys: "Esc", desc: "Cancel edit / close popover" },
-  { keys: "Delete", desc: "Delete the focused row (with confirmation)" },
+  { keys: "Delete", desc: "Delete the focused row (Cmd+Z to undo)" },
   { keys: `${MOD}+N`, desc: "New row" },
   { keys: `${MOD}+Z`, desc: "Undo last change" },
   { keys: `${MOD}+Return`, desc: "Commit project (Projects Main)" },
