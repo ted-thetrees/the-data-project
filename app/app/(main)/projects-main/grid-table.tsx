@@ -77,9 +77,9 @@ import { GroupByPicker } from "@/components/group-by-picker";
 const PROJECT_ICICLE_KEYS = [
   "project",
   "tickle",
+  "status",
   "uber_project",
   "priority",
-  "status",
 ] as const;
 
 // Task-level columns (per-row, user-reorderable).
@@ -666,6 +666,30 @@ export function GridTable({
                   );
                 })()}
 
+                {/* Icicle: Status (rowspan-merged pill select, +1) */}
+                {projectStartSet.has(i) && (() => {
+                  const span = projectByIndex[i];
+                  return (
+                    <td
+                      rowSpan={span.rowSpan + 1}
+                      className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
+                    >
+                      <PillSelect
+                        value={row.status_id ?? ""}
+                        options={statuses}
+                        onSave={(v) =>
+                          updateProjectField(
+                            row.project_id,
+                            "status_id",
+                            v || null,
+                          )
+                        }
+                        onCreate={createStatusOption}
+                      />
+                    </td>
+                  );
+                })()}
+
                 {/* Icicle: Uber Project (rowspan-merged pill select, +1) */}
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
@@ -690,7 +714,7 @@ export function GridTable({
                   );
                 })()}
 
-                {/* Icicle: Action Order Status (rowspan-merged pill select, +1) */}
+                {/* Icicle: Priority (rowspan-merged pill select, +1) */}
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
                   return (
@@ -709,30 +733,6 @@ export function GridTable({
                           )
                         }
                         onCreate={createPriorityOption}
-                      />
-                    </td>
-                  );
-                })()}
-
-                {/* Icicle: Entry Status (rowspan-merged pill select, +1) */}
-                {projectStartSet.has(i) && (() => {
-                  const span = projectByIndex[i];
-                  return (
-                    <td
-                      rowSpan={span.rowSpan + 1}
-                      className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
-                    >
-                      <PillSelect
-                        value={row.status_id ?? ""}
-                        options={statuses}
-                        onSave={(v) =>
-                          updateProjectField(
-                            row.project_id,
-                            "status_id",
-                            v || null,
-                          )
-                        }
-                        onCreate={createStatusOption}
                       />
                     </td>
                   );
