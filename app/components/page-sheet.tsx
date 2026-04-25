@@ -31,7 +31,7 @@ export function PageSheet({
   title: string;
   count?: number;
   subtitle?: React.ReactNode;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   return (
     <Sheet>

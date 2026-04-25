@@ -1,8 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { poolV002 } from "@/lib/db";
-import { PageShell } from "@/components/page-shell";
+import { PageSheet } from "@/components/page-sheet";
 import { Realtime } from "@/components/realtime";
-import { Subtitle } from "@/components/subtitle";
 import type { PillOption } from "@/components/pill";
 import {
   TableFeaturesGrid,
@@ -80,7 +79,7 @@ export default async function TableFeaturesPage() {
       getDisplayTypeOptions(),
     ]);
   return (
-    <PageShell title="Table Features" count={catalog.length} maxWidth="">
+    <div className="px-[var(--page-padding-x)] py-[var(--page-padding-y)]">
       <Realtime
         tables={[
           "tables_catalog",
@@ -90,10 +89,16 @@ export default async function TableFeaturesPage() {
           "tables_display_types",
         ]}
       />
-      <Subtitle>
-        Cross-tab of every page × every feature. Features marked{" "}
-        <em>Default for new</em> should be enabled on new pages by default.
-      </Subtitle>
+      <PageSheet
+        title="Table Features"
+        count={catalog.length}
+        subtitle={
+          <>
+            Cross-tab of every page × every feature. Features marked{" "}
+            <em>Default for new</em> should be enabled on new pages by default.
+          </>
+        }
+      />
       <TableFeaturesGrid
         catalog={catalog}
         features={features}
@@ -101,6 +106,6 @@ export default async function TableFeaturesPage() {
         statusOptions={statusOptions}
         displayTypeOptions={displayTypeOptions}
       />
-    </PageShell>
+    </div>
   );
 }
