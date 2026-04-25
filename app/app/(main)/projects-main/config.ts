@@ -4,7 +4,6 @@ export const PROJECTS_MAIN_DEFAULT_WIDTHS: Record<string, number> = {
   uber_project: 140,
   project: 220,
   tickle: 110,
-  project_status: 110,
   action_order_status: 140,
   entry_status: 110,
   task: 280,

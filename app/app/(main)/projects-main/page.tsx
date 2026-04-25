@@ -4,7 +4,6 @@ import { Realtime } from "@/components/realtime";
 import {
   getProjectsMainData,
   getTaskStatuses,
-  getProjectStatuses,
   getActionOrderStatuses,
   getEntryStatuses,
   getUberProjects,
@@ -35,9 +34,6 @@ export interface TaskRow {
   task_notes: string | null;
   project: string;
   project_id: string;
-  project_status: string;
-  project_status_id: string;
-  project_color: string;
   project_order: number | null;
   tickle_date: string | null;
   project_notes: string | null;
@@ -63,7 +59,6 @@ export default async function GridPage() {
   const [
     data,
     taskStatuses,
-    projectStatuses,
     actionOrderStatuses,
     entryStatuses,
     uberProjects,
@@ -71,7 +66,6 @@ export default async function GridPage() {
   ] = await Promise.all([
     getCachedProjectsMainData(),
     getTaskStatuses(),
-    getProjectStatuses(),
     getActionOrderStatuses(),
     getEntryStatuses(),
     getUberProjects(),
@@ -88,7 +82,6 @@ export default async function GridPage() {
           "projects",
           "uber_projects",
           "task_statuses",
-          "project_statuses",
           "project_action_order_statuses",
           "project_entry_statuses",
         ]}
@@ -96,7 +89,6 @@ export default async function GridPage() {
       <GridTable
         data={data}
         taskStatuses={taskStatuses}
-        projectStatuses={projectStatuses}
         actionOrderStatuses={actionOrderStatuses}
         entryStatuses={entryStatuses}
         uberProjects={uberProjects}

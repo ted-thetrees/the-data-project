@@ -45,8 +45,6 @@ import { Pill, PillSelect, PILL_CLASS } from "@/components/pill";
 
 const createUberProjectOption = (name: string) =>
   createPicklistOptionNamed("uber_projects", name);
-const createProjectStatusOption = (name: string) =>
-  createPicklistOptionNamed("project_statuses", name);
 const createActionOrderStatusOption = (name: string) =>
   createPicklistOptionNamed("project_action_order_statuses", name);
 const createEntryStatusOption = (name: string) =>
@@ -80,7 +78,6 @@ const PROJECT_ICICLE_KEYS = [
   "project",
   "tickle",
   "uber_project",
-  "project_status",
   "action_order_status",
   "entry_status",
 ] as const;
@@ -92,7 +89,6 @@ const HEADER_LABELS: Record<string, string> = {
   project: "Project",
   tickle: "Tickle",
   uber_project: "Uber Project",
-  project_status: "Project Status",
   action_order_status: "Action Order",
   entry_status: "Entry Status",
   task: "Task",
@@ -107,7 +103,6 @@ const HEADER_LABELS: Record<string, string> = {
 const GROUPABLE_KEYS = [
   "tickle",
   "uber_project",
-  "project_status",
   "action_order_status",
   "entry_status",
 ] as const;
@@ -130,11 +125,6 @@ const GROUP_ACCESSORS: Record<
     id: (r) => r.uber_project_id ?? null,
     label: (r) => r.uber_project ?? "(none)",
     color: (r) => r.uber_color,
-  },
-  project_status: {
-    id: (r) => r.project_status_id ?? null,
-    label: (r) => r.project_status ?? "(none)",
-    color: (r) => r.project_color,
   },
   action_order_status: {
     id: (r) => r.action_order_status_id ?? null,
@@ -198,7 +188,6 @@ function computeGroupSpans(
 export function GridTable({
   data,
   taskStatuses,
-  projectStatuses,
   actionOrderStatuses,
   entryStatuses,
   uberProjects,
@@ -208,7 +197,6 @@ export function GridTable({
 }: {
   data: TaskRow[];
   taskStatuses: StatusOption[];
-  projectStatuses: StatusOption[];
   actionOrderStatuses: StatusOption[];
   entryStatuses: StatusOption[];
   uberProjects: StatusOption[];
@@ -269,7 +257,6 @@ export function GridTable({
     //     Unknown/null options go last.
     const optionIndexByField: Record<string, Map<string, number>> = {
       uber_project: new Map(uberProjects.map((o, i) => [o.id, i])),
-      project_status: new Map(projectStatuses.map((o, i) => [o.id, i])),
       action_order_status: new Map(
         actionOrderStatuses.map((o, i) => [o.id, i]),
       ),
@@ -311,7 +298,7 @@ export function GridTable({
       return 0;
     });
     return sorted.flatMap((b) => b.rows);
-  }, [orderedData, groupBy, uberProjects, projectStatuses, actionOrderStatuses, entryStatuses]);
+  }, [orderedData, groupBy, uberProjects, actionOrderStatuses, entryStatuses]);
 
   // Compute icicle spans for each active group-by level. Each span covers the
   // consecutive `groupedData` rows that share the same accumulated group path
@@ -346,7 +333,7 @@ export function GridTable({
       computeGroupSpans(
         groupedData,
         projectAccessor,
-        (r) => r.project_color,
+        undefined,
         (r) => ({
           tickle: r.tickle_date,
           notes: r.project_notes,
@@ -698,26 +685,6 @@ export function GridTable({
                           )
                         }
                         onCreate={createUberProjectOption}
-                      />
-                    </td>
-                  );
-                })()}
-
-                {/* Icicle: Project Status (rowspan-merged pill select, +1) */}
-                {projectStartSet.has(i) && (() => {
-                  const span = projectByIndex[i];
-                  return (
-                    <td
-                      rowSpan={span.rowSpan + 1}
-                      className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
-                    >
-                      <PillSelect
-                        value={row.project_status_id}
-                        options={projectStatuses}
-                        onSave={(v) =>
-                          updateProjectField(row.project_id, "status_id", v)
-                        }
-                        onCreate={createProjectStatusOption}
                       />
                     </td>
                   );
