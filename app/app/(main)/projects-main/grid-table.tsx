@@ -1149,7 +1149,11 @@ export function GridTable({
         >
           <HugeiconsIcon icon={Menu01Icon} strokeWidth={2} />
         </SheetTrigger>
-        <SheetContent side="right" className="overflow-y-auto p-6 gap-4">
+        <SheetContent
+          side="right"
+          className="overflow-y-auto p-6 gap-4"
+          style={{ maxWidth: "32rem" }}
+        >
           <div>
             <SheetTitle className="text-[length:var(--title-font-size)] leading-[var(--title-line-height)] font-[number:var(--title-font-weight)] tracking-[var(--letter-spacing-tight)]">
               {title}
