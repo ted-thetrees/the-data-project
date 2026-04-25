@@ -591,8 +591,27 @@ export function GridTable({
     setColumnOrder(arrayMove(orderedTaskKeys, oldIndex, newIndex));
   };
 
+  const tableWrapperRef = useRef<HTMLDivElement>(null);
+  const [maxHeight, setMaxHeight] = useState<string>("100dvh");
+  useEffect(() => {
+    const measure = () => {
+      const el = tableWrapperRef.current;
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      setMaxHeight(`calc(100dvh - ${top}px)`);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(document.body);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
   const headerClass =
-    "text-left text-[length:var(--header-font-size)] font-[number:var(--header-font-weight)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
+    "sticky top-0 z-10 text-left text-[length:var(--header-font-size)] font-[number:var(--header-font-weight)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
 
   const body = (
     <>
@@ -634,7 +653,11 @@ export function GridTable({
         onChange={setGroupBy}
       />
 
-      <div className="overflow-x-auto">
+      <div
+        ref={tableWrapperRef}
+        className="overflow-auto"
+        style={{ maxHeight }}
+      >
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -671,7 +694,6 @@ export function GridTable({
                 <th
                   key={`gh-${k}`}
                   className={headerClass}
-                  style={{ position: "relative" }}
                 >
                   {HEADER_LABELS[k] ?? k}
                   <ColumnResizer
@@ -685,7 +707,6 @@ export function GridTable({
                 <th
                   key={key}
                   className={headerClass}
-                  style={{ position: "relative" }}
                 >
                   {HEADER_LABELS[key]}
                   <ColumnResizer
@@ -704,7 +725,6 @@ export function GridTable({
                     key={key}
                     id={key}
                     className={headerClass}
-                    style={{ position: "relative" }}
                     extras={
                       <ColumnResizer
                         columnIndex={i + groupBy.length + PROJECT_ICICLE_KEYS.length}
