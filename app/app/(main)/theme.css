@@ -266,6 +266,15 @@
   --title-letter-spacing: var(--letter-spacing-tight);
   --title-color: #F3F0E9;
 
+  /* ── Side sheet (right/left drawer) ── */
+  --sheet-max-width: 32rem;
+  --sheet-padding: 24px;
+  --sheet-gap: 16px;
+  --sheet-bg: var(--popover);
+  --sheet-fg: var(--popover-foreground);
+  --sheet-trigger-top: 16px;
+  --sheet-trigger-right: 16px;
+
   /* ── Search bar ── */
   --search-font-size: var(--font-size-base);
 

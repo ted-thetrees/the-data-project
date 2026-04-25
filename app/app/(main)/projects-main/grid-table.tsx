@@ -23,16 +23,8 @@ import {
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { format, parse } from "date-fns";
-import { Subtitle } from "@/components/subtitle";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Menu01Icon } from "@hugeicons/core-free-icons";
+import { PageSheet } from "@/components/page-sheet";
 import {
   Popover,
   PopoverContent,
@@ -1135,39 +1127,13 @@ export function GridTable({
   }
   return (
     <div className="px-[var(--page-padding-x)] py-[var(--page-padding-y)]">
-      <Sheet>
-        <SheetTrigger
-          render={
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="fixed top-4 right-4 z-40 bg-background border"
-              aria-label="Open menu"
-              title="Menu"
-            />
-          }
-        >
-          <HugeiconsIcon icon={Menu01Icon} strokeWidth={2} />
-        </SheetTrigger>
-        <SheetContent
-          side="right"
-          className="overflow-y-auto p-6 gap-4"
-          style={{ maxWidth: "32rem" }}
-        >
-          <div>
-            <SheetTitle className="text-[length:var(--title-font-size)] leading-[var(--title-line-height)] font-[number:var(--title-font-weight)] tracking-[var(--letter-spacing-tight)]">
-              {title}
-            </SheetTitle>
-            <p className="text-[color:var(--record-count-color)] text-[length:var(--record-count-font-size)] mt-1">
-              {groupedData.length.toLocaleString()} records
-            </p>
-          </div>
-          <Subtitle>
-            Active and drafted projects with their task breakdown. Drafts surface first, then projects ordered by tickle date.
-          </Subtitle>
-          {sidebarControls}
-        </SheetContent>
-      </Sheet>
+      <PageSheet
+        title={title}
+        count={groupedData.length}
+        subtitle="Active and drafted projects with their task breakdown. Drafts surface first, then projects ordered by tickle date."
+      >
+        {sidebarControls}
+      </PageSheet>
       {mainContent}
     </div>
   );
