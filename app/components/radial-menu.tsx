@@ -75,7 +75,8 @@ const NAV: Branch[] = [
     { kind: "leaf", label: "Pick Lists", path: "/pick-lists/inf-images", key: "X", icon: List },
   ] },
   { kind: "branch", label: "Calories", icon: Apple, children: [
-    { kind: "leaf", label: "Everything", path: "/calories", key: "a", icon: Apple },
+    { kind: "leaf", label: "Log", path: "/calories", key: "a", icon: Apple },
+    { kind: "leaf", label: "Foods", path: "/foods", key: "A", icon: List },
   ] },
   { kind: "branch", label: "Get", icon: ShoppingBag, children: [
     { kind: "leaf", label: "All", path: "/get", key: "g", icon: ShoppingBag },

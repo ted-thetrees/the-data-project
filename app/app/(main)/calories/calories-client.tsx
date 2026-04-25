@@ -1,254 +1,250 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { DataTable, type Column } from "@/components/data-table";
-import type { ViewParams } from "@/components/table-views";
-import { Subtitle } from "@/components/subtitle";
+import { Fragment, useMemo, useTransition } from "react";
 import { EditableText, EditableNumber } from "@/components/editable-text";
-import {
-  CALORIES_LOG_STORAGE_KEY,
-  CALORIES_FOODS_STORAGE_KEY,
-} from "./config";
+import { RowContextMenu } from "@/components/row-context-menu";
 import {
   createLogEntry,
-  createFood,
   updateLogItem,
+  updateLogAmount,
   updateLogCalories,
-  updateFoodName,
-  updateFoodCalories,
   deleteLogEntry,
-  deleteFood,
 } from "./actions";
 
 export interface LogRow {
   id: string;
   item: string;
+  amount: number;
   calories: number;
   food_name: string | null;
+  logged_on: string; // 'YYYY-MM-DD' (date already grouped — no TZ conversion)
   created_at: string;
 }
 
-export interface FoodRow {
-  id: string;
-  name: string;
-  calories: number;
+interface DayGroup {
+  loggedOn: string;
+  label: string;
+  rows: Array<LogRow & { running: number; remaining: number }>;
+  total: number;
+}
+
+const COLUMN_WIDTHS = {
+  date: 180,
+  item: 280,
+  amount: 90,
+  calories: 100,
+  running: 110,
+  remaining: 110,
+} as const;
+
+function formatDateLabel(loggedOn: string): string {
+  // loggedOn is 'YYYY-MM-DD' from Postgres to_char — parse as local date
+  // (not UTC) so "today" matches the user's local day.
+  const [y, m, d] = loggedOn.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const yest = new Date(today);
+  yest.setDate(yest.getDate() - 1);
+
+  if (date.getTime() === today.getTime()) return "Today";
+  if (date.getTime() === yest.getTime()) return "Yesterday";
+
+  return date.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function buildGroups(log: LogRow[], allowance: number): DayGroup[] {
+  const byDay = new Map<string, LogRow[]>();
+  for (const row of log) {
+    const list = byDay.get(row.logged_on) ?? [];
+    list.push(row);
+    byDay.set(row.logged_on, list);
+  }
+  const days = Array.from(byDay.keys()).sort((a, b) => (a < b ? 1 : -1));
+  return days.map((loggedOn) => {
+    const dayRows = (byDay.get(loggedOn) ?? []).slice().sort((a, b) =>
+      a.created_at < b.created_at ? -1 : 1,
+    );
+    let running = 0;
+    const rows = dayRows.map((r) => {
+      running += r.calories;
+      return { ...r, running, remaining: allowance - running };
+    });
+    return {
+      loggedOn,
+      label: formatDateLabel(loggedOn),
+      rows,
+      total: running,
+    };
+  });
 }
 
 export function CaloriesClient({
   log,
-  foods,
-  total,
   allowance,
-  logInitialParams,
-  foodsInitialParams,
 }: {
   log: LogRow[];
-  foods: FoodRow[];
-  total: number;
   allowance: number;
-  logInitialParams?: ViewParams;
-  foodsInitialParams?: ViewParams;
 }) {
-  const remaining = allowance - total;
-  const over = remaining < 0;
+  const groups = useMemo(() => buildGroups(log, allowance), [log, allowance]);
 
-  const logColumns: Column<LogRow>[] = [
-    {
-      key: "item",
-      header: "Item",
-      width: 260,
-      render: (row) => (
-        <EditableText
-          value={row.item}
-          onSave={(v) => updateLogItem(row.id, v)}
-        />
-      ),
-    },
-    {
-      key: "calories",
-      header: "Calories",
-      width: 100,
-      align: "right",
-      render: (row) => (
-        <EditableNumber
-          value={row.calories}
-          onSave={(v) => updateLogCalories(row.id, v)}
-        />
-      ),
-    },
-    {
-      key: "actions",
-      header: "",
-      width: 80,
-      render: (row) => <DeleteButton onDelete={() => deleteLogEntry(row.id)} />,
-    },
-  ];
+  const totalWidth =
+    COLUMN_WIDTHS.date +
+    COLUMN_WIDTHS.item +
+    COLUMN_WIDTHS.amount +
+    COLUMN_WIDTHS.calories +
+    COLUMN_WIDTHS.running +
+    COLUMN_WIDTHS.remaining;
 
-  const foodColumns: Column<FoodRow>[] = [
-    {
-      key: "name",
-      header: "Food",
-      width: 260,
-      render: (row) => (
-        <EditableText
-          value={row.name}
-          onSave={(v) => updateFoodName(row.id, v)}
-        />
-      ),
-    },
-    {
-      key: "calories",
-      header: "Calories",
-      width: 100,
-      align: "right",
-      render: (row) => (
-        <EditableNumber
-          value={row.calories}
-          onSave={(v) => updateFoodCalories(row.id, v)}
-        />
-      ),
-    },
-    {
-      key: "actions",
-      header: "",
-      width: 80,
-      render: (row) => <DeleteButton onDelete={() => deleteFood(row.id)} />,
-    },
-  ];
+  const headerClass =
+    "text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] font-[number:var(--header-font-weight)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
+  const cellClass =
+    "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] align-top";
 
   return (
-    <div className="space-y-10">
-      <section>
-        <TotalDisplay total={total} allowance={allowance} remaining={remaining} over={over} />
-      </section>
+    <div className="overflow-x-auto">
+      <table
+        className="text-[length:var(--cell-font-size)]"
+        style={{
+          tableLayout: "fixed",
+          borderCollapse: "separate",
+          borderSpacing: "var(--row-gap)",
+          width: totalWidth,
+        }}
+      >
+        <colgroup>
+          <col style={{ width: COLUMN_WIDTHS.date }} />
+          <col style={{ width: COLUMN_WIDTHS.item }} />
+          <col style={{ width: COLUMN_WIDTHS.amount }} />
+          <col style={{ width: COLUMN_WIDTHS.calories }} />
+          <col style={{ width: COLUMN_WIDTHS.running }} />
+          <col style={{ width: COLUMN_WIDTHS.remaining }} />
+        </colgroup>
+        <thead>
+          <tr>
+            <th className={headerClass}>Date</th>
+            <th className={headerClass}>Item</th>
+            <th className={`${headerClass} text-right`}>Amount</th>
+            <th className={`${headerClass} text-right`}>Calories</th>
+            <th className={`${headerClass} text-right`}>Running</th>
+            <th className={`${headerClass} text-right`}>Remaining</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr aria-hidden="true">
+            <td colSpan={6} style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }} />
+          </tr>
+          <NewEntryRow loggedOn={null} colSpan={6} label="+ New entry (today)" />
+          <tr aria-hidden="true">
+            <td colSpan={6} style={{ height: "var(--header-body-gap)", padding: 0, background: "transparent" }} />
+          </tr>
 
-      <section>
-        <h2 className="text-lg font-semibold mb-1">Today&apos;s Log</h2>
-        <Subtitle>
-          Click any cell to edit. Type a saved food name to auto-fill its calories.
-        </Subtitle>
-        <div className="mt-4">
-          <DataTable
-            columns={logColumns}
-            rows={log}
-            rowKey={(r) => r.id}
-            fixedLayout
-            storageKey={CALORIES_LOG_STORAGE_KEY}
-            initialParams={logInitialParams}
-            onAddTopRow={createLogEntry}
-            addTopRowLabel="+ New entry"
-            onAddRow={createLogEntry}
-            addRowLabel="+ Add entry"
-            onDeleteRow={(row) => deleteLogEntry(row.id)}
-            deleteItemLabel={(row) => `"${row.item}"`}
-          />
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-lg font-semibold mb-1">Custom Foods</h2>
-        <Subtitle>Saved foods with fixed calorie values. Click any cell to edit.</Subtitle>
-        <div className="mt-4">
-          <DataTable
-            columns={foodColumns}
-            rows={foods}
-            rowKey={(r) => r.id}
-            fixedLayout
-            storageKey={CALORIES_FOODS_STORAGE_KEY}
-            initialParams={foodsInitialParams}
-            onAddTopRow={createFood}
-            addTopRowLabel="+ New food"
-            onAddRow={createFood}
-            addRowLabel="+ Add food"
-            onDeleteRow={(row) => deleteFood(row.id)}
-            deleteItemLabel={(row) => `"${row.name}"`}
-          />
-        </div>
-      </section>
+          {groups.map((group) => (
+            <Fragment key={group.loggedOn}>
+              {group.rows.map((row, i) => {
+                const over = row.remaining < 0;
+                return (
+                  <RowContextMenu
+                    key={row.id}
+                    onDelete={() => deleteLogEntry(row.id)}
+                    itemLabel={row.item ? `"${row.item}"` : "this entry"}
+                  >
+                    {i === 0 && (
+                      <td
+                        rowSpan={group.rows.length + 1}
+                        className={`${cellClass} font-[number:var(--font-weight-medium)]`}
+                      >
+                        <div>{group.label}</div>
+                        <div className="text-[length:var(--font-size-xs)] text-[color:var(--muted-foreground)] mt-1">
+                          {group.total.toLocaleString()} cal
+                        </div>
+                      </td>
+                    )}
+                    <td className={cellClass}>
+                      <EditableText
+                        value={row.item}
+                        onSave={(v) => updateLogItem(row.id, v)}
+                      />
+                    </td>
+                    <td className={`${cellClass} text-right`}>
+                      <EditableNumber
+                        value={row.amount}
+                        onSave={(v) => updateLogAmount(row.id, v)}
+                      />
+                    </td>
+                    <td className={`${cellClass} text-right`}>
+                      <EditableNumber
+                        value={row.calories}
+                        onSave={(v) => updateLogCalories(row.id, v)}
+                      />
+                    </td>
+                    <td className={`${cellClass} text-right tabular-nums`}>
+                      {row.running.toLocaleString()}
+                    </td>
+                    <td
+                      className={`${cellClass} text-right tabular-nums`}
+                      style={{ color: over ? "var(--destructive)" : undefined }}
+                    >
+                      {row.remaining.toLocaleString()}
+                    </td>
+                  </RowContextMenu>
+                );
+              })}
+              <AddRowInGroup loggedOn={group.loggedOn} />
+            </Fragment>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-function TotalDisplay({
-  total,
-  allowance,
-  remaining,
-  over,
+function NewEntryRow({
+  loggedOn,
+  colSpan,
+  label,
 }: {
-  total: number;
-  allowance: number;
-  remaining: number;
-  over: boolean;
+  loggedOn: string | null;
+  colSpan: number;
+  label: string;
 }) {
+  const [pending, startTransition] = useTransition();
   return (
-    <div
-      className="rounded-[var(--radius-lg)] border border-[color:var(--border)] bg-[color:var(--card)] p-6 flex items-baseline gap-6"
-    >
-      <div>
-        <div className="text-[length:var(--font-size-xs)] uppercase tracking-[var(--letter-spacing-wide)] text-[color:var(--muted-foreground)]">
-          Today
-        </div>
-        <div className="text-[length:var(--font-size-xl)] font-[number:var(--font-weight-bold)]">
-          {total.toLocaleString()}
-          <span className="text-[length:var(--font-size-base)] font-[number:var(--font-weight-normal)] text-[color:var(--muted-foreground)]">
-            {" / "}
-            {allowance.toLocaleString()} cal
-          </span>
-        </div>
-      </div>
-      <div>
-        <div className="text-[length:var(--font-size-xs)] uppercase tracking-[var(--letter-spacing-wide)] text-[color:var(--muted-foreground)]">
-          {over ? "Over" : "Remaining"}
-        </div>
-        <div
-          className="text-[length:var(--font-size-xl)] font-[number:var(--font-weight-bold)]"
-          style={{ color: over ? "var(--destructive)" : "var(--success)" }}
-        >
-          {Math.abs(remaining).toLocaleString()} cal
-        </div>
-      </div>
-    </div>
+    <tr>
+      <td
+        colSpan={colSpan}
+        className="themed-new-row-cell"
+        onClick={() => {
+          if (!pending) {
+            startTransition(() => createLogEntry(loggedOn ?? undefined));
+          }
+        }}
+        title="Add a new entry"
+      >
+        {pending ? "Adding…" : label}
+      </td>
+    </tr>
   );
 }
 
-function DeleteButton({ onDelete }: { onDelete: () => Promise<void> }) {
+function AddRowInGroup({ loggedOn }: { loggedOn: string }) {
   const [pending, startTransition] = useTransition();
-  const [confirming, setConfirming] = useState(false);
-
-  if (!confirming) {
-    return (
-      <button
-        type="button"
-        onClick={() => setConfirming(true)}
-        className="themed-button-sm ghost-danger"
-      >
-        Delete
-      </button>
-    );
-  }
-
   return (
-    <div className="flex gap-1">
-      <button
-        type="button"
-        disabled={pending}
-        onClick={() =>
-          startTransition(async () => {
-            await onDelete();
-            setConfirming(false);
-          })
-        }
-        className="themed-button-sm themed-button-danger"
+    <tr>
+      <td
+        colSpan={5}
+        className="themed-new-row-cell"
+        onClick={() => {
+          if (!pending) startTransition(() => createLogEntry(loggedOn));
+        }}
+        title="Add an entry on this date"
       >
-        {pending ? "…" : "Confirm"}
-      </button>
-      <button
-        type="button"
-        onClick={() => setConfirming(false)}
-        className="themed-button-sm"
-      >
-        Cancel
-      </button>
-    </div>
+        {pending ? "Adding…" : "+ Add entry"}
+      </td>
+    </tr>
   );
 }
