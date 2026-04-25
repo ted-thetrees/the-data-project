@@ -23,9 +23,16 @@ import {
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { format, parse } from "date-fns";
-import { PageShell } from "@/components/page-shell";
 import { Subtitle } from "@/components/subtitle";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Menu01Icon } from "@hugeicons/core-free-icons";
 import {
   Popover,
   PopoverContent,
@@ -613,7 +620,7 @@ export function GridTable({
   const headerClass =
     "sticky top-0 z-10 text-left text-[length:var(--header-font-size)] font-[number:var(--header-font-weight)] text-[color:var(--header-color)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
 
-  const body = (
+  const sidebarControls = (
     <>
       <ViewSwitcher
         views={views}
@@ -652,7 +659,11 @@ export function GridTable({
         groupBy={groupBy}
         onChange={setGroupBy}
       />
+    </>
+  );
 
+  const mainContent = (
+    <>
       <div
         ref={tableWrapperRef}
         className="overflow-auto"
@@ -1114,14 +1125,47 @@ export function GridTable({
     </>
   );
 
-  if (!wrapped) return body;
+  if (!wrapped) {
+    return (
+      <>
+        {sidebarControls}
+        {mainContent}
+      </>
+    );
+  }
   return (
-    <PageShell title={title} count={groupedData.length} maxWidth="">
-      <Subtitle>
-        Active and drafted projects with their task breakdown. Drafts surface first, then projects ordered by tickle date.
-      </Subtitle>
-      {body}
-    </PageShell>
+    <div className="px-[var(--page-padding-x)] py-[var(--page-padding-y)]">
+      <Sheet>
+        <SheetTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="fixed top-4 right-4 z-40 bg-background border"
+              aria-label="Open menu"
+              title="Menu"
+            />
+          }
+        >
+          <HugeiconsIcon icon={Menu01Icon} strokeWidth={2} />
+        </SheetTrigger>
+        <SheetContent side="right" className="overflow-y-auto p-6 gap-4">
+          <div>
+            <SheetTitle className="text-[length:var(--title-font-size)] leading-[var(--title-line-height)] font-[number:var(--title-font-weight)] tracking-[var(--letter-spacing-tight)]">
+              {title}
+            </SheetTitle>
+            <p className="text-[color:var(--record-count-color)] text-[length:var(--record-count-font-size)] mt-1">
+              {groupedData.length.toLocaleString()} records
+            </p>
+          </div>
+          <Subtitle>
+            Active and drafted projects with their task breakdown. Drafts surface first, then projects ordered by tickle date.
+          </Subtitle>
+          {sidebarControls}
+        </SheetContent>
+      </Sheet>
+      {mainContent}
+    </div>
   );
 }
 
