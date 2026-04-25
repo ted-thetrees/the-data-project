@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath, updateTag } from "next/cache";
 import { poolV002 } from "@/lib/db";
 
 const SOURCE_TABLES: Record<string, string> = {
@@ -69,6 +70,21 @@ export async function PATCH(req: NextRequest) {
 
   if (result.rowCount === 0) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
+  }
+
+  // Sources whose colors are JOINed into the projects-main row cache. Bust
+  // the tag so the grouped icicle reflects the new color without waiting
+  // for the 30s revalidate window.
+  const PROJECTS_MAIN_SOURCES = new Set([
+    "project_statuses",
+    "project_action_order_statuses",
+    "project_entry_statuses",
+    "task_statuses",
+    "uber_projects",
+  ]);
+  if (PROJECTS_MAIN_SOURCES.has(source)) {
+    updateTag("projects-main");
+    revalidatePath("/projects-main");
   }
 
   return NextResponse.json({ success: true, ...result.rows[0] });
