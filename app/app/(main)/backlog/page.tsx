@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
@@ -32,6 +33,11 @@ async function getBacklog(): Promise<BacklogRow[]> {
   return result.rows;
 }
 
+const getCachedBacklog = unstable_cache(getBacklog, ["backlog-rows-v1"], {
+  tags: ["backlog"],
+  revalidate: 30,
+});
+
 async function getLookupOptions(
   table: string,
   orderClause = "ORDER BY sort_order NULLS LAST, name",
@@ -49,7 +55,7 @@ export default async function BacklogPage() {
     categoryOptions,
     initialParams,
   ] = await Promise.all([
-    getBacklog(),
+    getCachedBacklog(),
     getLookupOptions("backlog_priorities"),
     getLookupOptions("backlog_categories"),
     getInitialViewParams(BACKLOG_STORAGE_KEY, BACKLOG_DEFAULT_WIDTHS),

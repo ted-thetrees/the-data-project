@@ -1,7 +1,7 @@
 "use server";
 
 import { poolV002 } from "@/lib/db";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 type SourceConfig = {
   table: string;
@@ -66,6 +66,20 @@ const SOURCE_TABLES: Record<string, SourceConfig> = {
 };
 
 function revalidate() {
+  for (const tag of [
+    "projects-main",
+    "talent",
+    "series",
+    "backlog",
+    "get",
+    "people",
+    "user-stories",
+    "inf-images",
+    "table-features",
+    "color-palettes",
+  ]) {
+    updateTag(tag);
+  }
   revalidatePath("/pick-lists");
   revalidatePath("/pick-lists/projects");
   revalidatePath("/pick-lists/talent");

@@ -1,7 +1,7 @@
 "use server";
 
 import { poolV002 } from "@/lib/db";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 export async function updateBubbleDistribution(
   imageId: string,
@@ -16,6 +16,7 @@ export async function updateBubbleDistribution(
     `UPDATE inf_images SET bubble_distribution_id = $1, updated_at = now() WHERE id = $2`,
     [value, imageId],
   );
+  updateTag("inf-images");
   revalidatePath("/inf-images/list");
   revalidatePath("/inf-images");
 }
@@ -25,6 +26,7 @@ export async function updateImageName(imageId: string, name: string) {
     `UPDATE inf_images SET name = $1, updated_at = now() WHERE id = $2`,
     [name, imageId],
   );
+  updateTag("inf-images");
   revalidatePath("/inf-images/list");
   revalidatePath("/inf-images");
 }
@@ -46,6 +48,7 @@ export async function bulkSetBubbleDistribution(
      WHERE id = ANY($2::uuid[])`,
     [value, imageIds],
   );
+  updateTag("inf-images");
   revalidatePath("/inf-images/list");
   revalidatePath("/inf-images");
 }
@@ -79,6 +82,7 @@ export async function bulkSetImageFolderStatus(
       [folderId, statusIdNum, ...imageIds],
     );
   }
+  updateTag("inf-images");
   revalidatePath("/inf-images/list");
   revalidatePath("/inf-images");
 }
@@ -112,12 +116,14 @@ export async function setImageFolderStatus(
       [imageId, folderId, statusIdNum],
     );
   }
+  updateTag("inf-images");
   revalidatePath("/inf-images/list");
   revalidatePath("/inf-images");
 }
 
 export async function deleteImageFromList(imageId: string) {
   await poolV002.query(`DELETE FROM inf_images WHERE id = $1`, [imageId]);
+  updateTag("inf-images");
   revalidatePath("/inf-images/list");
   revalidatePath("/inf-images");
   revalidatePath("/inf-images/masonry");
@@ -129,6 +135,7 @@ export async function bulkDeleteImages(imageIds: string[]) {
     `DELETE FROM inf_images WHERE id = ANY($1::uuid[])`,
     [imageIds],
   );
+  updateTag("inf-images");
   revalidatePath("/inf-images/list");
   revalidatePath("/inf-images");
   revalidatePath("/inf-images/masonry");

@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
@@ -38,6 +39,11 @@ async function getJobs(): Promise<JobRow[]> {
   }));
 }
 
+const getCachedJobs = unstable_cache(getJobs, ["jtbd-jobs-v1"], {
+  tags: ["jtbd"],
+  revalidate: 30,
+});
+
 async function getLookupOptions(table: string): Promise<PillOption[]> {
   const result = await poolV002.query(
     `SELECT id::text AS id, name, color
@@ -50,7 +56,7 @@ async function getLookupOptions(table: string): Promise<PillOption[]> {
 export default async function JobsPage() {
   const [jobs, thinkerOptions, componentOptions, palettes, initialParams] =
     await Promise.all([
-      getJobs(),
+      getCachedJobs(),
       getLookupOptions("jtbd_thinkers"),
       getLookupOptions("jtbd_components"),
       getPalettes(),

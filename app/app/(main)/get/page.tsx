@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
@@ -33,6 +34,11 @@ async function getRows(): Promise<GetRow[]> {
   return result.rows;
 }
 
+const getCachedGetRows = unstable_cache(getRows, ["get-rows-v1"], {
+  tags: ["get"],
+  revalidate: 30,
+});
+
 async function getLookupOptions(table: string): Promise<PillOption[]> {
   const result = await poolV002.query(
     `SELECT id::text AS id, name, color FROM ${table} ORDER BY sort_order NULLS LAST, name`,
@@ -43,7 +49,7 @@ async function getLookupOptions(table: string): Promise<PillOption[]> {
 export default async function GetPage() {
   const [rows, categoryOptions, statusOptions, sourceOptions, initialParams] =
     await Promise.all([
-      getRows(),
+      getCachedGetRows(),
       getLookupOptions("get_categories"),
       getLookupOptions("get_statuses"),
       getLookupOptions("get_sources"),

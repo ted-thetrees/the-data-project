@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
@@ -37,10 +38,19 @@ async function getFoods(): Promise<FoodRow[]> {
   return result.rows;
 }
 
+const getCachedTodayLog = unstable_cache(getTodayLog, ["calories-log-v1"], {
+  tags: ["calories"],
+  revalidate: 30,
+});
+const getCachedFoods = unstable_cache(getFoods, ["calories-foods-v1"], {
+  tags: ["calories"],
+  revalidate: 30,
+});
+
 export default async function CaloriesPage() {
   const [log, foods, logInitialParams, foodsInitialParams] = await Promise.all([
-    getTodayLog(),
-    getFoods(),
+    getCachedTodayLog(),
+    getCachedFoods(),
     getInitialViewParams(CALORIES_LOG_STORAGE_KEY, CALORIES_LOG_DEFAULT_WIDTHS),
     getInitialViewParams(
       CALORIES_FOODS_STORAGE_KEY,

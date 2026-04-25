@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
@@ -39,6 +40,11 @@ async function getUserStories(): Promise<UserStoryRow[]> {
   }));
 }
 
+const getCachedUserStories = unstable_cache(getUserStories, ["user-stories-rows-v1"], {
+  tags: ["user-stories"],
+  revalidate: 30,
+});
+
 async function getLookupOptions(table: string): Promise<PillOption[]> {
   const result = await poolV002.query(
     `SELECT id::text AS id, name, color
@@ -50,7 +56,7 @@ async function getLookupOptions(table: string): Promise<PillOption[]> {
 
 export default async function UserStoriesPage() {
   const [rows, roleOptions, categoryOptions, initialParams] = await Promise.all([
-    getUserStories(),
+    getCachedUserStories(),
     getLookupOptions("user_story_roles"),
     getLookupOptions("user_story_categories"),
     getInitialViewParams(USER_STORIES_STORAGE_KEY, USER_STORIES_DEFAULT_WIDTHS),

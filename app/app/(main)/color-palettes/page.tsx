@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
@@ -22,6 +23,11 @@ async function getPalettes(): Promise<Palette[]> {
   );
   return result.rows;
 }
+
+const getCachedPalettes = unstable_cache(getPalettes, ["color-palettes-v1"], {
+  tags: ["color-palettes"],
+  revalidate: 30,
+});
 
 function hexToRgb(hex: string): [number, number, number] | null {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
@@ -70,7 +76,7 @@ function Swatch({ hex }: { hex: string | null }) {
 }
 
 export default async function ColorPalettesPage() {
-  const palettes = await getPalettes();
+  const palettes = await getCachedPalettes();
 
   return (
     <PageShell title="Color Palettes" count={palettes.length} maxWidth="" className="!px-[70px]">

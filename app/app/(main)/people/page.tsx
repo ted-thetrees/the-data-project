@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
@@ -28,6 +29,11 @@ async function getPeople(): Promise<PersonRow[]> {
   return result.rows;
 }
 
+const getCachedPeople = unstable_cache(getPeople, ["people-rows-v1"], {
+  tags: ["people"],
+  revalidate: 30,
+});
+
 async function getLookupOptions(
   table: string,
   orderClause = "ORDER BY sort_order NULLS LAST, name",
@@ -48,7 +54,7 @@ export default async function PeoplePage() {
     metroAreaOptions,
     initialParams,
   ] = await Promise.all([
-    getPeople(),
+    getCachedPeople(),
     getLookupOptions("people_genders"),
     getLookupOptions("people_familiarity_levels"),
     getLookupOptions("people_teller_statuses"),

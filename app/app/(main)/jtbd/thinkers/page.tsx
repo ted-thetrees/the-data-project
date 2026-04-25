@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
@@ -30,6 +31,11 @@ async function getThinkers(): Promise<ThinkerRow[]> {
   }));
 }
 
+const getCachedThinkers = unstable_cache(getThinkers, ["jtbd-thinkers-v1"], {
+  tags: ["jtbd"],
+  revalidate: 30,
+});
+
 async function getJobOptions(): Promise<PillOption[]> {
   const result = await poolV002.query(
     `SELECT id::text AS id, name, color
@@ -41,7 +47,7 @@ async function getJobOptions(): Promise<PillOption[]> {
 
 export default async function ThinkersPage() {
   const [thinkers, jobOptions, palettes, initialParams] = await Promise.all([
-    getThinkers(),
+    getCachedThinkers(),
     getJobOptions(),
     getPalettes(),
     getInitialViewParams(THINKERS_STORAGE_KEY, THINKERS_DEFAULT_WIDTHS),

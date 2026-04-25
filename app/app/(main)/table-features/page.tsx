@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
@@ -56,12 +57,25 @@ async function getStatusOptions(): Promise<PillOption[]> {
   return r.rows;
 }
 
+const getCachedCatalog = unstable_cache(getCatalog, ["tf-catalog-v1"], {
+  tags: ["table-features"],
+  revalidate: 30,
+});
+const getCachedFeatures = unstable_cache(getFeatures, ["tf-features-v1"], {
+  tags: ["table-features"],
+  revalidate: 30,
+});
+const getCachedCoverage = unstable_cache(getCoverage, ["tf-coverage-v1"], {
+  tags: ["table-features"],
+  revalidate: 30,
+});
+
 export default async function TableFeaturesPage() {
   const [catalog, features, coverage, statusOptions, displayTypeOptions] =
     await Promise.all([
-      getCatalog(),
-      getFeatures(),
-      getCoverage(),
+      getCachedCatalog(),
+      getCachedFeatures(),
+      getCachedCoverage(),
       getStatusOptions(),
       getDisplayTypeOptions(),
     ]);

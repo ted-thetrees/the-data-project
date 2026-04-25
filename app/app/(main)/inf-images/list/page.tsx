@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { poolV002 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
@@ -38,6 +39,11 @@ async function getRows(): Promise<ListRow[]> {
   return r.rows;
 }
 
+const getCachedRows = unstable_cache(getRows, ["inf-images-rows-v1"], {
+  tags: ["inf-images"],
+  revalidate: 30,
+});
+
 async function getFolders(): Promise<FolderOption[]> {
   const r = await poolV002.query<FolderOption>(
     `SELECT id, name, full_path, color FROM inf_images_folders ORDER BY full_path`,
@@ -54,7 +60,7 @@ async function getTags(): Promise<TagOption[]> {
 
 export default async function InfImagesListPage() {
   const [rows, folders, tags, bubbleDistributions, initialParams] = await Promise.all([
-    getRows(),
+    getCachedRows(),
     getFolders(),
     getTags(),
     getInfImagesBubbleDistributions() as unknown as Promise<PillOption[]>,

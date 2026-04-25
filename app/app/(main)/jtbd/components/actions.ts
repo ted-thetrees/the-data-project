@@ -1,10 +1,11 @@
 "use server";
 
 import { poolV002 } from "@/lib/db";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import type { PillOption } from "@/components/pill";
 
 function revalidateAll() {
+  updateTag("jtbd");
   revalidatePath("/jtbd/components");
   revalidatePath("/jtbd/jobs");
   revalidatePath("/jtbd/thinkers");

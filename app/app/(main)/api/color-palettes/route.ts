@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { poolV002 } from "@/lib/db";
 
 const CORS_HEADERS = {
@@ -56,6 +57,8 @@ export async function POST(req: NextRequest) {
      RETURNING id::text, name`,
     [name, ...colors]
   );
+
+  revalidateTag("color-palettes", "max");
 
   return NextResponse.json(
     { success: true, id: result.rows[0].id, name: result.rows[0].name },

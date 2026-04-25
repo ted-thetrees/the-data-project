@@ -1,9 +1,10 @@
 "use server";
 
 import { poolV002 } from "@/lib/db";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 function revalidateBacklogPage() {
+  updateTag("backlog");
   revalidatePath("/backlog");
 }
 
