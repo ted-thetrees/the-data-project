@@ -110,6 +110,7 @@ const GROUPABLE_KEYS = [
   "uber_project",
   "project_status",
   "action_order_status",
+  "entry_status",
 ] as const;
 type GroupableKey = (typeof GROUPABLE_KEYS)[number];
 
@@ -140,6 +141,11 @@ const GROUP_ACCESSORS: Record<
     id: (r) => r.action_order_status_id ?? null,
     label: (r) => r.action_order_status ?? "Uncategorized",
     color: (r) => r.action_order_color,
+  },
+  entry_status: {
+    id: (r) => r.entry_status_id ?? null,
+    label: (r) => r.entry_status ?? "(none)",
+    color: (r) => r.entry_status_color,
   },
 };
 
@@ -426,6 +432,7 @@ export function GridTable({
       action_order_status: new Map(
         actionOrderStatuses.map((o, i) => [o.id, i]),
       ),
+      entry_status: new Map(entryStatuses.map((o, i) => [o.id, i])),
     };
 
     const keyId = (k: GroupableKey, r: TaskRow) =>
@@ -463,7 +470,7 @@ export function GridTable({
       return 0;
     });
     return sorted.flatMap((b) => b.rows);
-  }, [orderedData, groupBy, uberProjects, projectStatuses, actionOrderStatuses]);
+  }, [orderedData, groupBy, uberProjects, projectStatuses, actionOrderStatuses, entryStatuses]);
 
   // Compute icicle spans for each active group-by level. Each span covers the
   // consecutive `groupedData` rows that share the same accumulated group path
