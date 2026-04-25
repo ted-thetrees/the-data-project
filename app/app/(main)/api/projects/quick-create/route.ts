@@ -33,8 +33,8 @@ export async function POST(req: NextRequest) {
     uberRows.rows.find((r) => r.name === uber_project) ?? uberRows.rows[0];
 
   const project = await poolV002.query<{ id: string }>(
-    `INSERT INTO projects (name, status_id, uber_project_id, action_order_status_id, is_draft)
-     VALUES ($1, $2, $3, $4, true)
+    `INSERT INTO projects (name, status_id, uber_project_id, action_order_status_id)
+     VALUES ($1, $2, $3, $4)
      RETURNING id`,
     [title, projectStatusRow.rows[0].id, uber.id, actionOrderRow.rows[0]?.id ?? null],
   );

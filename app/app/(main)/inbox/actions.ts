@@ -127,8 +127,8 @@ export async function migrateRecord(recordId: string): Promise<string | null> {
   const title = inbox.title || "(untitled)";
 
   const projectRes = await pool.query(
-    `INSERT INTO projects (name, uber_project_id, status_id, is_draft)
-     VALUES ($1, $2, $3, true)
+    `INSERT INTO projects (name, uber_project_id, status_id)
+     VALUES ($1, $2, $3)
      RETURNING id`,
     [title, uberId, projectStatusRes.rows[0].id]
   );

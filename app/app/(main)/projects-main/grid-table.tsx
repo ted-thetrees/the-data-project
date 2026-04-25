@@ -34,7 +34,6 @@ import type { TaskRow, StatusOption } from "./page";
 import {
   updateTaskField,
   updateProjectField,
-  finalizeProject,
   createTask,
   createProject,
   deleteTask,
@@ -219,123 +218,6 @@ export function GridTable({
 }) {
   const projectAccessor = (r: TaskRow) => r.project;
 
-  // Per-project "dirty" tray: projects you've edited (or just created) float
-  // to the top in the order they became dirty and stay put until committed.
-  // Committed projects render in normal SQL order below.
-  const [dirtyProjectIds, setDirtyProjectIds] = useState<string[]>([]);
-  const dirtyTaskOrderRef = useRef<Map<string, string[]>>(new Map());
-  const prevProjectIdsRef = useRef<Set<string> | null>(null);
-
-  const markProjectDirty = (projectId: string) => {
-    if (!dirtyTaskOrderRef.current.has(projectId)) {
-      const tasks = data
-        .filter((r) => r.project_id === projectId)
-        .map((r) => r.id);
-      dirtyTaskOrderRef.current.set(projectId, tasks);
-    }
-    setDirtyProjectIds((prev) =>
-      prev.includes(projectId) ? prev : [projectId, ...prev],
-    );
-  };
-
-  const changeProjectStatus = (projectId: string, statusId: string) => {
-    const next = projectStatuses.find((s) => s.id === statusId);
-    if (next && next.name !== "Active") markProjectDirty(projectId);
-    return updateProjectField(projectId, "status_id", statusId);
-  };
-
-  const commitProject = (projectId: string) => {
-    const isDraft = data.some(
-      (r) => r.project_id === projectId && r.project_is_draft,
-    );
-    dirtyTaskOrderRef.current.delete(projectId);
-    setDirtyProjectIds((prev) => prev.filter((id) => id !== projectId));
-    if (isDraft) void finalizeProject(projectId);
-  };
-
-  const commitAll = () => {
-    const draftIds = dirtyProjectIds.filter((id) =>
-      data.some((r) => r.project_id === id && r.project_is_draft),
-    );
-    dirtyTaskOrderRef.current.clear();
-    setDirtyProjectIds([]);
-    for (const id of draftIds) void finalizeProject(id);
-  };
-
-  // Detect newly-appeared project ids (and any inbox-promoted ids saved
-  // in sessionStorage) and auto-mark them dirty so they land in the
-  // tray. Edits to projects that are already in the sorted population
-  // do NOT flow through here — those re-sort naturally in SQL order.
-  useLayoutEffect(() => {
-    const currentIds = new Set(data.map((r) => r.project_id));
-    if (prevProjectIdsRef.current === null) {
-      prevProjectIdsRef.current = currentIds;
-      // Pick up any project ids stashed by the Inbox "Projects" button.
-      if (typeof window !== "undefined") {
-        const TRAY_KEY = "projects-main:tray";
-        let stashed: string[] = [];
-        try {
-          const raw = sessionStorage.getItem(TRAY_KEY);
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) {
-              stashed = parsed.filter(
-                (v): v is string => typeof v === "string",
-              );
-            }
-          }
-        } catch {
-          stashed = [];
-        }
-        sessionStorage.removeItem(TRAY_KEY);
-        const toAdd = stashed.filter((id) => currentIds.has(id));
-        if (toAdd.length > 0) {
-          for (const pid of toAdd) {
-            if (!dirtyTaskOrderRef.current.has(pid)) {
-              const tasks = data
-                .filter((r) => r.project_id === pid)
-                .map((r) => r.id);
-              dirtyTaskOrderRef.current.set(pid, tasks);
-            }
-          }
-          setDirtyProjectIds((prev) => {
-            const existing = new Set(prev);
-            const fresh = toAdd.filter((id) => !existing.has(id));
-            if (fresh.length === 0) return prev;
-            return [...fresh, ...prev];
-          });
-        }
-      }
-      return;
-    }
-    const newIds: string[] = [];
-    for (const id of currentIds) {
-      if (!prevProjectIdsRef.current.has(id)) newIds.push(id);
-    }
-    prevProjectIdsRef.current = currentIds;
-    if (newIds.length === 0) return;
-    for (const pid of newIds) {
-      if (!dirtyTaskOrderRef.current.has(pid)) {
-        const tasks = data
-          .filter((r) => r.project_id === pid)
-          .map((r) => r.id);
-        dirtyTaskOrderRef.current.set(pid, tasks);
-      }
-    }
-    setDirtyProjectIds((prev) => {
-      const existing = new Set(prev);
-      const toAdd = newIds.filter((id) => !existing.has(id));
-      if (toAdd.length === 0) return prev;
-      return [...toAdd, ...prev];
-    });
-  }, [data]);
-
-  const dirtySet = useMemo(
-    () => new Set(dirtyProjectIds),
-    [dirtyProjectIds],
-  );
-
-
   const {
     views,
     activeViewId,
@@ -357,48 +239,10 @@ export function GridTable({
     [params.groupBy],
   );
 
-  const orderedData = useMemo(() => {
-    // Server now returns all projects regardless of status; hide non-Active
-    // projects on the client UNLESS they're dirty (so setting a project's
-    // status to Abandoned doesn't yank it from view before Commit).
-    const visible = data.filter(
-      (row) =>
-        row.project_status === "Active" || dirtySet.has(row.project_id),
-    );
-    if (dirtyProjectIds.length === 0) return visible;
-    const byProject = new Map<string, TaskRow[]>();
-    for (const row of visible) {
-      if (!byProject.has(row.project_id)) byProject.set(row.project_id, []);
-      byProject.get(row.project_id)!.push(row);
-    }
-    // Render the dirty tray in stable project_id order so editing the Project
-    // name (which re-sorts the upstream SQL result) can't reshuffle the tray.
-    const sortedDirtyIds = [...dirtyProjectIds].sort();
-    const result: TaskRow[] = [];
-    for (const pid of sortedDirtyIds) {
-      const rows = byProject.get(pid) ?? [];
-      const snapshotTaskIds = dirtyTaskOrderRef.current.get(pid) ?? [];
-      const taskIndex = new Map(snapshotTaskIds.map((id, i) => [id, i]));
-      const known: Array<{ idx: number; row: TaskRow }> = [];
-      const fresh: TaskRow[] = [];
-      for (const row of rows) {
-        const idx = taskIndex.get(row.id);
-        if (idx !== undefined) known.push({ idx, row });
-        else fresh.push(row);
-      }
-      known.sort((a, b) => a.idx - b.idx);
-      // Stable sort for fresh tasks too — server task order can shift when
-      // status/order/name changes, and we don't want that to reshuffle tasks
-      // inside a pending tray row.
-      fresh.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
-      for (const { row } of known) result.push(row);
-      for (const row of fresh) result.push(row);
-    }
-    for (const row of visible) {
-      if (!dirtySet.has(row.project_id)) result.push(row);
-    }
-    return result;
-  }, [data, dirtyProjectIds, dirtySet]);
+  const orderedData = useMemo(
+    () => data.filter((row) => row.project_status === "Active"),
+    [data],
+  );
 
   // When grouping is active, re-sort projects (preserving task order within a
   // project) so that rows sharing group-by keys are consecutive. That lets us
@@ -509,7 +353,6 @@ export function GridTable({
         (r) => ({
           tickle: r.tickle_date,
           notes: r.project_notes,
-          is_draft: r.project_is_draft,
           project_id: r.project_id,
         }),
         groupBy.map((k) => (r: TaskRow) => GROUP_ACCESSORS[k].id(r) ?? "__null__"),
@@ -538,15 +381,7 @@ export function GridTable({
   const handleProjectsKeyDown = (e: React.KeyboardEvent<HTMLTableElement>) => {
     const target = e.target as HTMLElement;
     const tr = target.closest("tr[data-project-id]") as HTMLElement | null;
-    const projectId = tr?.dataset.projectId;
     const taskId = tr?.dataset.taskId;
-
-    // Cmd/Ctrl+Enter → commit the project of the focused row.
-    if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && projectId) {
-      e.preventDefault();
-      if (dirtySet.has(projectId)) commitProject(projectId);
-      return;
-    }
 
     // Alt+Up / Alt+Down → reorder task within project.
     if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown") && taskId) {
@@ -621,24 +456,6 @@ export function GridTable({
         onDelete={deleteView}
       >
         Active projects &middot; click any field to edit &middot; drag column edges to resize
-        {dirtyProjectIds.length > 0 && (
-          <>
-            {" "}&middot;{" "}
-            <span>
-              {dirtyProjectIds.length} uncommitted
-            </span>
-            {" "}
-            <button
-              type="button"
-              onClick={commitAll}
-              className="themed-button-sm"
-              title="Commit every uncommitted project into its sorted position"
-              style={{ marginLeft: 4 }}
-            >
-              Commit all
-            </button>
-          </>
-        )}
       </ViewSwitcher>
 
       <GroupByPicker
@@ -828,39 +645,17 @@ export function GridTable({
                 {/* Icicle: Project (rowspan-merged, +1 to span add-row) */}
                 {projectStartSet.has(i) && (() => {
                   const span = projectByIndex[i];
-                  const isDraft = Boolean(span.extra?.is_draft);
-                  const isDirty = dirtySet.has(row.project_id);
                   return (
                     <td
                       rowSpan={span.rowSpan + 1}
                       className="align-top px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] text-sm"
                     >
-                      <div className="flex items-start gap-2">
-                        <div className="flex-1 min-w-0">
-                          <EditableTextWrap
-                            value={span.value}
-                            onSave={(v) =>
-                              updateProjectField(row.project_id, "name", v)
-                            }
-                          />
-                        </div>
-                        {(isDraft || isDirty) && (
-                          <div className="flex flex-col items-end gap-1 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => commitProject(row.project_id)}
-                              title={
-                                isDraft
-                                  ? "Commit: promote this draft into the corpus and leave the tray"
-                                  : "Commit this project into its sorted position"
-                              }
-                              className="themed-button-sm themed-button-primary"
-                            >
-                              Commit
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      <EditableTextWrap
+                        value={span.value}
+                        onSave={(v) =>
+                          updateProjectField(row.project_id, "name", v)
+                        }
+                      />
                     </td>
                   );
                 })()}
@@ -923,7 +718,7 @@ export function GridTable({
                         value={row.project_status_id}
                         options={projectStatuses}
                         onSave={(v) =>
-                          changeProjectStatus(row.project_id, v)
+                          updateProjectField(row.project_id, "status_id", v)
                         }
                         onCreate={createProjectStatusOption}
                       />

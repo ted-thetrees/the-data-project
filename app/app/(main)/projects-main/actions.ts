@@ -58,15 +58,6 @@ export async function updateUberField(
   revalidatePath("/projects-main");
 }
 
-export async function finalizeProject(id: string) {
-  await poolV002.query(
-    `UPDATE projects SET is_draft = false WHERE id = $1`,
-    [id]
-  );
-  updateTag("projects-main");
-  revalidatePath("/projects-main");
-}
-
 export async function deleteTask(id: string) {
   await poolV002.query(
     `UPDATE tasks SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL`,
@@ -188,8 +179,8 @@ export async function createProject() {
   if (!uberProject.rows[0]) throw new Error("No uber projects available");
 
   const project = await poolV002.query(
-    `INSERT INTO projects (name, status_id, uber_project_id, action_order_status_id, is_draft)
-     VALUES ('Untitled Project', $1, $2, $3, true)
+    `INSERT INTO projects (name, status_id, uber_project_id, action_order_status_id)
+     VALUES ('Untitled Project', $1, $2, $3)
      RETURNING id`,
     [
       projectStatus.rows[0].id,
