@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { GridTable } from "./grid-table";
 import { Realtime } from "@/components/realtime";
 import {
@@ -7,6 +8,12 @@ import {
   getActionOrderStatuses,
   getUberProjects,
 } from "./data";
+
+const getCachedProjectsMainData = unstable_cache(
+  getProjectsMainData,
+  ["projects-main-rows-v1"],
+  { tags: ["projects-main"], revalidate: 30 },
+);
 import {
   PROJECTS_MAIN_STORAGE_KEY,
   PROJECTS_MAIN_DEFAULT_WIDTHS,
@@ -58,7 +65,7 @@ export default async function GridPage() {
     uberProjects,
     initialParams,
   ] = await Promise.all([
-    getProjectsMainData(),
+    getCachedProjectsMainData(),
     getTaskStatuses(),
     getProjectStatuses(),
     getActionOrderStatuses(),

@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { pool } from "@/lib/db";
 
 const SERVICE_URL = process.env.SCREENSHOT_SERVICE_URL;
@@ -40,4 +41,5 @@ export async function capturePreviewForInbox(
      WHERE id = $2`,
     [imageUrl, recordId],
   );
+  revalidateTag("inbox", "max");
 }

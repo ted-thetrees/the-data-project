@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { poolV002 } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
@@ -41,6 +42,8 @@ export async function POST(req: NextRequest) {
     `INSERT INTO tasks (name, project_id, status_id) VALUES ('', $1, $2)`,
     [project.rows[0].id, taskStatusRow.rows[0].id],
   );
+
+  revalidateTag("projects-main", "max");
 
   return NextResponse.json({
     success: true,

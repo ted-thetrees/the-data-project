@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { poolV002 } from "@/lib/db";
 import { TalentTable } from "./talent-table";
 import { Realtime } from "@/components/realtime";
@@ -139,6 +140,11 @@ async function getTalent(
   return { rows, recordCount: areasByRecord.size };
 }
 
+const getCachedTalent = unstable_cache(getTalent, ["talent-rows-v1"], {
+  tags: ["talent"],
+  revalidate: 30,
+});
+
 async function getLookupOptions(table: string): Promise<PillOption[]> {
   const result = await poolV002.query(
     `SELECT name as id, name, color FROM ${table} ORDER BY sort_order NULLS LAST, name`,
@@ -178,7 +184,7 @@ export default async function TalentPage({
     areaOptions,
     initialParams,
   ] = await Promise.all([
-    getTalent({
+    getCachedTalent({
       expandOn: groupBy === "area" ? "area" : null,
       sortMode: groupBy === "none" ? "none" : "category",
     }),

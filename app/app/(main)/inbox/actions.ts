@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { removePassphrase } from "@/lib/passphrase";
 import { pool, getInboxRecords, getNotesRecords, getYouTubeRecords } from "@/lib/db";
 import { capturePreviewForInbox } from "@/lib/preview-service";
@@ -60,6 +60,7 @@ export async function backfillOneInboxPreview(): Promise<{
 
   await capturePreviewForInbox(row.id, row.title);
   const remaining = await countPendingPreviews();
+  updateTag("inbox");
   revalidatePath("/inbox");
   return { processed: true, remaining, recordId: row.id };
 }
@@ -71,6 +72,7 @@ export async function deleteRecord(recordId: string) {
   );
 
   await removePassphrase(recordId);
+  updateTag("inbox");
   revalidatePath("/inbox");
 }
 
@@ -79,6 +81,7 @@ export async function updateRecordContent(recordId: string, content: string) {
     `UPDATE inbox SET content = $1 WHERE id = $2`,
     [content, recordId],
   );
+  updateTag("inbox");
   revalidatePath("/inbox");
   revalidatePath("/notes");
   revalidatePath("/youtube");
@@ -141,6 +144,8 @@ export async function migrateRecord(recordId: string): Promise<string | null> {
     [recordId]
   );
 
+  updateTag("inbox");
+  updateTag("projects-main");
   revalidatePath("/inbox");
   revalidatePath("/projects-main");
   return projectId;

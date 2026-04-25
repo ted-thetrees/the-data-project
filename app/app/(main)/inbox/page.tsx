@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 export const metadata = { title: "Inbox" };
 
+import { unstable_cache } from "next/cache";
 import { getInboxRecords, getInboxCount } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Subtitle } from "@/components/subtitle";
@@ -12,10 +13,19 @@ import { InfiniteInbox } from "./infinite-inbox";
 import { loadMoreInboxCards } from "./actions";
 import { resolveInboxCards } from "./card-data";
 
+const getCachedInboxRecords = unstable_cache(getInboxRecords, ["inbox-records-v1"], {
+  tags: ["inbox"],
+  revalidate: 30,
+});
+const getCachedInboxCount = unstable_cache(getInboxCount, ["inbox-count-v1"], {
+  tags: ["inbox"],
+  revalidate: 30,
+});
+
 export default async function Home() {
   const [records, count, pendingPreviews] = await Promise.all([
-    getInboxRecords(50),
-    getInboxCount(),
+    getCachedInboxRecords(50),
+    getCachedInboxCount(),
     countPendingPreviews(),
   ]);
   const initial = await resolveInboxCards(records);

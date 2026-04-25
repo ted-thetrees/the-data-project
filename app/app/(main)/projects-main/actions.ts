@@ -1,7 +1,7 @@
 "use server";
 
 import { poolV002 } from "@/lib/db";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 const TASK_FIELDS = new Set(["name", "status_id", "result", "notes"]);
 const PROJECT_FIELDS = new Set([
@@ -24,6 +24,7 @@ export async function updateTaskField(
     value,
     id,
   ]);
+  updateTag("projects-main");
   revalidatePath("/projects-main");
 }
 
@@ -38,6 +39,7 @@ export async function updateProjectField(
     value,
     id,
   ]);
+  updateTag("projects-main");
   revalidatePath("/projects-main");
 }
 
@@ -51,6 +53,7 @@ export async function updateUberField(
     `UPDATE uber_projects SET ${field} = $1 WHERE id = $2`,
     [value, id]
   );
+  updateTag("projects-main");
   revalidatePath("/projects-main");
 }
 
@@ -59,6 +62,7 @@ export async function finalizeProject(id: string) {
     `UPDATE projects SET is_draft = false WHERE id = $1`,
     [id]
   );
+  updateTag("projects-main");
   revalidatePath("/projects-main");
 }
 
@@ -67,6 +71,7 @@ export async function deleteTask(id: string) {
     `UPDATE tasks SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL`,
     [id],
   );
+  updateTag("projects-main");
   revalidatePath("/projects-main");
 }
 
@@ -132,6 +137,7 @@ export async function moveTask(taskId: string, direction: "up" | "down") {
   } finally {
     client.release();
   }
+  updateTag("projects-main");
   revalidatePath("/projects-main");
 }
 
@@ -148,6 +154,7 @@ export async function deleteProject(id: string) {
   } finally {
     client.release();
   }
+  updateTag("projects-main");
   revalidatePath("/projects-main");
 }
 
@@ -160,6 +167,7 @@ export async function createTask(projectId: string) {
     `INSERT INTO tasks (name, project_id, status_id) VALUES ($1, $2, $3)`,
     ["", projectId, status.rows[0].id]
   );
+  updateTag("projects-main");
   revalidatePath("/projects-main");
 }
 
@@ -192,5 +200,6 @@ export async function createProject() {
     `INSERT INTO tasks (name, project_id, status_id) VALUES ('', $1, $2)`,
     [project.rows[0].id, taskStatus.rows[0].id],
   );
+  updateTag("projects-main");
   revalidatePath("/projects-main");
 }
