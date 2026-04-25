@@ -5,6 +5,7 @@ const SOURCE_TABLES: Record<string, string> = {
   picklist_colors: "picklist_colors",
   project_statuses: "project_statuses",
   project_action_order_statuses: "project_action_order_statuses",
+  project_entry_statuses: "project_entry_statuses",
   task_statuses: "task_statuses",
   crime_series_statuses: "crime_series_statuses",
   uber_projects: "uber_projects",
