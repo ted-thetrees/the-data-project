@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useWindowVirtualizer } from "@tanstack/react-virtual";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   DndContext,
   PointerSensor,
@@ -293,7 +293,7 @@ export function ListTable({
   }, [flatRows, iceLevels]);
 
   const tableWrapperRef = useRef<HTMLDivElement>(null);
-  const [scrollMargin, setScrollMargin] = useState(0);
+  const [maxHeight, setMaxHeight] = useState<string>("100dvh");
   const [lightbox, setLightbox] = useState<{
     url: string;
     name: string;
@@ -318,17 +318,29 @@ export function ListTable({
     setSelectedIds(new Set(rows.map((r) => r.image_id)));
   };
   useEffect(() => {
-    if (tableWrapperRef.current) {
-      setScrollMargin(tableWrapperRef.current.offsetTop);
-    }
+    const measure = () => {
+      const el = tableWrapperRef.current;
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      setMaxHeight(`calc(100dvh - ${top}px)`);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(document.body);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
   }, []);
   // Row heights vary because the Image column displays full-width images at
   // their natural aspect ratio. Use the image's known dimensions for the
   // per-row size estimate so initial scroll positions are close to right.
   const imageColWidth =
     params.columnWidths.image ?? LIST_DEFAULT_WIDTHS.image ?? 140;
-  const rowVirtualizer = useWindowVirtualizer({
+  const rowVirtualizer = useVirtualizer({
     count: flatRows.length,
+    getScrollElement: () => tableWrapperRef.current,
     estimateSize: (index) => {
       const f = flatRows[index];
       if (!f || f.kind !== "data") return 48;
@@ -339,7 +351,6 @@ export function ListTable({
       return imageColWidth; // square fallback
     },
     overscan: 8,
-    scrollMargin,
   });
 
   const headerClass =
@@ -509,7 +520,11 @@ export function ListTable({
           }}
         />
       )}
-      <div ref={tableWrapperRef} className="overflow-x-auto">
+      <div
+        ref={tableWrapperRef}
+        className="overflow-auto"
+        style={{ maxHeight }}
+      >
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -589,7 +604,7 @@ export function ListTable({
               const total = rowVirtualizer.getTotalSize();
               const first = items[0];
               const last = items[items.length - 1];
-              const offsetTop = first ? first.start - scrollMargin : 0;
+              const offsetTop = first ? first.start : 0;
               const offsetBottom = last && first ? total - last.end : 0;
               const firstIdx = first?.index ?? 0;
               const lastIdx = last?.index ?? -1;
