@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath, updateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { poolV002 } from "@/lib/db";
 
 const SOURCE_TABLES: Record<string, string> = {
@@ -81,7 +81,7 @@ export async function PATCH(req: NextRequest) {
     "uber_projects",
   ]);
   if (PROJECTS_MAIN_SOURCES.has(source)) {
-    updateTag("projects-main");
+    revalidateTag("projects-main", "max");
     revalidatePath("/projects-main");
   }
 
