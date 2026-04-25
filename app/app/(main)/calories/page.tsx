@@ -4,6 +4,8 @@ import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
 import { Subtitle } from "@/components/subtitle";
 import { CaloriesClient, type LogRow } from "./calories-client";
+import { CALORIES_STORAGE_KEY, CALORIES_DEFAULT_WIDTHS } from "./config";
+import { getInitialViewParams } from "@/lib/table-views-cookie";
 
 export const metadata = { title: "Calories" };
 export const dynamic = "force-dynamic";
@@ -32,7 +34,10 @@ const getCachedLog = unstable_cache(getLog, ["calories-log-v2"], {
 });
 
 export default async function CaloriesPage() {
-  const log = await getCachedLog();
+  const [log, initialParams] = await Promise.all([
+    getCachedLog(),
+    getInitialViewParams(CALORIES_STORAGE_KEY, CALORIES_DEFAULT_WIDTHS),
+  ]);
 
   return (
     <PageShell title="Calories" count={log.length} maxWidth="">
@@ -41,7 +46,11 @@ export default async function CaloriesPage() {
         Food entries grouped by date. Type a saved food name to auto-fill its
         calories.
       </Subtitle>
-      <CaloriesClient log={log} allowance={DAILY_ALLOWANCE} />
+      <CaloriesClient
+        log={log}
+        allowance={DAILY_ALLOWANCE}
+        initialParams={initialParams}
+      />
     </PageShell>
   );
 }

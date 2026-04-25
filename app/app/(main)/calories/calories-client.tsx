@@ -3,6 +3,9 @@
 import { Fragment, useMemo, useTransition } from "react";
 import { EditableText, EditableNumber } from "@/components/editable-text";
 import { RowContextMenu } from "@/components/row-context-menu";
+import { ColumnResizer } from "@/components/column-resizer";
+import { useTableViews, type ViewParams } from "@/components/table-views";
+import { CALORIES_STORAGE_KEY, CALORIES_DEFAULT_WIDTHS } from "./config";
 import {
   createLogEntry,
   updateLogItem,
@@ -10,6 +13,9 @@ import {
   updateLogCalories,
   deleteLogEntry,
 } from "./actions";
+
+const COLUMN_KEYS = ["date", "item", "amount", "calories", "running", "remaining"] as const;
+type ColumnKey = (typeof COLUMN_KEYS)[number];
 
 export interface LogRow {
   id: string;
@@ -27,15 +33,6 @@ interface DayGroup {
   rows: Array<LogRow & { running: number; remaining: number }>;
   total: number;
 }
-
-const COLUMN_WIDTHS = {
-  date: 180,
-  item: 280,
-  amount: 90,
-  calories: 100,
-  running: 110,
-  remaining: 110,
-} as const;
 
 function formatDateLabel(loggedOn: string): string {
   // loggedOn is 'YYYY-MM-DD' from Postgres to_char — parse as local date
@@ -86,24 +83,46 @@ function buildGroups(log: LogRow[], allowance: number): DayGroup[] {
 export function CaloriesClient({
   log,
   allowance,
+  initialParams,
 }: {
   log: LogRow[];
   allowance: number;
+  initialParams?: ViewParams;
 }) {
   const groups = useMemo(() => buildGroups(log, allowance), [log, allowance]);
 
-  const totalWidth =
-    COLUMN_WIDTHS.date +
-    COLUMN_WIDTHS.item +
-    COLUMN_WIDTHS.amount +
-    COLUMN_WIDTHS.calories +
-    COLUMN_WIDTHS.running +
-    COLUMN_WIDTHS.remaining;
+  const { params, setColumnWidth } = useTableViews(
+    CALORIES_STORAGE_KEY,
+    CALORIES_DEFAULT_WIDTHS,
+    initialParams,
+  );
+
+  const widthOf = (key: ColumnKey) =>
+    params.columnWidths[key] ?? CALORIES_DEFAULT_WIDTHS[key];
+
+  const totalWidth = COLUMN_KEYS.reduce((sum, k) => sum + widthOf(k), 0);
 
   const headerClass =
-    "text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] font-[number:var(--header-font-weight)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
+    "relative text-left text-[length:var(--header-font-size)] text-[color:var(--header-color)] font-[number:var(--header-font-weight)] px-[var(--header-padding-x)] py-[var(--header-padding-y)] bg-[color:var(--header-bg)]";
   const cellClass =
     "px-[var(--cell-padding-x)] py-[var(--cell-padding-y)] bg-[color:var(--cell-bg)] align-top";
+
+  const HEADER_LABELS: Record<ColumnKey, string> = {
+    date: "Date",
+    item: "Item",
+    amount: "Amount",
+    calories: "Calories",
+    running: "Running",
+    remaining: "Remaining",
+  };
+  const RIGHT_ALIGNED: Record<ColumnKey, boolean> = {
+    date: false,
+    item: false,
+    amount: true,
+    calories: true,
+    running: true,
+    remaining: true,
+  };
 
   return (
     <div className="overflow-x-auto">
@@ -117,21 +136,25 @@ export function CaloriesClient({
         }}
       >
         <colgroup>
-          <col style={{ width: COLUMN_WIDTHS.date }} />
-          <col style={{ width: COLUMN_WIDTHS.item }} />
-          <col style={{ width: COLUMN_WIDTHS.amount }} />
-          <col style={{ width: COLUMN_WIDTHS.calories }} />
-          <col style={{ width: COLUMN_WIDTHS.running }} />
-          <col style={{ width: COLUMN_WIDTHS.remaining }} />
+          {COLUMN_KEYS.map((key) => (
+            <col key={key} style={{ width: widthOf(key) }} />
+          ))}
         </colgroup>
         <thead>
           <tr>
-            <th className={headerClass}>Date</th>
-            <th className={headerClass}>Item</th>
-            <th className={`${headerClass} text-right`}>Amount</th>
-            <th className={`${headerClass} text-right`}>Calories</th>
-            <th className={`${headerClass} text-right`}>Running</th>
-            <th className={`${headerClass} text-right`}>Remaining</th>
+            {COLUMN_KEYS.map((key, i) => (
+              <th
+                key={key}
+                className={`${headerClass} ${RIGHT_ALIGNED[key] ? "text-right" : ""}`}
+              >
+                {HEADER_LABELS[key]}
+                <ColumnResizer
+                  columnIndex={i}
+                  currentWidth={widthOf(key)}
+                  onResize={(w) => setColumnWidth(key, w)}
+                />
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
