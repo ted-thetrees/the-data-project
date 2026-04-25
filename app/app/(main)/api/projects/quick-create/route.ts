@@ -8,21 +8,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "title required" }, { status: 400 });
   }
 
-  const [uberRows, projectStatusRow, taskStatusRow, actionOrderRow] =
-    await Promise.all([
-      poolV002.query<{ id: string; name: string }>(
-        `SELECT id, name FROM uber_projects ORDER BY name`,
-      ),
-      poolV002.query(`SELECT id FROM project_statuses WHERE name = 'Active' LIMIT 1`),
-      poolV002.query(`SELECT id FROM task_statuses WHERE name = 'Tickled' LIMIT 1`),
-      poolV002.query(
-        `SELECT id FROM project_action_order_statuses WHERE name = 'Needs Sorting' LIMIT 1`,
-      ),
-    ]);
+  const [uberRows, taskStatusRow, actionOrderRow] = await Promise.all([
+    poolV002.query<{ id: string; name: string }>(
+      `SELECT id, name FROM uber_projects ORDER BY name`,
+    ),
+    poolV002.query(`SELECT id FROM task_statuses WHERE name = 'Tickled' LIMIT 1`),
+    poolV002.query(
+      `SELECT id FROM project_action_order_statuses WHERE name = 'Needs Sorting' LIMIT 1`,
+    ),
+  ]);
   if (!uberRows.rows.length) {
     return NextResponse.json({ error: "no uber projects" }, { status: 500 });
   }
-  if (!projectStatusRow.rows[0] || !taskStatusRow.rows[0]) {
+  if (!taskStatusRow.rows[0]) {
     return NextResponse.json(
       { error: "required statuses missing" },
       { status: 500 },
@@ -33,10 +31,10 @@ export async function POST(req: NextRequest) {
     uberRows.rows.find((r) => r.name === uber_project) ?? uberRows.rows[0];
 
   const project = await poolV002.query<{ id: string }>(
-    `INSERT INTO projects (name, status_id, uber_project_id, action_order_status_id)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO projects (name, uber_project_id, action_order_status_id)
+     VALUES ($1, $2, $3)
      RETURNING id`,
-    [title, projectStatusRow.rows[0].id, uber.id, actionOrderRow.rows[0]?.id ?? null],
+    [title, uber.id, actionOrderRow.rows[0]?.id ?? null],
   );
   await poolV002.query(
     `INSERT INTO tasks (name, project_id, status_id) VALUES ('', $1, $2)`,

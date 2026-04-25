@@ -14,7 +14,6 @@ type SourceConfig = {
 };
 
 const SOURCE_TABLES: Record<string, SourceConfig> = {
-  project_statuses: { table: "project_statuses", hasSortOrder: true, idType: "uuid" },
   project_action_order_statuses: {
     table: "project_action_order_statuses",
     hasSortOrder: true,

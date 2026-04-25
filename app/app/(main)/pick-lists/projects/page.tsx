@@ -3,7 +3,6 @@ import { Realtime } from "@/components/realtime";
 import { PicklistStatusTable, PicklistColorTable } from "../picklist-tables";
 import {
   getPalettes,
-  getProjectStatuses,
   getProjectActionOrderStatuses,
   getProjectEntryStatuses,
   getTaskStatuses,
@@ -34,7 +33,6 @@ function PickListSection({
 
 export default async function PickListsProjectsPage() {
   const [
-    projectStatuses,
     actionOrderStatuses,
     entryStatuses,
     taskStatuses,
@@ -42,7 +40,6 @@ export default async function PickListsProjectsPage() {
     legacyColors,
     palettes,
   ] = await Promise.all([
-    getProjectStatuses(),
     getProjectActionOrderStatuses(),
     getProjectEntryStatuses(),
     getTaskStatuses(),
@@ -55,7 +52,6 @@ export default async function PickListsProjectsPage() {
     <PageShell title="Pick Lists · Projects">
       <Realtime
         tables={[
-          "project_statuses",
           "project_action_order_statuses",
           "project_entry_statuses",
           "task_statuses",
@@ -65,17 +61,6 @@ export default async function PickListsProjectsPage() {
         ]}
       />
       <div className="space-y-10">
-        <PickListSection title="Project Statuses" usedBy="Projects">
-          <PicklistStatusTable
-            source="project_statuses"
-            rows={projectStatuses}
-            palettes={palettes}
-            showVisible
-            sortable
-            storageKey="pick-lists:project_statuses"
-          />
-        </PickListSection>
-
         <PickListSection title="Action Order" usedBy="Projects">
           <PicklistStatusTable
             source="project_action_order_statuses"

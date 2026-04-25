@@ -114,11 +114,6 @@ export async function migrateRecord(recordId: string): Promise<string | null> {
 
   const uberId = await ensureMigratedUber();
 
-  const projectStatusRes = await pool.query(
-    `SELECT id FROM project_statuses WHERE name = 'Active' LIMIT 1`
-  );
-  if (!projectStatusRes.rows[0]) throw new Error("Active project status missing");
-
   const taskStatusRes = await pool.query(
     `SELECT id FROM task_statuses WHERE name = 'Tickled' LIMIT 1`
   );
@@ -127,10 +122,10 @@ export async function migrateRecord(recordId: string): Promise<string | null> {
   const title = inbox.title || "(untitled)";
 
   const projectRes = await pool.query(
-    `INSERT INTO projects (name, uber_project_id, status_id)
-     VALUES ($1, $2, $3)
+    `INSERT INTO projects (name, uber_project_id)
+     VALUES ($1, $2)
      RETURNING id`,
-    [title, uberId, projectStatusRes.rows[0].id]
+    [title, uberId]
   );
   const projectId = projectRes.rows[0].id as string;
 
