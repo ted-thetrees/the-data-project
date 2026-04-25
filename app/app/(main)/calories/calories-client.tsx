@@ -14,7 +14,7 @@ import {
 export interface LogRow {
   id: string;
   item: string;
-  amount: number;
+  amount: string;
   calories: number;
   food_name: string | null;
   logged_on: string; // 'YYYY-MM-DD' (date already grouped — no TZ conversion)
@@ -171,7 +171,7 @@ export function CaloriesClient({
                       />
                     </td>
                     <td className={`${cellClass} text-right`}>
-                      <EditableNumber
+                      <EditableText
                         value={row.amount}
                         onSave={(v) => updateLogAmount(row.id, v)}
                       />

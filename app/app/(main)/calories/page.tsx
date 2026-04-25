@@ -14,7 +14,7 @@ async function getLog(): Promise<LogRow[]> {
   const result = await poolV002.query<LogRow>(`
     SELECT l.id::text,
            l.item,
-           l.amount::float8 AS amount,
+           l.amount,
            l.calories,
            to_char(l.logged_on, 'YYYY-MM-DD') AS logged_on,
            l.created_at,

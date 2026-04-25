@@ -19,12 +19,12 @@ export async function createLogEntry(loggedOn?: string) {
   if (loggedOn) {
     await poolV002.query(
       `INSERT INTO calorie_log (item, amount, calories, logged_on)
-       VALUES ('Untitled', 1, 0, $1::date)`,
+       VALUES ('Untitled', '', 0, $1::date)`,
       [loggedOn],
     );
   } else {
     await poolV002.query(
-      `INSERT INTO calorie_log (item, amount, calories) VALUES ('Untitled', 1, 0)`,
+      `INSERT INTO calorie_log (item, amount, calories) VALUES ('Untitled', '', 0)`,
     );
   }
   revalidate();
@@ -39,9 +39,7 @@ export async function updateLogItem(id: string, rawItem: string) {
   if (matched.rows[0]) {
     await poolV002.query(
       `UPDATE calorie_log
-         SET item = $1,
-             food_id = $2,
-             calories = ROUND($3 * COALESCE(amount, 1))
+         SET item = $1, food_id = $2, calories = $3
        WHERE id = $4`,
       [item, matched.rows[0].id, matched.rows[0].calories, id],
     );
@@ -54,20 +52,9 @@ export async function updateLogItem(id: string, rawItem: string) {
   revalidate();
 }
 
-export async function updateLogAmount(id: string, amount: number) {
-  if (!Number.isFinite(amount) || amount < 0) {
-    throw new Error("Invalid amount");
-  }
-  // If this entry is linked to a food, rescale calories from the food's
-  // base calories. Otherwise just store the new amount.
+export async function updateLogAmount(id: string, amount: string) {
   await poolV002.query(
-    `UPDATE calorie_log AS l
-        SET amount = $1,
-            calories = CASE
-              WHEN l.food_id IS NULL THEN l.calories
-              ELSE ROUND($1 * (SELECT f.calories FROM calorie_foods f WHERE f.id = l.food_id))
-            END
-      WHERE l.id = $2`,
+    `UPDATE calorie_log SET amount = $1 WHERE id = $2`,
     [amount, id],
   );
   revalidate();
