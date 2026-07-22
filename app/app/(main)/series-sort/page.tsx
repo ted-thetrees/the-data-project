@@ -1,4 +1,4 @@
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { SortTable } from "./sort-table";
 import { Realtime } from "@/components/realtime";
 
@@ -15,7 +15,7 @@ export interface SortRow {
 }
 
 async function getData(): Promise<SortRow[]> {
-  const result = await poolV002.query(`
+  const result = await poolTDPv4.query(`
     SELECT cs.id, cs.title, cs.network, cs.youtube_trailer,
            cs.release_date::text, cs.has_trailer
     FROM crime_series cs

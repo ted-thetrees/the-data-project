@@ -1,6 +1,6 @@
 "use server";
 
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { revalidatePath, updateTag } from "next/cache";
 
 function revalidateBacklogPage() {
@@ -13,7 +13,7 @@ function parseLookupId(v: string): number | null {
 }
 
 export async function updateBacklogMainEntry(id: string, value: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE backlog SET main_entry = $1, updated_at = now() WHERE id = $2`,
     [value || "Untitled", id],
   );
@@ -21,7 +21,7 @@ export async function updateBacklogMainEntry(id: string, value: string) {
 }
 
 export async function updateBacklogDetails(id: string, value: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE backlog SET details = $1, updated_at = now() WHERE id = $2`,
     [value || null, id],
   );
@@ -29,7 +29,7 @@ export async function updateBacklogDetails(id: string, value: string) {
 }
 
 export async function updateBacklogPriority(id: string, priorityId: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE backlog SET priority_id = $1, updated_at = now() WHERE id = $2`,
     [parseLookupId(priorityId), id],
   );
@@ -37,7 +37,7 @@ export async function updateBacklogPriority(id: string, priorityId: string) {
 }
 
 export async function updateBacklogCategory(id: string, categoryId: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE backlog SET primary_category_id = $1, updated_at = now() WHERE id = $2`,
     [parseLookupId(categoryId), id],
   );
@@ -45,7 +45,7 @@ export async function updateBacklogCategory(id: string, categoryId: string) {
 }
 
 export async function createBacklogItem() {
-  await poolV002.query(
+  await poolTDPv4.query(
     `INSERT INTO backlog (main_entry) VALUES ('Untitled')`,
   );
   revalidateBacklogPage();
@@ -69,7 +69,7 @@ export async function createBacklogItemInGroup(
   const placeholders = values.map((_, i) => `$${i + 1}`).join(", ");
   // sort_order = MIN(existing) - 1 so the new row lands above every other
   // backlog row in any in-memory sort_order-based ordering.
-  await poolV002.query(
+  await poolTDPv4.query(
     `INSERT INTO backlog (${cols.join(", ")}, sort_order)
      VALUES (${placeholders}, (SELECT COALESCE(MIN(sort_order), 0) - 1 FROM backlog))`,
     values,
@@ -78,14 +78,14 @@ export async function createBacklogItemInGroup(
 }
 
 export async function deleteBacklogItem(id: string) {
-  await poolV002.query(`DELETE FROM backlog WHERE id = $1`, [id]);
+  await poolTDPv4.query(`DELETE FROM backlog WHERE id = $1`, [id]);
   revalidateBacklogPage();
 }
 
 export async function reorderBacklogRows(orderedIds: string[]) {
   if (orderedIds.length === 0) return;
   const ids = orderedIds.map((v) => Number(v));
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE backlog AS t
        SET sort_order = u.ord
        FROM unnest($1::bigint[]) WITH ORDINALITY AS u(id, ord)

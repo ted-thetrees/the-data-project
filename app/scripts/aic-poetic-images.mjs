@@ -1,7 +1,7 @@
 import { Pool } from "pg";
 import { spawnSync } from "node:child_process";
 
-const DATABASE_URL = process.env.DATABASE_URL_V002;
+const DATABASE_URL = process.env.DATABASE_URL_TDPV4;
 const CLAUDE = "/Users/tedpearlman/.local/bin/claude";
 const LIMIT = Number(process.argv[2] || 10);
 const RESET = process.argv.includes("--reset");

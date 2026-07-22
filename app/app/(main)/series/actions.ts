@@ -1,6 +1,6 @@
 "use server";
 
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { revalidatePath, updateTag } from "next/cache";
 
 function revalidate() {
@@ -13,7 +13,7 @@ export async function updateCrimeSeriesStatus(
   seriesId: string,
   statusId: string,
 ) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE crime_series SET status_id = $1 WHERE id = $2`,
     [statusId, seriesId],
   );
@@ -24,7 +24,7 @@ export async function updateCrimeSeriesTitle(
   seriesId: string,
   title: string,
 ) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE crime_series SET title = $1 WHERE id = $2`,
     [title || "Untitled", seriesId],
   );
@@ -35,7 +35,7 @@ export async function updateCrimeSeriesTrailer(
   seriesId: string,
   url: string | null,
 ) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE crime_series SET youtube_trailer = $1 WHERE id = $2`,
     [url, seriesId],
   );
@@ -43,7 +43,7 @@ export async function updateCrimeSeriesTrailer(
 }
 
 export async function createCrimeSeries(statusId: string | null) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `INSERT INTO crime_series (title, status_id) VALUES ('Untitled', $1)`,
     [statusId],
   );
@@ -51,6 +51,6 @@ export async function createCrimeSeries(statusId: string | null) {
 }
 
 export async function deleteCrimeSeries(id: string) {
-  await poolV002.query(`DELETE FROM crime_series WHERE id = $1`, [id]);
+  await poolTDPv4.query(`DELETE FROM crime_series WHERE id = $1`, [id]);
   revalidate();
 }

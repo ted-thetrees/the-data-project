@@ -13,7 +13,7 @@ for (const line of envFile.split("\n")) {
 }
 
 const pool = new pg.Pool({
-  connectionString: env.DATABASE_URL_V002,
+  connectionString: env.DATABASE_URL_TDPV4,
   ssl: { rejectUnauthorized: false },
 });
 

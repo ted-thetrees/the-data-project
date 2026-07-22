@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 
 const SOURCE_TABLES: Record<string, string> = {
   picklist_colors: "picklist_colors",
@@ -63,7 +63,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "color must be #rrggbb" }, { status: 400 });
   }
 
-  const result = await poolV002.query(
+  const result = await poolTDPv4.query(
     `UPDATE ${table} SET color = $1 WHERE id = $2 RETURNING id::text, color`,
     [color.toLowerCase(), id]
   );

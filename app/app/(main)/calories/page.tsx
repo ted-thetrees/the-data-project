@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
 import { Subtitle } from "@/components/subtitle";
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 const DAILY_ALLOWANCE = 1300;
 
 async function getLog(): Promise<LogRow[]> {
-  const result = await poolV002.query<LogRow>(`
+  const result = await poolTDPv4.query<LogRow>(`
     SELECT l.id::text,
            l.item,
            l.amount,

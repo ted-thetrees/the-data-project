@@ -1,6 +1,6 @@
 "use server";
 
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { revalidatePath, updateTag } from "next/cache";
 
 export async function updateBubbleDistribution(
@@ -12,7 +12,7 @@ export async function updateBubbleDistribution(
     bubbleDistributionId && bubbleDistributionId.length > 0
       ? Number(bubbleDistributionId)
       : null;
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE inf_images SET bubble_distribution_id = $1, updated_at = now() WHERE id = $2`,
     [value, imageId],
   );
@@ -24,7 +24,7 @@ export async function updateBubbleDistribution(
 export async function updateImageStatus(imageId: string, statusId: string) {
   const value =
     statusId && statusId.length > 0 ? Number(statusId) : null;
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE inf_images SET status_id = $1, updated_at = now() WHERE id = $2`,
     [value, imageId],
   );
@@ -41,7 +41,7 @@ export async function bulkSetImageStatus(
   if (imageIds.length === 0) return;
   const value =
     statusId && statusId.length > 0 ? Number(statusId) : null;
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE inf_images SET status_id = $1, updated_at = now()
      WHERE id = ANY($2::uuid[])`,
     [value, imageIds],
@@ -53,7 +53,7 @@ export async function bulkSetImageStatus(
 }
 
 export async function updateImageName(imageId: string, name: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE inf_images SET name = $1, updated_at = now() WHERE id = $2`,
     [name, imageId],
   );
@@ -74,7 +74,7 @@ export async function bulkSetBubbleDistribution(
     bubbleDistributionId && bubbleDistributionId.length > 0
       ? Number(bubbleDistributionId)
       : null;
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE inf_images SET bubble_distribution_id = $1, updated_at = now()
      WHERE id = ANY($2::uuid[])`,
     [value, imageIds],
@@ -94,19 +94,19 @@ export async function bulkSetImageFolderStatus(
 ) {
   if (imageIds.length === 0) return;
   const statusIdNum = Number(statusId);
-  const sortRow = await poolV002.query<{ id: number }>(
+  const sortRow = await poolTDPv4.query<{ id: number }>(
     `SELECT id FROM inf_images_bubble_distributions WHERE name = 'Sort' LIMIT 1`,
   );
   const sortId = sortRow.rows[0]?.id;
   if (sortId !== undefined && statusIdNum === sortId) {
-    await poolV002.query(
+    await poolTDPv4.query(
       `DELETE FROM inf_images_folder_links WHERE folder_id = $1 AND image_id = ANY($2::uuid[])`,
       [folderId, imageIds],
     );
   } else {
     // Build a multi-row INSERT ... ON CONFLICT
     const values = imageIds.map((_, i) => `($${i + 3}::uuid, $1, $2)`).join(",");
-    await poolV002.query(
+    await poolTDPv4.query(
       `INSERT INTO inf_images_folder_links (image_id, folder_id, status_id)
        VALUES ${values}
        ON CONFLICT (image_id, folder_id) DO UPDATE SET status_id = EXCLUDED.status_id`,
@@ -130,17 +130,17 @@ export async function setImageFolderStatus(
   statusId: string,
 ) {
   const statusIdNum = Number(statusId);
-  const sortRow = await poolV002.query<{ id: number }>(
+  const sortRow = await poolTDPv4.query<{ id: number }>(
     `SELECT id FROM inf_images_bubble_distributions WHERE name = 'Sort' LIMIT 1`,
   );
   const sortId = sortRow.rows[0]?.id;
   if (sortId !== undefined && statusIdNum === sortId) {
-    await poolV002.query(
+    await poolTDPv4.query(
       `DELETE FROM inf_images_folder_links WHERE image_id = $1 AND folder_id = $2`,
       [imageId, folderId],
     );
   } else {
-    await poolV002.query(
+    await poolTDPv4.query(
       `INSERT INTO inf_images_folder_links (image_id, folder_id, status_id)
        VALUES ($1, $2, $3)
        ON CONFLICT (image_id, folder_id) DO UPDATE SET status_id = EXCLUDED.status_id`,
@@ -153,7 +153,7 @@ export async function setImageFolderStatus(
 }
 
 export async function deleteImageFromList(imageId: string) {
-  await poolV002.query(`DELETE FROM inf_images WHERE id = $1`, [imageId]);
+  await poolTDPv4.query(`DELETE FROM inf_images WHERE id = $1`, [imageId]);
   updateTag("inf-images");
   revalidatePath("/inf-images/list");
   revalidatePath("/inf-images");
@@ -162,7 +162,7 @@ export async function deleteImageFromList(imageId: string) {
 
 export async function bulkDeleteImages(imageIds: string[]) {
   if (imageIds.length === 0) return;
-  await poolV002.query(
+  await poolTDPv4.query(
     `DELETE FROM inf_images WHERE id = ANY($1::uuid[])`,
     [imageIds],
   );

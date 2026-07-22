@@ -1,4 +1,4 @@
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
 import { Subtitle } from "@/components/subtitle";
@@ -8,7 +8,7 @@ export const metadata = { title: "INF Images — Masonry" };
 export const dynamic = "force-dynamic";
 
 async function getImages(): Promise<MasonryImage[]> {
-  const r = await poolV002.query<MasonryImage>(`
+  const r = await poolTDPv4.query<MasonryImage>(`
     SELECT
       id::text         AS id,
       eagle_id,

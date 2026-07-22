@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 
-const DATABASE_URL = process.env.DATABASE_URL_V002;
+const DATABASE_URL = process.env.DATABASE_URL_TDPV4;
 const PEXELS_KEY = process.env.PEXELS_API_KEY;
 const PEXELS_SEARCH = "https://api.pexels.com/v1/search";
 const PAGES = Number(process.argv[2] || 7);

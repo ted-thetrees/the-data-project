@@ -1,6 +1,6 @@
 "use server";
 
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { revalidatePath, updateTag } from "next/cache";
 
 function revalidateTalentPages() {
@@ -12,7 +12,7 @@ export async function updateTalentCategory(
   talentId: string,
   category: string,
 ) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE talent SET primary_talent_category = $1 WHERE id = $2`,
     [category, talentId],
   );
@@ -23,7 +23,7 @@ export async function updateTalentOverallRating(
   talentId: string,
   rating: string,
 ) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE talent SET overall_rating = $1 WHERE id = $2`,
     [rating, talentId],
   );
@@ -31,7 +31,7 @@ export async function updateTalentOverallRating(
 }
 
 export async function updateTalentName(talentId: string, name: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE talent SET name = $1 WHERE id = $2`,
     [name || "Untitled", talentId],
   );
@@ -39,7 +39,7 @@ export async function updateTalentName(talentId: string, name: string) {
 }
 
 export async function updateTalentWebsite(talentId: string, url: string | null) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE talent SET website = $1 WHERE id = $2`,
     [url, talentId],
   );
@@ -47,7 +47,7 @@ export async function updateTalentWebsite(talentId: string, url: string | null) 
 }
 
 export async function updateTalentInstagram(talentId: string, url: string | null) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE talent SET instagram = $1 WHERE id = $2`,
     [url, talentId],
   );
@@ -58,7 +58,7 @@ export async function createTalent(
   category: string | null,
   rating: string | null,
 ) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `INSERT INTO talent (name, primary_talent_category, overall_rating)
      VALUES ('Untitled', $1, $2)`,
     [category, rating],
@@ -67,7 +67,7 @@ export async function createTalent(
 }
 
 export async function addTalentArea(talentId: string, areaId: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `INSERT INTO talent_area_links (talent_id, area_id)
      VALUES ($1, $2)
      ON CONFLICT DO NOTHING`,
@@ -77,7 +77,7 @@ export async function addTalentArea(talentId: string, areaId: string) {
 }
 
 export async function removeTalentArea(talentId: string, areaId: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `DELETE FROM talent_area_links
      WHERE talent_id = $1 AND area_id = $2`,
     [talentId, areaId],
@@ -90,7 +90,7 @@ export async function removeTalentArea(talentId: string, areaId: string) {
 // area of expertise — otherwise the new row would land in "Uncategorized"
 // instead of the group the user clicked into.
 export async function createTalentInArea(areaId: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `WITH new_talent AS (
        INSERT INTO talent (name) VALUES ('Untitled') RETURNING id
      )
@@ -102,6 +102,6 @@ export async function createTalentInArea(areaId: string) {
 }
 
 export async function deleteTalent(id: string) {
-  await poolV002.query(`DELETE FROM talent WHERE id = $1`, [id]);
+  await poolTDPv4.query(`DELETE FROM talent WHERE id = $1`, [id]);
   revalidateTalentPages();
 }

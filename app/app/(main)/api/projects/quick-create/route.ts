@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   const { title, uber_project } = await req.json();
@@ -9,11 +9,11 @@ export async function POST(req: NextRequest) {
   }
 
   const [uberRows, taskStatusRow, priorityRow] = await Promise.all([
-    poolV002.query<{ id: string; name: string }>(
+    poolTDPv4.query<{ id: string; name: string }>(
       `SELECT id, name FROM uber_projects ORDER BY name`,
     ),
-    poolV002.query(`SELECT id FROM task_statuses WHERE name = 'Tickled' LIMIT 1`),
-    poolV002.query(
+    poolTDPv4.query(`SELECT id FROM task_statuses WHERE name = 'Tickled' LIMIT 1`),
+    poolTDPv4.query(
       `SELECT id FROM project_priorities WHERE name = 'Needs Sorting' LIMIT 1`,
     ),
   ]);
@@ -30,13 +30,13 @@ export async function POST(req: NextRequest) {
   const uber =
     uberRows.rows.find((r) => r.name === uber_project) ?? uberRows.rows[0];
 
-  const project = await poolV002.query<{ id: string }>(
+  const project = await poolTDPv4.query<{ id: string }>(
     `INSERT INTO projects (name, uber_project_id, priority_id)
      VALUES ($1, $2, $3)
      RETURNING id`,
     [title, uber.id, priorityRow.rows[0]?.id ?? null],
   );
-  await poolV002.query(
+  await poolTDPv4.query(
     `INSERT INTO tasks (name, project_id, status_id) VALUES ('', $1, $2)`,
     [project.rows[0].id, taskStatusRow.rows[0].id],
   );

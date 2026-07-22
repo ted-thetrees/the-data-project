@@ -1,6 +1,6 @@
 "use server";
 
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { revalidatePath, updateTag } from "next/cache";
 
 type SourceConfig = {
@@ -121,7 +121,7 @@ export async function createPicklistOptionNamed(
   if (!cleanName) throw new Error("Name is required");
 
   // Inherit color from the first existing option so created tags blend in.
-  const colorRow = await poolV002.query<{ color: string | null }>(
+  const colorRow = await poolTDPv4.query<{ color: string | null }>(
     `SELECT color FROM ${config.table} ORDER BY sort_order NULLS LAST, id LIMIT 1`,
   );
   const inheritedColor = colorRow.rows[0]?.color ?? "#727272";
@@ -146,7 +146,7 @@ export async function createPicklistOptionNamed(
     placeholders.push(`$${params.length}`);
   }
 
-  const result = await poolV002.query<{
+  const result = await poolTDPv4.query<{
     id: string;
     name: string;
     color: string | null;
@@ -167,7 +167,7 @@ export async function createPicklistOption(source: string) {
   // Pick a unique "New option" name — several picklist tables have UNIQUE(name)
   // (and some, like people_metro_areas, also UNIQUE(full_name)), so reusing
   // the literal string would fail on the second click.
-  const existing = await poolV002.query(
+  const existing = await poolTDPv4.query(
     `SELECT name FROM ${config.table} WHERE name LIKE 'New option%'`,
   );
   const taken = new Set<string>(
@@ -194,7 +194,7 @@ export async function createPicklistOption(source: string) {
     values.push(`'${actual.replace(/'/g, "''")}'`);
   }
 
-  await poolV002.query(
+  await poolTDPv4.query(
     `INSERT INTO ${config.table} (${columns.join(", ")}) VALUES (${values.join(", ")})`,
   );
   revalidate();
@@ -207,7 +207,7 @@ export async function updatePicklistName(
 ) {
   const config = SOURCE_TABLES[source];
   if (!config) throw new Error(`Invalid picklist source: ${source}`);
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE ${config.table} SET name = $1 WHERE id = $2`,
     [name || "Untitled", id],
   );
@@ -221,7 +221,7 @@ export async function updatePicklistFullName(
 ) {
   const config = SOURCE_TABLES[source];
   if (!config) throw new Error(`Invalid picklist source: ${source}`);
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE ${config.table} SET full_name = $1 WHERE id = $2`,
     [fullName || "Untitled", id],
   );
@@ -244,7 +244,7 @@ export async function reorderPicklistOptions(
       : config.idType === "text"
         ? "text[]"
         : "bigint[]";
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE ${config.table} AS t
        SET sort_order = u.ord
        FROM unnest($1::${arrayType}) WITH ORDINALITY AS u(id, ord)

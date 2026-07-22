@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { PageSheet } from "@/components/page-sheet";
 import { Realtime } from "@/components/realtime";
 import type { PillOption } from "@/components/pill";
@@ -14,7 +14,7 @@ export const metadata = { title: "Table Features" };
 export const dynamic = "force-dynamic";
 
 async function getCatalog(): Promise<CatalogRow[]> {
-  const r = await poolV002.query<CatalogRow>(
+  const r = await poolTDPv4.query<CatalogRow>(
     `SELECT id::text AS id, name, path, notes, sort_order,
             display_type_id::text AS display_type_id
      FROM tables_catalog
@@ -24,7 +24,7 @@ async function getCatalog(): Promise<CatalogRow[]> {
 }
 
 async function getDisplayTypeOptions(): Promise<PillOption[]> {
-  const r = await poolV002.query<PillOption>(
+  const r = await poolTDPv4.query<PillOption>(
     `SELECT id::text AS id, name, color FROM tables_display_types
      ORDER BY sort_order NULLS LAST, name`,
   );
@@ -32,7 +32,7 @@ async function getDisplayTypeOptions(): Promise<PillOption[]> {
 }
 
 async function getFeatures(): Promise<FeatureRow[]> {
-  const r = await poolV002.query<FeatureRow>(
+  const r = await poolTDPv4.query<FeatureRow>(
     `SELECT id::text AS id, key, label, category, description, default_for_new, sort_order
      FROM tables_features
      ORDER BY sort_order NULLS LAST, label`,
@@ -41,7 +41,7 @@ async function getFeatures(): Promise<FeatureRow[]> {
 }
 
 async function getCoverage(): Promise<CoverageRow[]> {
-  const r = await poolV002.query<CoverageRow>(
+  const r = await poolTDPv4.query<CoverageRow>(
     `SELECT table_id::text AS table_id, feature_id::text AS feature_id, status_id::text AS status_id
      FROM tables_coverage`,
   );
@@ -49,7 +49,7 @@ async function getCoverage(): Promise<CoverageRow[]> {
 }
 
 async function getStatusOptions(): Promise<PillOption[]> {
-  const r = await poolV002.query<PillOption>(
+  const r = await poolTDPv4.query<PillOption>(
     `SELECT id::text AS id, name, color FROM tables_feature_statuses
      ORDER BY sort_order NULLS LAST, name`,
   );

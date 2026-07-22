@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { CrimeSeriesTable } from "./crime-series-table";
 import { Realtime } from "@/components/realtime";
 import type { PillOption } from "@/components/pill";
@@ -25,7 +25,7 @@ export interface SeriesRow {
 }
 
 async function getData(): Promise<SeriesRow[]> {
-  const result = await poolV002.query(`
+  const result = await poolTDPv4.query(`
     SELECT cs.id, cs.title, cs.network, cs.youtube_trailer,
            cs.release_date::text, cs.status_id::text,
            s.name as status, s.color as status_color, s.sort_order as status_sort
@@ -42,7 +42,7 @@ const getCachedSeriesData = unstable_cache(getData, ["series-rows-v1"], {
 });
 
 async function getStatusOptions(): Promise<PillOption[]> {
-  const result = await poolV002.query(
+  const result = await poolTDPv4.query(
     `SELECT id::text, name, color FROM crime_series_statuses ORDER BY sort_order NULLS LAST, name`,
   );
   return result.rows;

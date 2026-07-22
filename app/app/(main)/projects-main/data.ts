@@ -1,8 +1,8 @@
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import type { TaskRow, StatusOption } from "./page";
 
 export async function getProjectsMainData(): Promise<TaskRow[]> {
-  const result = await poolV002.query(`
+  const result = await poolTDPv4.query(`
     SELECT t.id, t.name as task, t.result, t.notes as task_notes, t."order" as task_order,
            t.status_id as task_status_id,
            ts.name as task_status, ts.color as task_color,
@@ -36,28 +36,28 @@ export async function getProjectsMainData(): Promise<TaskRow[]> {
 }
 
 export async function getTaskStatuses(): Promise<StatusOption[]> {
-  const result = await poolV002.query(
+  const result = await poolTDPv4.query(
     `SELECT id, name, color FROM task_statuses ORDER BY sort_order NULLS LAST, name`
   );
   return result.rows;
 }
 
 export async function getPriorities(): Promise<StatusOption[]> {
-  const result = await poolV002.query(
+  const result = await poolTDPv4.query(
     `SELECT id, name, color FROM project_priorities ORDER BY sort_order NULLS LAST, name`
   );
   return result.rows;
 }
 
 export async function getStatuses(): Promise<StatusOption[]> {
-  const result = await poolV002.query(
+  const result = await poolTDPv4.query(
     `SELECT id, name, color FROM project_statuses ORDER BY sort_order NULLS LAST, name`
   );
   return result.rows;
 }
 
 export async function getUberProjects(): Promise<StatusOption[]> {
-  const result = await poolV002.query(
+  const result = await poolTDPv4.query(
     `SELECT id, name, color FROM uber_projects ORDER BY sort_order NULLS LAST, name`
   );
   return result.rows;

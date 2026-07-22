@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
 import { Subtitle } from "@/components/subtitle";
@@ -16,7 +16,7 @@ export const metadata = { title: "INF Images — List" };
 export const dynamic = "force-dynamic";
 
 async function getRows(): Promise<ListRow[]> {
-  const r = await poolV002.query<ListRow>(`
+  const r = await poolTDPv4.query<ListRow>(`
     SELECT
       i.id::text                          AS image_id,
       i.eagle_id,
@@ -49,14 +49,14 @@ const getCachedRows = unstable_cache(getRows, ["inf-images-rows-v1"], {
 });
 
 async function getFolders(): Promise<FolderOption[]> {
-  const r = await poolV002.query<FolderOption>(
+  const r = await poolTDPv4.query<FolderOption>(
     `SELECT id, name, full_path, color FROM inf_images_folders ORDER BY full_path`,
   );
   return r.rows;
 }
 
 async function getTags(): Promise<TagOption[]> {
-  const r = await poolV002.query<TagOption>(
+  const r = await poolTDPv4.query<TagOption>(
     `SELECT id::text AS id, name FROM inf_images_tags ORDER BY name`,
   );
   return r.rows;

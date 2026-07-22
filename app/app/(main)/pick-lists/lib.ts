@@ -1,11 +1,11 @@
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import type { PaletteForPicker } from "@/components/editable-color-cell";
 import type { Status, PicklistColor } from "./picklist-tables";
 
 const COLOR_COLUMNS = Array.from({ length: 15 }, (_, i) => `color_${i + 1}`);
 
 export async function getPalettes(): Promise<PaletteForPicker[]> {
-  const result = await poolV002.query(
+  const result = await poolTDPv4.query(
     `SELECT id::text, name, ${COLOR_COLUMNS.join(", ")} FROM color_palettes ORDER BY created_at DESC`,
   );
   return result.rows.map((row: Record<string, string | null>) => ({
@@ -19,7 +19,7 @@ async function getStatusesByName(
   table: string,
   orderClause = "ORDER BY name",
 ): Promise<Status[]> {
-  const result = await poolV002.query(
+  const result = await poolTDPv4.query(
     `SELECT id::text, name, COALESCE(color, '') as color FROM ${table} ${orderClause}`,
   );
   return result.rows;
@@ -165,7 +165,7 @@ export function getTablesFeatureStatuses() {
 export async function getInfImagesFolders(): Promise<Status[]> {
   // Show the full folder path as the picklist label so nested folders with
   // duplicate names (e.g., "Yes" under multiple parents) are distinguishable.
-  const r = await poolV002.query(
+  const r = await poolTDPv4.query(
     `SELECT id, full_path AS name, COALESCE(color, '') AS color
      FROM inf_images_folders
      ORDER BY sort_order NULLS LAST, full_path`,
@@ -174,7 +174,7 @@ export async function getInfImagesFolders(): Promise<Status[]> {
 }
 
 export async function getPeopleMetroAreas(): Promise<Status[]> {
-  const result = await poolV002.query(
+  const result = await poolTDPv4.query(
     `SELECT id::text, name, full_name, COALESCE(color, '') as color
      FROM people_metro_areas
      ORDER BY name`,
@@ -186,7 +186,7 @@ export async function getPicklistColorsForTables(
   tables: string[],
 ): Promise<Map<string, PicklistColor[]>> {
   if (tables.length === 0) return new Map();
-  const result = await poolV002.query(
+  const result = await poolTDPv4.query(
     `SELECT id::text, "table", field, option, color FROM picklist_colors
      WHERE "table" = ANY($1::text[])
      ORDER BY "table", field, option`,

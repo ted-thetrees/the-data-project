@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
 import { Subtitle } from "@/components/subtitle";
@@ -13,7 +13,7 @@ export const metadata = { title: "JTBD — Thinkers" };
 export const dynamic = "force-dynamic";
 
 async function getThinkers(): Promise<ThinkerRow[]> {
-  const result = await poolV002.query(`
+  const result = await poolTDPv4.query(`
     SELECT t.id::text, t.name, t.color, t.notes,
            COALESCE(
              (SELECT json_agg(j.id::text ORDER BY j.sort_order NULLS LAST, j.name)
@@ -37,7 +37,7 @@ const getCachedThinkers = unstable_cache(getThinkers, ["jtbd-thinkers-v1"], {
 });
 
 async function getJobOptions(): Promise<PillOption[]> {
-  const result = await poolV002.query(
+  const result = await poolTDPv4.query(
     `SELECT id::text AS id, name, color
      FROM jtbd_jobs
      ORDER BY sort_order NULLS LAST, name`,

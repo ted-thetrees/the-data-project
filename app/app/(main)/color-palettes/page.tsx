@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
 import { Subtitle } from "@/components/subtitle";
@@ -18,7 +18,7 @@ type Palette = {
 } & Record<string, string | null>;
 
 async function getPalettes(): Promise<Palette[]> {
-  const result = await poolV002.query(
+  const result = await poolTDPv4.query(
     `SELECT id, name, ${COLOR_COLUMNS.join(", ")} FROM color_palettes ORDER BY created_at DESC`
   );
   return result.rows;

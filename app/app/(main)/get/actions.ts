@@ -1,6 +1,6 @@
 "use server";
 
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { revalidatePath, updateTag } from "next/cache";
 
 function revalidateGetPage() {
@@ -13,7 +13,7 @@ function parseLookupId(v: string): number | null {
 }
 
 export async function createGetItem() {
-  await poolV002.query(
+  await poolTDPv4.query(
     `INSERT INTO get (name, sort_order)
      VALUES ('Untitled', (SELECT COALESCE(MIN(sort_order), 0) - 1 FROM get))`,
   );
@@ -38,7 +38,7 @@ export async function createGetItemInGroup(prefill: Record<string, string | null
     cols.push(allowed[k]);
     placeholders.push(`$${params.length}`);
   }
-  await poolV002.query(
+  await poolTDPv4.query(
     `INSERT INTO get (${cols.join(",")}) VALUES (${placeholders.join(",")})`,
     params,
   );
@@ -52,7 +52,7 @@ export async function reorderGetRows(orderedIds: string[]) {
   orderedIds.forEach((id, i) => {
     params.push(id, i);
   });
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE get g SET sort_order = v.sort_order
      FROM (VALUES ${values}) AS v(id, sort_order)
      WHERE g.id = v.id`,
@@ -62,12 +62,12 @@ export async function reorderGetRows(orderedIds: string[]) {
 }
 
 export async function deleteGetItem(id: string) {
-  await poolV002.query(`DELETE FROM get WHERE id = $1`, [id]);
+  await poolTDPv4.query(`DELETE FROM get WHERE id = $1`, [id]);
   revalidateGetPage();
 }
 
 export async function updateGetName(id: string, value: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE get SET name = $1, updated_at = now() WHERE id = $2`,
     [value || "Untitled", id],
   );
@@ -75,7 +75,7 @@ export async function updateGetName(id: string, value: string) {
 }
 
 export async function updateGetCategory(id: string, categoryId: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE get SET category_id = $1, updated_at = now() WHERE id = $2`,
     [parseLookupId(categoryId), id],
   );
@@ -83,7 +83,7 @@ export async function updateGetCategory(id: string, categoryId: string) {
 }
 
 export async function updateGetStatus(id: string, statusId: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE get SET status_id = $1, updated_at = now() WHERE id = $2`,
     [parseLookupId(statusId), id],
   );
@@ -91,7 +91,7 @@ export async function updateGetStatus(id: string, statusId: string) {
 }
 
 export async function updateGetSource(id: string, sourceId: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE get SET source_id = $1, updated_at = now() WHERE id = $2`,
     [parseLookupId(sourceId), id],
   );
@@ -99,7 +99,7 @@ export async function updateGetSource(id: string, sourceId: string) {
 }
 
 export async function updateGetSourceDetail(id: string, value: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE get SET source_detail = $1, updated_at = now() WHERE id = $2`,
     [value || null, id],
   );
@@ -107,7 +107,7 @@ export async function updateGetSourceDetail(id: string, value: string) {
 }
 
 export async function updateGetUrl(id: string, value: string | null) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE get SET url = $1, updated_at = now() WHERE id = $2`,
     [value, id],
   );
@@ -115,7 +115,7 @@ export async function updateGetUrl(id: string, value: string | null) {
 }
 
 export async function updateGetNotes(id: string, value: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE get SET notes = $1, updated_at = now() WHERE id = $2`,
     [value || null, id],
   );

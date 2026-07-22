@@ -5,8 +5,8 @@ export const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-export const poolV002 = new Pool({
-  connectionString: process.env.DATABASE_URL_V002,
+export const poolTDPv4 = new Pool({
+  connectionString: process.env.DATABASE_URL_TDPV4,
   ssl: { rejectUnauthorized: false },
 });
 

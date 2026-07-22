@@ -1,6 +1,6 @@
 "use server";
 
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { revalidatePath, updateTag } from "next/cache";
 
 function revalidatePeoplePage() {
@@ -13,7 +13,7 @@ function parseLookupId(v: string): number | null {
 }
 
 export async function updatePersonName(id: string, name: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE people SET name = $1, updated_at = now() WHERE id = $2`,
     [name || "Untitled", id],
   );
@@ -21,7 +21,7 @@ export async function updatePersonName(id: string, name: string) {
 }
 
 export async function updatePersonKnownAs(id: string, knownAs: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE people SET known_as = $1, updated_at = now() WHERE id = $2`,
     [knownAs || null, id],
   );
@@ -29,7 +29,7 @@ export async function updatePersonKnownAs(id: string, knownAs: string) {
 }
 
 export async function updatePersonPassphrase(id: string, passphrase: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE people SET passphrase = $1, updated_at = now() WHERE id = $2`,
     [passphrase || null, id],
   );
@@ -37,7 +37,7 @@ export async function updatePersonPassphrase(id: string, passphrase: string) {
 }
 
 export async function updatePersonGender(id: string, genderId: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE people SET gender_id = $1, updated_at = now() WHERE id = $2`,
     [parseLookupId(genderId), id],
   );
@@ -45,7 +45,7 @@ export async function updatePersonGender(id: string, genderId: string) {
 }
 
 export async function updatePersonFamiliarity(id: string, familiarityId: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE people SET familiarity_id = $1, updated_at = now() WHERE id = $2`,
     [parseLookupId(familiarityId), id],
   );
@@ -53,7 +53,7 @@ export async function updatePersonFamiliarity(id: string, familiarityId: string)
 }
 
 export async function updatePersonTellerStatus(id: string, tellerStatusId: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE people SET teller_status_id = $1, updated_at = now() WHERE id = $2`,
     [parseLookupId(tellerStatusId), id],
   );
@@ -61,7 +61,7 @@ export async function updatePersonTellerStatus(id: string, tellerStatusId: strin
 }
 
 export async function updatePersonOrgFilled(id: string, orgFilledId: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE people SET has_org_filled_id = $1, updated_at = now() WHERE id = $2`,
     [parseLookupId(orgFilledId), id],
   );
@@ -69,7 +69,7 @@ export async function updatePersonOrgFilled(id: string, orgFilledId: string) {
 }
 
 export async function updatePersonMetroArea(id: string, metroAreaId: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE people SET metro_area_id = $1, updated_at = now() WHERE id = $2`,
     [parseLookupId(metroAreaId), id],
   );
@@ -77,7 +77,7 @@ export async function updatePersonMetroArea(id: string, metroAreaId: string) {
 }
 
 export async function createPerson() {
-  await poolV002.query(
+  await poolTDPv4.query(
     `INSERT INTO people (name, sort_order)
      VALUES ('Untitled', (SELECT COALESCE(MIN(sort_order), 0) - 1 FROM people))`,
   );
@@ -91,7 +91,7 @@ export async function reorderPeopleRows(orderedIds: string[]) {
   orderedIds.forEach((id, i) => {
     params.push(id, i);
   });
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE people p SET sort_order = v.sort_order
      FROM (VALUES ${values}) AS v(id, sort_order)
      WHERE p.id = v.id`,
@@ -117,7 +117,7 @@ export async function createPersonInGroup(prefill: Record<string, string | null>
     cols.push(allowed[k]);
     placeholders.push(`$${params.length}`);
   }
-  await poolV002.query(
+  await poolTDPv4.query(
     `INSERT INTO people (${cols.join(",")}) VALUES (${placeholders.join(",")})`,
     params,
   );
@@ -125,6 +125,6 @@ export async function createPersonInGroup(prefill: Record<string, string | null>
 }
 
 export async function deletePerson(id: string) {
-  await poolV002.query(`DELETE FROM people WHERE id = $1`, [id]);
+  await poolTDPv4.query(`DELETE FROM people WHERE id = $1`, [id]);
   revalidatePeoplePage();
 }

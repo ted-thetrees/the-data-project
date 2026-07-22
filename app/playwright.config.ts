@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-// Load DATABASE_URL_V002 (and friends) from .env.local for the test runner.
+// Load DATABASE_URL_TDPV4 (and friends) from .env.local for the test runner.
 try {
   const envPath = resolve(__dirname, ".env.local");
   for (const line of readFileSync(envPath, "utf8").split("\n")) {

@@ -25,9 +25,9 @@ if (rawCalories !== undefined && !Number.isFinite(explicitCalories)) {
   process.exit(1);
 }
 
-const connectionString = process.env.DATABASE_URL_V002;
+const connectionString = process.env.DATABASE_URL_TDPV4;
 if (!connectionString) {
-  console.error("DATABASE_URL_V002 not set. Run from app/ with --env-file=.env.local");
+  console.error("DATABASE_URL_TDPV4 not set. Run from app/ with --env-file=.env.local");
   process.exit(1);
 }
 

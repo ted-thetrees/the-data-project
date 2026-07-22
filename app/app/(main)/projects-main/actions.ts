@@ -1,6 +1,6 @@
 "use server";
 
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { revalidatePath, updateTag } from "next/cache";
 
 const TASK_FIELDS = new Set(["name", "status_id", "result", "notes"]);
@@ -20,7 +20,7 @@ export async function updateTaskField(
   value: unknown
 ) {
   if (!TASK_FIELDS.has(field)) throw new Error(`Invalid task field: ${field}`);
-  await poolV002.query(`UPDATE tasks SET ${field} = $1 WHERE id = $2`, [
+  await poolTDPv4.query(`UPDATE tasks SET ${field} = $1 WHERE id = $2`, [
     value,
     id,
   ]);
@@ -35,7 +35,7 @@ export async function updateProjectField(
 ) {
   if (!PROJECT_FIELDS.has(field))
     throw new Error(`Invalid project field: ${field}`);
-  await poolV002.query(`UPDATE projects SET ${field} = $1 WHERE id = $2`, [
+  await poolTDPv4.query(`UPDATE projects SET ${field} = $1 WHERE id = $2`, [
     value,
     id,
   ]);
@@ -49,7 +49,7 @@ export async function updateUberField(
   value: unknown
 ) {
   if (!UBER_FIELDS.has(field)) throw new Error(`Invalid uber field: ${field}`);
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE uber_projects SET ${field} = $1 WHERE id = $2`,
     [value, id]
   );
@@ -58,7 +58,7 @@ export async function updateUberField(
 }
 
 export async function deleteTask(id: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE tasks SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL`,
     [id],
   );
@@ -74,7 +74,7 @@ export async function deleteTask(id: string) {
  * so the swap is deterministic even when some rows start with NULL orders.
  */
 export async function moveTask(taskId: string, direction: "up" | "down") {
-  const client = await poolV002.connect();
+  const client = await poolTDPv4.connect();
   try {
     await client.query("BEGIN");
     const projectRes = await client.query<{ project_id: string }>(
@@ -133,7 +133,7 @@ export async function moveTask(taskId: string, direction: "up" | "down") {
 }
 
 export async function deleteProject(id: string) {
-  const client = await poolV002.connect();
+  const client = await poolTDPv4.connect();
   try {
     await client.query("BEGIN");
     await client.query(`DELETE FROM tasks WHERE project_id = $1`, [id]);
@@ -150,11 +150,11 @@ export async function deleteProject(id: string) {
 }
 
 export async function createTask(projectId: string) {
-  const status = await poolV002.query(
+  const status = await poolTDPv4.query(
     `SELECT id FROM task_statuses WHERE name = 'Tickled' LIMIT 1`
   );
   if (!status.rows[0]) throw new Error("Tickled task status missing");
-  await poolV002.query(
+  await poolTDPv4.query(
     `INSERT INTO tasks (name, project_id, status_id) VALUES ($1, $2, $3)`,
     ["", projectId, status.rows[0].id]
   );
@@ -164,9 +164,9 @@ export async function createTask(projectId: string) {
 
 export async function createProject() {
   const [taskStatus, uberProject, priority] = await Promise.all([
-    poolV002.query(`SELECT id FROM task_statuses WHERE name = 'Tickled' LIMIT 1`),
-    poolV002.query(`SELECT id FROM uber_projects ORDER BY name LIMIT 1`),
-    poolV002.query(
+    poolTDPv4.query(`SELECT id FROM task_statuses WHERE name = 'Tickled' LIMIT 1`),
+    poolTDPv4.query(`SELECT id FROM uber_projects ORDER BY name LIMIT 1`),
+    poolTDPv4.query(
       `SELECT id FROM project_priorities
        WHERE name = 'Needs Sorting' LIMIT 1`,
     ),
@@ -174,7 +174,7 @@ export async function createProject() {
   if (!taskStatus.rows[0]) throw new Error("Tickled task status missing");
   if (!uberProject.rows[0]) throw new Error("No uber projects available");
 
-  const project = await poolV002.query(
+  const project = await poolTDPv4.query(
     `INSERT INTO projects (name, uber_project_id, priority_id)
      VALUES ('Untitled Project', $1, $2)
      RETURNING id`,
@@ -183,7 +183,7 @@ export async function createProject() {
       priority.rows[0]?.id ?? null,
     ],
   );
-  await poolV002.query(
+  await poolTDPv4.query(
     `INSERT INTO tasks (name, project_id, status_id) VALUES ('', $1, $2)`,
     [project.rows[0].id, taskStatus.rows[0].id],
   );

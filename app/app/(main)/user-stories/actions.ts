@@ -1,6 +1,6 @@
 "use server";
 
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { revalidatePath, updateTag } from "next/cache";
 
 function revalidateUserStoriesPage() {
@@ -9,7 +9,7 @@ function revalidateUserStoriesPage() {
 }
 
 export async function updateUserStoryTitle(id: string, title: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE user_stories SET title = $1 WHERE id = $2`,
     [title || "Untitled", id],
   );
@@ -17,7 +17,7 @@ export async function updateUserStoryTitle(id: string, title: string) {
 }
 
 export async function updateUserStoryNarrative(id: string, narrative: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE user_stories SET narrative = $1 WHERE id = $2`,
     [narrative || null, id],
   );
@@ -26,7 +26,7 @@ export async function updateUserStoryNarrative(id: string, narrative: string) {
 
 export async function updateUserStoryCategory(id: string, categoryId: string) {
   const parsed = categoryId ? Number(categoryId) : null;
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE user_stories SET category_id = $1 WHERE id = $2`,
     [parsed, id],
   );
@@ -34,7 +34,7 @@ export async function updateUserStoryCategory(id: string, categoryId: string) {
 }
 
 export async function addUserStoryRole(storyId: string, roleId: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `INSERT INTO user_story_role_links (user_story_id, role_id)
      VALUES ($1, $2)
      ON CONFLICT DO NOTHING`,
@@ -44,7 +44,7 @@ export async function addUserStoryRole(storyId: string, roleId: string) {
 }
 
 export async function removeUserStoryRole(storyId: string, roleId: string) {
-  await poolV002.query(
+  await poolTDPv4.query(
     `DELETE FROM user_story_role_links
      WHERE user_story_id = $1 AND role_id = $2`,
     [storyId, Number(roleId)],
@@ -53,7 +53,7 @@ export async function removeUserStoryRole(storyId: string, roleId: string) {
 }
 
 export async function createUserStory() {
-  await poolV002.query(
+  await poolTDPv4.query(
     `INSERT INTO user_stories (title, sort_order)
      VALUES ('Untitled', (SELECT COALESCE(MIN(sort_order), 0) - 1 FROM user_stories))`,
   );
@@ -67,7 +67,7 @@ export async function reorderUserStoryRows(orderedIds: string[]) {
   orderedIds.forEach((id, i) => {
     params.push(id, i);
   });
-  await poolV002.query(
+  await poolTDPv4.query(
     `UPDATE user_stories us SET sort_order = v.sort_order
      FROM (VALUES ${values}) AS v(id, sort_order)
      WHERE us.id = v.id`,
@@ -87,7 +87,7 @@ export async function createUserStoryInGroup(
     cols.push("category_id");
     placeholders.push(`$${params.length}`);
   }
-  await poolV002.query(
+  await poolTDPv4.query(
     `INSERT INTO user_stories (${cols.join(",")}) VALUES (${placeholders.join(",")})`,
     params,
   );
@@ -95,6 +95,6 @@ export async function createUserStoryInGroup(
 }
 
 export async function deleteUserStory(id: string) {
-  await poolV002.query(`DELETE FROM user_stories WHERE id = $1`, [id]);
+  await poolTDPv4.query(`DELETE FROM user_stories WHERE id = $1`, [id]);
   revalidateUserStoriesPage();
 }

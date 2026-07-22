@@ -9,9 +9,9 @@
 
 import pg from "pg";
 
-const connectionString = process.env.DATABASE_URL_V002;
+const connectionString = process.env.DATABASE_URL_TDPV4;
 if (!connectionString) {
-  console.error("DATABASE_URL_V002 is not set");
+  console.error("DATABASE_URL_TDPV4 is not set");
   process.exit(1);
 }
 

@@ -18,7 +18,7 @@ const LIBRARY = "/Users/tedpearlman/Eagle/Everything.library";
 const BUCKET = "eagle-images";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const DATABASE_URL = process.env.DATABASE_URL_V002;
+const DATABASE_URL = process.env.DATABASE_URL_TDPV4;
 
 const VIDEO_EXTS = new Set(["mp4", "mov", "webm", "m4v", "mkv"]);
 const SKIP_EXTS = new Set(["url"]); // bookmarks, no actual image
@@ -32,7 +32,7 @@ const INCLUDE_VIDEOS = args.includes("--include-videos");
 const DRY_RUN = args.includes("--dry-run");
 
 if (!SUPABASE_URL || !SERVICE_KEY || !DATABASE_URL) {
-  console.error("missing env: NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / DATABASE_URL_V002");
+  console.error("missing env: NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / DATABASE_URL_TDPV4");
   process.exit(1);
 }
 

@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { TalentTable } from "./talent-table";
 import { Realtime } from "@/components/realtime";
 import type { PillOption } from "@/components/pill";
@@ -48,7 +48,7 @@ async function getTalent(
       sortMode === "none"
         ? "ORDER BY t.name"
         : "ORDER BY tc.sort_order NULLS LAST, trl.sort_order NULLS LAST, t.name";
-    const result = await poolV002.query(`
+    const result = await poolTDPv4.query(`
       SELECT t.id, t.name, t.primary_talent_category,
              t.overall_rating, t.website, t.instagram, t.notes,
              string_agg(DISTINCT ta.name, ', ') as areas,
@@ -90,7 +90,7 @@ async function getTalent(
   // so adjacent rows need to share an area for computeGroupSpans() to merge
   // them into a single span. ta.sort_order honors whatever order the user set
   // on the pick-list page; Uncategorized (NULLs) sorts to the end.
-  const result = await poolV002.query(`
+  const result = await poolTDPv4.query(`
     WITH distinct_talent AS (
       SELECT t.id, t.name, t.primary_talent_category,
              t.overall_rating, t.website, t.instagram, t.notes,
@@ -146,14 +146,14 @@ const getCachedTalent = unstable_cache(getTalent, ["talent-rows-v1"], {
 });
 
 async function getLookupOptions(table: string): Promise<PillOption[]> {
-  const result = await poolV002.query(
+  const result = await poolTDPv4.query(
     `SELECT name as id, name, color FROM ${table} ORDER BY sort_order NULLS LAST, name`,
   );
   return result.rows;
 }
 
 async function getAreaOptions(): Promise<PillOption[]> {
-  const result = await poolV002.query(
+  const result = await poolTDPv4.query(
     `SELECT id::text AS id, name, color
      FROM talent_areas
      ORDER BY sort_order NULLS LAST, name`,

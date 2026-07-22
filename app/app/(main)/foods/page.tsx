@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
 import { Subtitle } from "@/components/subtitle";
@@ -11,7 +11,7 @@ export const metadata = { title: "Foods" };
 export const dynamic = "force-dynamic";
 
 async function getFoods(): Promise<FoodRow[]> {
-  const result = await poolV002.query<FoodRow>(`
+  const result = await poolTDPv4.query<FoodRow>(`
     SELECT id::text, name, calories
     FROM calorie_foods
     ORDER BY name

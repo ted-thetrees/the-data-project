@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
 import { Subtitle } from "@/components/subtitle";
@@ -12,7 +12,7 @@ export const metadata = { title: "JTBD — Components" };
 export const dynamic = "force-dynamic";
 
 async function getComponents(): Promise<ComponentRow[]> {
-  const result = await poolV002.query(`
+  const result = await poolTDPv4.query(`
     SELECT c.id::text, c.name, c.notes,
            COALESCE(
              (SELECT json_agg(j.id::text ORDER BY j.sort_order NULLS LAST, j.name)
@@ -36,7 +36,7 @@ const getCachedComponents = unstable_cache(getComponents, ["jtbd-components-v1"]
 });
 
 async function getJobOptions(): Promise<PillOption[]> {
-  const result = await poolV002.query(
+  const result = await poolTDPv4.query(
     `SELECT id::text AS id, name, color
      FROM jtbd_jobs
      ORDER BY sort_order NULLS LAST, name`,

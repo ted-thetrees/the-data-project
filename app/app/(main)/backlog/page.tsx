@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
 import { Subtitle } from "@/components/subtitle";
@@ -12,7 +12,7 @@ export const metadata = { title: "Backlog" };
 export const dynamic = "force-dynamic";
 
 async function getBacklog(): Promise<BacklogRow[]> {
-  const result = await poolV002.query<BacklogRow>(`
+  const result = await poolTDPv4.query<BacklogRow>(`
     SELECT
       b.id::text                    AS id,
       b.main_entry,
@@ -42,7 +42,7 @@ async function getLookupOptions(
   table: string,
   orderClause = "ORDER BY sort_order NULLS LAST, name",
 ): Promise<PillOption[]> {
-  const result = await poolV002.query(
+  const result = await poolTDPv4.query(
     `SELECT id::text AS id, name, color FROM ${table} ${orderClause}`,
   );
   return result.rows;

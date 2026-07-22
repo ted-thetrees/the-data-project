@@ -9,9 +9,9 @@ const MARKER = "UNDO_E2E_";
 let pool: pg.Pool;
 
 test.beforeAll(async () => {
-  const connectionString = process.env.DATABASE_URL_V002;
+  const connectionString = process.env.DATABASE_URL_TDPV4;
   if (!connectionString) {
-    throw new Error("DATABASE_URL_V002 must be set for e2e tests");
+    throw new Error("DATABASE_URL_TDPV4 must be set for e2e tests");
   }
   pool = new pg.Pool({
     connectionString,

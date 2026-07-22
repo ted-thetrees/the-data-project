@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
   const cols = Array.from({ length: 15 }, (_, i) => `color_${i + 1}`);
   const placeholders = cols.map((_, i) => `$${i + 2}`).join(", ");
-  const result = await poolV002.query(
+  const result = await poolTDPv4.query(
     `INSERT INTO color_palettes (name, ${cols.join(", ")})
      VALUES ($1, ${placeholders})
      RETURNING id::text, name`,

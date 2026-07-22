@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { PageShell } from "@/components/page-shell";
 import { Realtime } from "@/components/realtime";
 import { Subtitle } from "@/components/subtitle";
@@ -15,7 +15,7 @@ export const metadata = { title: "User Stories" };
 export const dynamic = "force-dynamic";
 
 async function getUserStories(): Promise<UserStoryRow[]> {
-  const result = await poolV002.query<UserStoryRow>(`
+  const result = await poolTDPv4.query<UserStoryRow>(`
     SELECT
       us.id::text,
       us.title,
@@ -46,7 +46,7 @@ const getCachedUserStories = unstable_cache(getUserStories, ["user-stories-rows-
 });
 
 async function getLookupOptions(table: string): Promise<PillOption[]> {
-  const result = await poolV002.query(
+  const result = await poolTDPv4.query(
     `SELECT id::text AS id, name, color
      FROM ${table}
      ORDER BY sort_order NULLS LAST, name`,

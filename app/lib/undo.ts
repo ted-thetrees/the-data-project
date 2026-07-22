@@ -1,6 +1,6 @@
 "use server";
 
-import { poolV002 } from "@/lib/db";
+import { poolTDPv4 } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
 /**
@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
  * Returns a short description of what was undone, or null if nothing to undo.
  */
 export async function undoLast(): Promise<string | null> {
-  const res = await poolV002.query<{ description: string | null }>(
+  const res = await poolTDPv4.query<{ description: string | null }>(
     `SELECT audit.undo_last() AS description`,
   );
   const description = res.rows[0]?.description ?? null;
